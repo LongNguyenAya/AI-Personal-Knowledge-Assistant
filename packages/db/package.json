@@ -1,0 +1,9 @@
+{
+  "name": "@ai-assistant/db",
+  "version": "1.0.0",
+  "main": "src/schema.ts",
+  "types": "src/schema.ts",
+  "dependencies": {
+    "drizzle-orm": "0.45.2"
+  }
+}
