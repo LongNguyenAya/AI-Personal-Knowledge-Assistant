@@ -1,9 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { db } from "../../db/client";
-import { chunks, documents } from "@ai-assistant/db/src/schema";
-import { sql, eq } from "drizzle-orm";
 import { embedText } from "../../utils/embedding";
+import { findRelevantChunks } from "../../db/repositories/chunks";
 
 export function searchDocumentsTool(userId: string) {
   return tool({
@@ -13,13 +11,7 @@ export function searchDocumentsTool(userId: string) {
     }),
     execute: async ({ query }) => {
       const embedding = await embedText(query);
-      const results = await db
-        .select({ content: chunks.content })
-        .from(chunks)
-        .innerJoin(documents, eq(chunks.documentId, documents.id))
-        .where(eq(documents.userId, userId))
-        .orderBy(sql`${chunks.embedding} <=> ${JSON.stringify(embedding)}::vector`)
-        .limit(3);
+      const results = await findRelevantChunks(userId, embedding, 3);
 
       return { results: results.map((r) => r.content) };
     },

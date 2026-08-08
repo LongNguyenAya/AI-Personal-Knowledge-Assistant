@@ -1,24 +1,35 @@
-import { db } from "@/lib/db";
 import { reminders } from "@ai-assistant/db/src/schema";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { withAuthedContext } from "@/lib/with-authed-context";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+const PATCHABLE_FIELDS = ["title", "content", "dueAt"] as const;
 
-  const { id } = await params;
+export const PATCH = withAuthedContext<{ id: string }>(async (req, { session, params, tx }) => {
+  const { id } = params;
   const body = await req.json();
-  const [updated] = await db.update(reminders).set(body).where(eq(reminders.id, id)).returning();
+
+  const patch: Record<string, unknown> = {};
+  for (const key of PATCHABLE_FIELDS) {
+    if (key in body) patch[key] = key === "dueAt" ? new Date(body[key]) : body[key];
+  }
+  if (Object.keys(patch).length === 0) {
+    return new Response("No valid fields to update", { status: 400 });
+  }
+
+  const [updated] = await tx.update(reminders).set(patch)
+    .where(and(eq(reminders.id, id), eq(reminders.userId, session.user.id)))
+    .returning();
+
+  if (!updated) return new Response("Not Found", { status: 404 });
   return Response.json(updated);
-}
+});
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+export const DELETE = withAuthedContext<{ id: string }>(async (req, { session, params, tx }) => {
+  const { id } = params;
+  const [deleted] = await tx.delete(reminders)
+    .where(and(eq(reminders.id, id), eq(reminders.userId, session.user.id)))
+    .returning({ id: reminders.id });
 
-  const { id } = await params;
-  await db.delete(reminders).where(eq(reminders.id, id));
+  if (!deleted) return new Response("Not Found", { status: 404 });
   return Response.json({ success: true });
-}
+});

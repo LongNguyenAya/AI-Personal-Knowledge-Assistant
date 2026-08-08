@@ -1,5 +1,9 @@
-import { pgTable, uuid, text, timestamp, vector, boolean, pgEnum, index, integer, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, vector, boolean, pgEnum, index, integer, uniqueIndex, pgPolicy, pgRole } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+
+// Provisioned by docker/initdb/01-roles.sql — .existing() references the role in policies
+// without Drizzle trying to CREATE/DROP it itself.
+export const appUserRole = pgRole("app_user").existing();
 
 export const roleEnum = pgEnum("role", ["user", "admin"]);
 export const documentStatusEnum = pgEnum("document_status", ["uploaded", "processing", "processed", "failed"]);
@@ -93,7 +97,13 @@ export const documents = pgTable("documents", {
   deletedAt: timestamp("deleted_at"),
 }, (table) => ({
   userIdIdx: index("documents_user_id_idx").on(table.userId),
-}));
+  userIsolationPolicy: pgPolicy("documents_user_isolation", {
+    for: "all",
+    to: appUserRole,
+    using: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+    withCheck: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+  }),
+})).enableRLS();
 
 export const chunks = pgTable("chunks", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -105,7 +115,14 @@ export const chunks = pgTable("chunks", {
 }, (table) => ({
   documentIdIdx: index("chunks_document_id_idx").on(table.documentId),
   // Index HNSW cho embedding cần tạo riêng bằng raw SQL sau khi migrate (Drizzle chưa hỗ trợ cú pháp này)
-}));
+  // chunks không có cột user_id trực tiếp -> policy join qua documents
+  userIsolationPolicy: pgPolicy("chunks_user_isolation", {
+    for: "all",
+    to: appUserRole,
+    using: sql`exists (select 1 from documents d where d.id = ${table.documentId} and d.user_id = current_setting('app.current_user_id')::uuid)`,
+    withCheck: sql`exists (select 1 from documents d where d.id = ${table.documentId} and d.user_id = current_setting('app.current_user_id')::uuid)`,
+  }),
+})).enableRLS();
 
 export const tasks = pgTable("tasks", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -117,7 +134,13 @@ export const tasks = pgTable("tasks", {
   deletedAt: timestamp("deleted_at"),
 }, (table) => ({
   userIdIdx: index("tasks_user_id_idx").on(table.userId),
-}));
+  userIsolationPolicy: pgPolicy("tasks_user_isolation", {
+    for: "all",
+    to: appUserRole,
+    using: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+    withCheck: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+  }),
+})).enableRLS();
 
 export const conversations = pgTable("conversations", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -127,7 +150,13 @@ export const conversations = pgTable("conversations", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index("conversations_user_id_idx").on(table.userId),
-}));
+  userIsolationPolicy: pgPolicy("conversations_user_isolation", {
+    for: "all",
+    to: appUserRole,
+    using: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+    withCheck: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+  }),
+})).enableRLS();
 
 export const reminders = pgTable("reminders", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -144,7 +173,13 @@ export const reminders = pgTable("reminders", {
 }, (table) => ({
   userIdIdx: index("reminders_user_id_idx").on(table.userId),
   dueAtStatusIdx: index("reminders_due_at_status_idx").on(table.dueAt, table.status),
-}));
+  userIsolationPolicy: pgPolicy("reminders_user_isolation", {
+    for: "all",
+    to: appUserRole,
+    using: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+    withCheck: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+  }),
+})).enableRLS();
 
 export const chatHistory = pgTable("chat_history", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -157,7 +192,13 @@ export const chatHistory = pgTable("chat_history", {
 }, (table) => ({
   userIdIdx: index("chat_history_user_id_idx").on(table.userId),
   conversationIdIdx: index("chat_history_conversation_id_idx").on(table.conversationId),
-}));
+  userIsolationPolicy: pgPolicy("chat_history_user_isolation", {
+    for: "all",
+    to: appUserRole,
+    using: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+    withCheck: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+  }),
+})).enableRLS();
 
 export const adminAuditLog = pgTable("admin_audit_log", {
   id: uuid("id").defaultRandom().primaryKey(),

@@ -1,17 +1,17 @@
 import { Hono } from "hono";
+import { createUIMessageStreamResponse } from "ai";
 import { runResearchAgent } from "../agents/research-agent";
+import type { AppEnv } from "../types";
 
-const app = new Hono();
+const app = new Hono<AppEnv>();
 
 app.post("/agent/chat", async (c) => {
-  const userId = c.req.header("X-User-Id");
+  const userId = c.get("userId");
   const { message } = await c.req.json();
 
-  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+  const stream = await runResearchAgent(message, userId);
 
-  const result = await runResearchAgent(message, userId);
-
-  return result.toUIMessageStreamResponse();
+  return createUIMessageStreamResponse({ stream });
 });
 
 export default app;

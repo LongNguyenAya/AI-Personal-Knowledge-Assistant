@@ -1,24 +1,18 @@
-import { db } from "@/lib/db";
 import { reminders } from "@ai-assistant/db/src/schema";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
+import { withAuthedContext } from "@/lib/with-authed-context";
 
-export async function GET(req: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
-
-  const list = await db.select().from(reminders).orderBy(desc(reminders.createdAt));
+export const GET = withAuthedContext(async (req, { session, tx }) => {
+  const list = await tx.select().from(reminders)
+    .where(eq(reminders.userId, session.user.id))
+    .orderBy(desc(reminders.createdAt));
   return Response.json(list);
-}
+});
 
-export async function POST(req: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
-
+export const POST = withAuthedContext(async (req, { session, tx }) => {
   const { title, content, dueAt } = await req.json();
 
-  const [created] = await db.insert(reminders).values({
+  const [created] = await tx.insert(reminders).values({
     userId: session.user.id,
     title,
     content,
@@ -27,4 +21,4 @@ export async function POST(req: Request) {
   }).returning();
 
   return Response.json(created);
-}
+});

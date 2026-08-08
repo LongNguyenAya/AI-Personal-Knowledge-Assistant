@@ -1,32 +1,24 @@
 import { google } from "@ai-sdk/google";
-import { streamText } from "ai";
-import { db } from "../db/client";
-import { chunks, documents } from "@ai-assistant/db/src/schema";
-import { sql, eq } from "drizzle-orm";
-import { embedText } from "../utils/embedding";
+import { streamText, createUIMessageStream } from "ai";
+import { retrieveRelevantChunks } from "./retrieval";
 import { RESEARCH_AGENT_SYSTEM_PROMPT } from "./prompts";
 
 export async function runResearchAgent(question: string, userId: string) {
-  const questionEmbedding = await embedText(question);
+  const { context, sources } = await retrieveRelevantChunks(question, userId);
 
-  const relevantChunks = await db
-    .select({
-      content: chunks.content,
-      distance: sql<number>`${chunks.embedding} <=> ${JSON.stringify(questionEmbedding)}::vector`,
-    })
-    .from(chunks)
-    .innerJoin(documents, eq(chunks.documentId, documents.id))
-    .where(eq(documents.userId, userId))
-    .orderBy(sql`${chunks.embedding} <=> ${JSON.stringify(questionEmbedding)}::vector`)
-    .limit(5);
+  return createUIMessageStream({
+    execute: ({ writer }) => {
+      for (const s of sources) {
+        writer.write({ type: "source-document", sourceId: s.documentId, mediaType: "text/plain", title: s.fileName, filename: s.fileName });
+      }
 
-  const context = relevantChunks.map((c) => c.content).join("\n\n---\n\n");
+      const result = streamText({
+        model: google("gemini-flash-latest"),
+        system: RESEARCH_AGENT_SYSTEM_PROMPT(context),
+        prompt: question,
+      });
 
-  const result = streamText({
-    model: google("gemini-2.5-flash"),
-    system: RESEARCH_AGENT_SYSTEM_PROMPT(context),
-    prompt: question,
+      writer.merge(result.toUIMessageStream());
+    },
   });
-
-  return result;
 }

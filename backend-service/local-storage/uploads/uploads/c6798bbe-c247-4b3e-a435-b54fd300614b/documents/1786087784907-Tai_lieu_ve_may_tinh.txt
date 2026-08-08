@@ -1,0 +1,151 @@
+==============================================================
+                    TÌM HIỂU VỀ MÁY TÍNH
+==============================================================
+
+
+1. MÁY TÍNH LÀ GÌ?
+
+Máy tính là thiết bị điện tử có khả năng tiếp nhận dữ liệu đầu
+vào, xử lý dữ liệu đó theo một tập hợp lệnh đã được lập trình
+sẵn, và trả về kết quả ở dạng con người sử dụng được. Điểm làm
+nên sức mạnh của máy tính không nằm ở việc nó tính nhanh, mà ở
+chỗ nó là thiết bị "đa năng": chỉ cần thay đổi phần mềm, cùng
+một cỗ máy có thể chuyển từ soạn thảo văn bản sang xử lý ảnh,
+mô phỏng thời tiết hay điều khiển một dây chuyền sản xuất.
+
+Mọi máy tính hiện đại đều hoạt động trên nguyên lý ba bước:
+Nhập (Input) - Xử lý (Processing) - Xuất (Output), kèm theo khả
+năng Lưu trữ (Storage) để giữ lại dữ liệu giữa các lần làm việc.
+
+
+2. LỊCH SỬ PHÁT TRIỂN NGẮN GỌN
+
+Ý tưởng về máy tính có từ rất sớm. Vào thế kỷ 19, Charles
+Babbage thiết kế "Analytical Engine" - cỗ máy cơ khí đầu tiên
+mang đầy đủ đặc điểm của một máy tính lập trình được, dù nó
+chưa bao giờ được chế tạo hoàn chỉnh. Ada Lovelace, người viết
+thuật toán cho cỗ máy này, thường được xem là lập trình viên
+đầu tiên trong lịch sử.
+
+Máy tính điện tử thực sự xuất hiện vào thập niên 1940, với
+những cỗ máy khổng lồ dùng đèn điện tử chân không như ENIAC.
+Chúng nặng hàng chục tấn và chiếm trọn một căn phòng lớn.
+
+Bước ngoặt đến năm 1947 khi transistor được phát minh tại phòng
+thí nghiệm Bell. Transistor nhỏ hơn, bền hơn và tốn ít điện hơn
+đèn chân không rất nhiều. Đến năm 1958, mạch tích hợp (IC) ra
+đời, cho phép đặt nhiều transistor lên cùng một miếng bán dẫn.
+Từ đó máy tính thu nhỏ dần: từ máy lớn (mainframe) sang máy mini,
+rồi máy tính cá nhân vào cuối thập niên 1970, laptop, điện thoại
+thông minh, và ngày nay là các thiết bị nhúng có mặt trong hầu
+hết đồ dùng quanh ta.
+
+Xu hướng thu nhỏ này từng được mô tả bằng định luật Moore: số
+transistor trên một con chip tăng gấp đôi sau khoảng hai năm.
+Quy luật này đã duy trì suốt nhiều thập kỷ, dù gần đây tốc độ
+đã chậm lại do giới hạn vật lý.
+
+
+3. CÁC THÀNH PHẦN PHẦN CỨNG CHÍNH
+
+- Bộ xử lý trung tâm (CPU): được ví như bộ não của máy tính.
+  CPU đọc lệnh từ bộ nhớ, giải mã và thực thi chúng. Bên trong
+  CPU có khối tính toán số học - logic (ALU), khối điều khiển
+  và các thanh ghi. CPU hiện đại thường có nhiều nhân (core),
+  cho phép xử lý song song nhiều tác vụ.
+
+- Bộ nhớ trong (RAM): nơi lưu dữ liệu và chương trình đang chạy.
+  RAM có tốc độ truy xuất rất nhanh nhưng là bộ nhớ tạm thời -
+  mất điện là mất dữ liệu.
+
+- Bộ nhớ ngoài: ổ cứng HDD hoặc ổ thể rắn SSD, dùng lưu trữ lâu
+  dài. Chậm hơn RAM nhiều lần nhưng giữ được dữ liệu khi tắt máy
+  và có dung lượng lớn hơn hẳn.
+
+- Bo mạch chủ (Mainboard): tấm mạch lớn kết nối toàn bộ linh
+  kiện, đóng vai trò xương sống truyền dữ liệu giữa các bộ phận.
+
+- Card đồ họa (GPU): xử lý hình ảnh và video. GPU có hàng nghìn
+  nhân nhỏ chuyên tính toán song song, nên ngày nay còn được
+  dùng rộng rãi cho trí tuệ nhân tạo và tính toán khoa học.
+
+- Nguồn điện (PSU): chuyển điện xoay chiều từ ổ cắm thành điện
+  một chiều ở các mức điện áp mà linh kiện cần.
+
+- Thiết bị nhập/xuất: bàn phím, chuột, màn hình, máy in, loa...
+
+
+4. PHẦN MỀM
+
+Phần cứng nếu không có phần mềm thì chỉ là khối kim loại vô
+dụng. Phần mềm được chia thành ba nhóm chính:
+
+- Phần mềm hệ thống: quan trọng nhất là hệ điều hành (Windows,
+  macOS, Linux, Android, iOS). Hệ điều hành quản lý tài nguyên
+  phần cứng, phân phối bộ nhớ và thời gian CPU cho các chương
+  trình, đồng thời cung cấp giao diện để người dùng thao tác.
+
+- Phần mềm ứng dụng: các chương trình phục vụ công việc cụ thể
+  như trình duyệt web, bộ soạn thảo văn bản, phần mềm thiết kế,
+  trò chơi.
+
+- Phần mềm tiện ích: công cụ hỗ trợ như chương trình diệt virus,
+  nén file, sao lưu dữ liệu.
+
+Phần mềm được viết bằng ngôn ngữ lập trình như C, Python, Java
+hay JavaScript. Mã nguồn do con người viết sẽ được biên dịch
+hoặc thông dịch thành mã máy - dãy số nhị phân mà CPU hiểu được.
+
+
+5. MÁY TÍNH XỬ LÝ THÔNG TIN NHƯ THẾ NÀO?
+
+Máy tính chỉ làm việc với hai trạng thái: có điện và không có
+điện, quy ước là 1 và 0. Mỗi chữ số như vậy gọi là một bit. Tám
+bit tạo thành một byte. Mọi thứ - chữ viết, hình ảnh, âm thanh,
+video - đều được mã hóa thành các dãy bit trước khi máy tính có
+thể xử lý.
+
+Chu trình làm việc cơ bản của CPU gồm ba bước lặp đi lặp lại:
+lấy lệnh từ bộ nhớ (fetch), giải mã lệnh (decode), rồi thực thi
+(execute). CPU hiện đại thực hiện chu trình này hàng tỷ lần mỗi
+giây, đồng thời áp dụng nhiều kỹ thuật tăng tốc như đường ống
+lệnh (pipeline) và dự đoán rẽ nhánh.
+
+
+6. VAI TRÒ CỦA MÁY TÍNH TRONG ĐỜI SỐNG
+
+Máy tính đã thay đổi gần như mọi lĩnh vực. Trong giáo dục, nó
+mở ra học liệu trực tuyến và lớp học từ xa. Trong y tế, nó hỗ
+trợ chẩn đoán hình ảnh, quản lý hồ sơ bệnh án và nghiên cứu
+thuốc mới. Trong sản xuất, máy tính điều khiển robot và tự động
+hóa dây chuyền. Trong khoa học, nó cho phép mô phỏng những hiện
+tượng không thể thí nghiệm trực tiếp như biến đổi khí hậu hay
+va chạm thiên hà.
+
+Bên cạnh lợi ích, máy tính cũng đặt ra không ít vấn đề: an
+ninh mạng, quyền riêng tư dữ liệu, khoảng cách số giữa các vùng
+miền, rác thải điện tử, và tác động của việc lạm dụng thiết bị
+lên sức khỏe.
+
+
+7. XU HƯỚNG TƯƠNG LAI
+
+Một số hướng phát triển đáng chú ý hiện nay gồm: trí tuệ nhân
+tạo và học máy ngày càng được tích hợp sâu vào thiết bị hằng
+ngày; điện toán đám mây giúp người dùng truy cập sức mạnh tính
+toán lớn mà không cần sở hữu phần cứng; điện toán lượng tử với
+tiềm năng giải một số bài toán mà máy tính truyền thống không
+kham nổi; và Internet vạn vật (IoT) đưa khả năng tính toán vào
+mọi đồ vật quanh ta.
+
+
+==============================================================
+                        KẾT LUẬN
+
+Từ những cỗ máy nặng hàng chục tấn đến con chip nhỏ hơn móng
+tay, máy tính đã đi một chặng đường phát triển đáng kinh ngạc
+chỉ trong khoảng tám thập kỷ. Hiểu được cách máy tính hoạt động
+- từ bit và byte đến phần cứng và phần mềm - không còn là kiến
+thức dành riêng cho kỹ sư, mà đã trở thành một kỹ năng nền tảng
+trong xã hội hiện đại.
+==============================================================
