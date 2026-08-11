@@ -33,7 +33,7 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
-      await sendVerificationEmail(user.email, url);
+      await sendVerificationEmail(user.id, user.email, url);
     },
     // Tự gửi email ngay sau /sign-up/email — không cần client tự gọi thêm API riêng.
     sendOnSignUp: true,
