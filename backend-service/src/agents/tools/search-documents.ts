@@ -11,7 +11,9 @@ export function searchDocumentsTool(userId: string) {
     }),
     execute: async ({ query }) => {
       const embedding = await embedText(query);
-      const results = await findRelevantChunks(userId, embedding, 3);
+      // top-3 chung là đủ — tool này để tra 1 sự kiện cụ thể, không cần đa dạng theo tài liệu
+      // như retrieval.ts (dùng cho câu hỏi tổng hợp).
+      const results = await findRelevantChunks(userId, embedding, { maxPerDocument: 3, totalLimit: 3 });
 
       return { results: results.map((r) => r.content) };
     },

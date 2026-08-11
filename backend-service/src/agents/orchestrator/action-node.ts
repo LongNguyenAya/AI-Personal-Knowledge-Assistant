@@ -5,7 +5,7 @@ import { createReminderTool } from "../tools/create-reminder";
 import { searchDocumentsTool } from "../tools/search-documents";
 import { createTaskTool } from "../tools/create-task";
 import { listTasksTool } from "../tools/list-tasks";
-import { ACTION_AGENT_SYSTEM_PROMPT } from "../prompts";
+import { buildActionAgentSystemPrompt } from "../prompts";
 import { OrchestratorState } from "./state";
 import { appendMessage } from "../../db/repositories/chat-history";
 
@@ -25,18 +25,19 @@ export async function actionNode(state: typeof OrchestratorState.State) {
     : "";
 
   const { text } = await generateText({
-    model: google("gemini-flash-latest"),
-    system: ACTION_AGENT_SYSTEM_PROMPT(new Date().toISOString()) + contextHint,
+    model: google("gemini-flash-lite-latest"),
+    system: (await buildActionAgentSystemPrompt(new Date().toISOString())) + contextHint,
     prompt: state.message,
     tools: buildActionTools(state.userId),
     stopWhen: stepCountIs(5),
+    telemetry: { functionId: "action-node" },
   });
 
   return { actionResult: text };
 }
 
-// Biến thể streaming của actionNode — dùng làm bước cuối trả lời trực tiếp cho user
-// (route "action" hoặc "both", với researchResult làm ngữ cảnh nếu có sẵn).
+// Bản streaming của actionNode — dùng làm bước trả lời cuối cho user (route "action" hoặc
+// "both"), lấy researchResult làm ngữ cảnh nếu có.
 export async function streamActionAnswer(state: {
   userId: string;
   message: string;
@@ -49,13 +50,17 @@ export async function streamActionAnswer(state: {
     : "";
 
   return streamText({
-    model: google("gemini-flash-latest"),
-    system: ACTION_AGENT_SYSTEM_PROMPT(new Date().toISOString()) + contextHint,
+    model: google("gemini-flash-lite-latest"),
+    system: (await buildActionAgentSystemPrompt(new Date().toISOString())) + contextHint,
     messages: [...state.history, { role: "user", content: state.message }],
     tools: buildActionTools(state.userId),
     stopWhen: stepCountIs(5),
+    telemetry: { functionId: "action-node-stream" },
     onFinish: ({ text }) => {
-      appendMessage(state.userId, state.conversationId, "assistant", text);
+      // .catch() bắt buộc — xem giải thích trong orchestrator/research-node.ts's streamResearchAnswer.
+      appendMessage(state.userId, state.conversationId, "assistant", text).catch((err) =>
+        console.error("[action-node] Lỗi khi lưu tin nhắn assistant:", err)
+      );
     },
   });
 }

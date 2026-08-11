@@ -1,7 +1,2 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import * as schema from "@ai-assistant/db/src/schema";
-
-const client = postgres(process.env.DATABASE_APP_URL!);
-
-export const db = drizzle(client, { schema });
+// Chỉ re-export — logic thật ở packages/db/src/client.ts, dùng chung với backend-service.
+export { db } from "@ai-assistant/db/src/client";

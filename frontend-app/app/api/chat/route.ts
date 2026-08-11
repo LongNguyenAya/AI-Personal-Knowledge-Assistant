@@ -1,17 +1,21 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { mintBackendToken } from "@/lib/backend-token";
+import { BACKEND_URL } from "@/lib/config";
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new Response("Unauthorized", { status: 401 });
+  if (session.user.isActive === false) return new Response("Account locked", { status: 403 });
+  if (session.user.deletedAt) return new Response("Account deleted", { status: 403 });
 
   const { messages, conversationId } = await req.json();
   const lastMessage = messages[messages.length - 1];
-  const question = lastMessage.parts?.find((p: any) => p.type === "text")?.text ?? "";
+  const question =
+    lastMessage.parts?.find((p: { type: string }) => p.type === "text")?.text ?? "";
 
   const token = await mintBackendToken(session.user.id);
-  const response = await fetch("http://localhost:4000/agent/orchestrate/stream", {
+  const response = await fetch(`${BACKEND_URL}/agent/orchestrate/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -19,6 +23,14 @@ export async function POST(req: Request) {
     },
     body: JSON.stringify({ message: question, conversationId }),
   });
+
+  // Forward thẳng response kể cả khi backend lỗi sẽ khiến client (useChat) nhận stream sai
+  // định dạng, lỗi hiển thị mù mờ hoặc im lặng — check response.ok trước, giống pattern ở
+  // documents/route.ts.
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    return new Response(text || "Backend service lỗi", { status: response.status });
+  }
 
   // Forward nguyên response, giữ đúng header content-type mà toUIMessageStreamResponse() đã set
   return new Response(response.body, {

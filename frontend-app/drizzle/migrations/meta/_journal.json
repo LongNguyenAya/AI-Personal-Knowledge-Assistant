@@ -8,6 +8,62 @@
       "when": 1785959352144,
       "tag": "0000_robust_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786256088424,
+      "tag": "0001_grant_admin_user",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786266377698,
+      "tag": "0002_convert_timestamps_to_timestamptz",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786345011229,
+      "tag": "0003_add_pdf_extraction_agent_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786349350004,
+      "tag": "0004_add_reminder_id_to_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786415399711,
+      "tag": "0005_tearful_the_professor",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786416101503,
+      "tag": "0006_purple_hellfire_club",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786416813189,
+      "tag": "0007_rainy_smiling_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786422399290,
+      "tag": "0008_colorful_azazel",
+      "breakpoints": true
     }
   ]
 }

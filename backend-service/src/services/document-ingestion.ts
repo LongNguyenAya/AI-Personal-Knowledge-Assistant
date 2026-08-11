@@ -1,19 +1,50 @@
-import { saveFile } from "../storage/local-storage";
+import { saveFile, readFile } from "../storage/s3-storage";
 import { chunkText } from "../utils/chunk-text";
 import { embedText } from "../utils/embedding";
+import { extractPdfContent } from "../utils/pdf-extraction";
 import { updateStatus } from "../db/repositories/documents";
 import { insertChunks } from "../db/repositories/chunks";
+import { sendIngestionMessage } from "./sqs";
 
-// Toàn bộ pipeline "upload 1 tài liệu": lưu file -> chunk -> embed từng đoạn -> ghi DB ->
-// cập nhật status. saveFile cố ý nằm trong cùng khối try như code gốc — lỗi ở bước lưu file
-// cũng phải đánh dấu tài liệu "failed", không chỉ lỗi ở bước embed/DB.
-export async function ingestDocument(userId: string, documentId: string, key: string, buffer: Buffer) {
+// PDF đã có MAX_PDF_BYTES riêng (pdf-extraction.ts) — nhánh .txt/.md thì chưa giới hạn gì, file
+// lớn tuỳ ý sẽ chunk và gọi embedding API không giới hạn. frontend-app có chặn ở tầng của nó,
+// nhưng ai có JWT hợp lệ vẫn gọi thẳng được endpoint này, nên backend không nên chỉ tin tầng gọi.
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
+// Giai đoạn 1, chạy trong request HTTP — phải nhanh. Chỉ lưu file rồi đẩy 1 message vào SQS,
+// không xử lý (chunk/embed) ở đây. Message chỉ mang key, không mang bytes (giới hạn 1 message
+// SQS là 256KB, trong khi file có thể tới 15MB) — worker sẽ tự đọc lại file qua key.
+export async function enqueueDocumentIngestion(
+  userId: string,
+  documentId: string,
+  key: string,
+  fileName: string,
+  buffer: Buffer
+): Promise<void> {
+  if (buffer.length > MAX_UPLOAD_BYTES) {
+    throw new Error(`File quá lớn (${buffer.length} bytes) — vượt giới hạn ${MAX_UPLOAD_BYTES} bytes.`);
+  }
+  await saveFile(userId, key, buffer);
+  await sendIngestionMessage({ userId, documentId, key, fileName });
+}
+
+// Giai đoạn 2, chạy trong worker nền (workers/document-ingestion-worker.ts) khi nhận được
+// message từ SQS: chunk -> embed từng đoạn -> ghi DB -> cập nhật status. Lỗi ở bất kỳ bước nào
+// đều phải đánh dấu tài liệu "failed", nên tất cả nằm chung 1 khối try — và luôn tự bắt lỗi,
+// không throw ra ngoài, vì worker gọi hàm này sẽ xoá message khỏi queue ngay sau khi gọi xong
+// bất kể thành công hay thất bại (không dùng cơ chế retry tự động của SQS).
+export async function processDocumentIngestion(
+  userId: string,
+  documentId: string,
+  key: string,
+  fileName: string
+): Promise<{ success: true; chunksCreated: number } | { success: false; error: string }> {
   try {
-    await saveFile(key, buffer);
     await updateStatus(userId, documentId, "processing");
 
-    // Giả sử file là .txt/.md thuần trước (PDF xử lý ở bước sau)
-    const text = buffer.toString("utf-8");
+    const buffer = await readFile(userId, key);
+    const isPdf = fileName.toLowerCase().endsWith(".pdf");
+    const text = isPdf ? await extractPdfContent(buffer) : buffer.toString("utf-8");
     const textChunks = chunkText(text);
 
     const items = [];
@@ -26,7 +57,13 @@ export async function ingestDocument(userId: string, documentId: string, key: st
     await updateStatus(userId, documentId, "processed");
     return { success: true as const, chunksCreated: textChunks.length };
   } catch (err) {
-    await updateStatus(userId, documentId, "failed");
+    // updateStatus cũng có thể lỗi (thường cùng nguyên nhân với lỗi gốc, vd DB hiccup) — không
+    // bọc riêng thì lỗi này văng ra ngoài, document kẹt vĩnh viễn ở "processing" mà không ai biết.
+    try {
+      await updateStatus(userId, documentId, "failed");
+    } catch (statusErr) {
+      console.error(`[document-ingestion] Không thể đánh dấu document ${documentId} là "failed" sau lỗi gốc:`, statusErr);
+    }
     return { success: false as const, error: String(err) };
   }
 }

@@ -16,8 +16,8 @@ export async function getLatestConversation(userId: string) {
   return existing ?? null;
 }
 
-// RLS đã tự lọc theo user khi SELECT (conversation không phải của mình sẽ trả rỗng dù tồn tại
-// thật trong DB) — thêm điều kiện userId tường minh ở đây là lớp phòng thủ thứ 2, không thay thế.
+// RLS đã tự lọc theo user rồi (SELECT conversation của người khác sẽ trả rỗng), nhưng vẫn thêm
+// điều kiện userId tường minh ở đây làm lớp phòng thủ thứ 2.
 export async function assertConversationOwnership(userId: string, conversationId: string): Promise<boolean> {
   const [row] = await withUserContext(userId, (tx) =>
     tx

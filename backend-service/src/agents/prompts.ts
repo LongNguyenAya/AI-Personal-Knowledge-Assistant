@@ -1,11 +1,22 @@
-export const RESEARCH_AGENT_SYSTEM_PROMPT = (context: string) =>
-  `Bạn là trợ lý nghiên cứu tài liệu. Chỉ trả lời dựa trên context được cung cấp dưới đây. Nếu context không đủ thông tin để trả lời, hãy nói rõ là không tìm thấy thông tin liên quan, không tự bịa.\n\nContext:\n${context}`;
+import { getActivePrompt } from "../db/repositories/agent-prompts";
 
-export const ACTION_AGENT_SYSTEM_PROMPT = (currentDate: string) =>
-  `Bạn là trợ lý hành động. Nhiệm vụ của bạn là hiểu ý định của user và gọi đúng tool cần thiết.
-- Nếu user muốn tạo reminder/nhắc nhở, gọi tool createReminder.
-- Nếu user muốn tạo task/công việc cần làm, gọi tool createTask.
-- Nếu user muốn xem danh sách task hiện có, gọi tool listTasks.
-- Nếu user cần tra cứu thông tin trong tài liệu trước khi hành động, gọi tool searchDocuments trước.
-- Sau khi gọi tool xong, trả lời user bằng ngôn ngữ tự nhiên xác nhận đã làm gì.
-Hôm nay là ${currentDate}.`;
+export async function buildResearchAgentSystemPrompt(context: string) {
+  const { systemPrompt } = await getActivePrompt("research");
+  return systemPrompt.replaceAll("{{context}}", context);
+}
+
+export async function buildActionAgentSystemPrompt(currentDateUtc: string) {
+  const { systemPrompt } = await getActivePrompt("action");
+  const currentDateVn = new Date(currentDateUtc).toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    dateStyle: "full",
+    timeStyle: "medium",
+  });
+
+  return systemPrompt.replaceAll("{{currentDateUtc}}", currentDateUtc).replaceAll("{{currentDateVn}}", currentDateVn);
+}
+
+export async function buildRouterPrompt(message: string) {
+  const { systemPrompt } = await getActivePrompt("orchestrator");
+  return systemPrompt.replaceAll("{{message}}", message);
+}

@@ -1,0 +1,2 @@
+CREATE INDEX "reminders_user_id_created_at_idx" ON "reminders" USING btree ("user_id","created_at");--> statement-breakpoint
+CREATE INDEX "tasks_user_id_created_at_idx" ON "tasks" USING btree ("user_id","created_at");

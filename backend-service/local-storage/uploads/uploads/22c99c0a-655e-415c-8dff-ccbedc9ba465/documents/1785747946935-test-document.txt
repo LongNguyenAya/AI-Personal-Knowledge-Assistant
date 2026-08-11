@@ -1,9 +1,0 @@
-Trí tuệ nhân tạo (AI) đang thay đổi cách con người làm việc và học tập. Trong lĩnh vực lập trình, các mô hình ngôn ngữ lớn như Gemini, Claude, GPT đã giúp developer viết code nhanh hơn, debug hiệu quả hơn, và học các công nghệ mới dễ dàng hơn bao giờ hết.
-
-Retrieval-Augmented Generation (RAG) là một kỹ thuật quan trọng trong việc xây dựng ứng dụng AI. Thay vì chỉ dựa vào kiến thức có sẵn của mô hình ngôn ngữ, RAG cho phép hệ thống tìm kiếm thông tin liên quan từ một nguồn dữ liệu bên ngoài, sau đó đưa thông tin đó vào ngữ cảnh trước khi mô hình trả lời. Điều này giúp giảm thiểu tình trạng "ảo giác" (hallucination) và cho phép AI trả lời dựa trên dữ liệu cụ thể, cập nhật của người dùng.
-
-Để xây dựng một hệ thống RAG hiệu quả, có ba bước chính cần thực hiện. Đầu tiên là chia nhỏ văn bản (chunking) - quá trình này cắt tài liệu dài thành các đoạn nhỏ hơn, đủ ngắn để xử lý nhưng vẫn giữ được ngữ cảnh cần thiết. Bước thứ hai là embedding - chuyển đổi mỗi đoạn văn bản thành một vector số học, đại diện cho ý nghĩa ngữ nghĩa của đoạn đó. Bước cuối cùng là similarity search - khi có câu hỏi mới, hệ thống sẽ embed câu hỏi đó và tìm kiếm các đoạn văn bản có vector gần giống nhất trong cơ sở dữ liệu.
-
-PostgreSQL với extension pgvector đã trở thành một lựa chọn phổ biến để lưu trữ và tìm kiếm vector, vì nó cho phép kết hợp dữ liệu quan hệ truyền thống với khả năng tìm kiếm ngữ nghĩa trong cùng một hệ quản trị cơ sở dữ liệu, giúp đơn giản hóa kiến trúc hệ thống đáng kể so với việc phải duy trì một vector database riêng biệt.
-
-Ngoài RAG, các hệ thống AI hiện đại còn sử dụng kỹ thuật tool-calling (hay function calling), cho phép mô hình ngôn ngữ tự quyết định gọi các hàm bên ngoài để thực hiện hành động cụ thể, ví dụ như tạo task, gửi email, hoặc truy vấn cơ sở dữ liệu, thay vì chỉ sinh ra văn bản trả lời đơn thuần.

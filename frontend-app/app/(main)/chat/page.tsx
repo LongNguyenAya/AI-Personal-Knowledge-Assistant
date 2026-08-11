@@ -1,7 +1,45 @@
 "use client";
 import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
 import { DefaultChatTransport, isToolUIPart, getToolName } from "ai";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
+import { fetchJson } from "@/lib/fetch-json";
+
+// remarkBreaks coi 1 dấu xuống dòng như <br> — AI hay xuống dòng đơn giữa các ý, khác quy ước
+// markdown chuẩn (cần 2 dấu mới ngắt đoạn), thiếu plugin này chữ sẽ dính liền thành 1 dòng.
+// Không set màu riêng cho các thẻ, để tự kế thừa màu bong bóng chat.
+function ChatMarkdown({ text }: { text: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkBreaks]}
+      components={{
+        p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+        ul: ({ children }) => <ul className="mb-1.5 list-disc pl-4 last:mb-0">{children}</ul>,
+        ol: ({ children }) => <ol className="mb-1.5 list-decimal pl-4 last:mb-0">{children}</ol>,
+        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+        code: ({ children }) => (
+          <code className="rounded bg-black/10 px-1 py-0.5 font-mono text-[0.85em] dark:bg-white/10">{children}</code>
+        ),
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+  );
+}
+
+type Conversation = { id: string; title: string | null; createdAt: string };
+type StoredMessage = { role: "user" | "assistant" | "system"; content: string; createdAt: string };
+
+function toUIMessages(rows: StoredMessage[]): UIMessage[] {
+  return rows.map((r, i) => ({
+    id: `history-${i}`,
+    role: r.role,
+    parts: [{ type: "text", text: r.content }],
+  }));
+}
 
 export default function ChatPage() {
   const [input, setInput] = useState("");
@@ -9,6 +47,16 @@ export default function ChatPage() {
   // không cần re-render khi nó đổi.
   const conversationIdRef = useRef<string | null>(null);
 
+  const [conversationList, setConversationList] = useState<Conversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Pattern chính thức của Vercel AI SDK: body là callback chỉ chạy lúc gửi request thật, không
+  // phải lúc render, nên đọc ref ở đây an toàn. Mục đích là giữ transport không bị tạo lại mỗi
+  // lần conversationId đổi — nếu đưa nó vào dependency, useChat sẽ coi như đổi transport và có
+  // thể reset state chat giữa chừng. React Compiler (thử nghiệm) chưa nhận ra pattern này nên
+  // tắt riêng 2 rule cho đoạn này.
+  /* eslint-disable react-hooks/refs, react-hooks/preserve-manual-memoization */
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -17,23 +65,70 @@ export default function ChatPage() {
       }),
     []
   );
+  /* eslint-enable react-hooks/refs, react-hooks/preserve-manual-memoization */
 
   const { messages, sendMessage, status, setMessages } = useChat({ transport });
 
-  // Lấy cuộc hội thoại gần nhất lúc vào trang (hoặc tạo mới nếu chưa từng chat).
+  // requestSeq chặn race condition khi chuyển conversation nhanh — nếu response của A về sau
+  // response của B (network không đảm bảo thứ tự), tin nhắn hiển thị sẽ nhầm sang A dù đang xem
+  // B. Chỉ áp dụng response nếu nó vẫn là request mới nhất lúc hoàn thành.
+  const requestSeqRef = useRef(0);
+  const loadMessagesFor = useCallback(
+    async (conversationId: string) => {
+      const seq = ++requestSeqRef.current;
+      try {
+        const rows = await fetchJson<StoredMessage[]>(`/api/conversations/${conversationId}/messages`);
+        if (requestSeqRef.current !== seq) return; // đã có request mới hơn, bỏ kết quả cũ này
+        setMessages(toUIMessages(rows));
+        setError(null);
+      } catch (err) {
+        if (requestSeqRef.current !== seq) return;
+        setError(err instanceof Error ? err.message : "Không tải được lịch sử chat");
+      }
+    },
+    [setMessages, setError]
+  );
+
+  // Lúc mount: lấy danh sách conversation, chọn cái mới nhất làm active (tạo mới nếu chưa từng
+  // chat lần nào), rồi nạp lại lịch sử tin nhắn của nó lên UI.
   useEffect(() => {
-    fetch("/api/conversations")
-      .then((res) => res.json())
-      .then((conv) => {
-        conversationIdRef.current = conv.id;
-      });
+    (async () => {
+      try {
+        let list = await fetchJson<Conversation[]>("/api/conversations");
+        if (list.length === 0) {
+          const created = await fetchJson<Conversation>("/api/conversations", { method: "POST" });
+          list = [created];
+        }
+        setConversationList(list);
+        const latest = list[0];
+        conversationIdRef.current = latest.id;
+        setActiveId(latest.id);
+        await loadMessagesFor(latest.id);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Không tải được danh sách hội thoại");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleNewConversation() {
-    const res = await fetch("/api/conversations", { method: "POST" });
-    const conv = await res.json();
-    conversationIdRef.current = conv.id;
-    setMessages([]);
+    try {
+      const created = await fetchJson<Conversation>("/api/conversations", { method: "POST" });
+      conversationIdRef.current = created.id;
+      setActiveId(created.id);
+      setConversationList((prev) => [created, ...prev]);
+      setMessages([]);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Tạo cuộc trò chuyện mới thất bại");
+    }
+  }
+
+  async function handleSelectConversation(id: string) {
+    if (id === activeId) return;
+    conversationIdRef.current = id;
+    setActiveId(id);
+    await loadMessagesFor(id);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -44,38 +139,99 @@ export default function ChatPage() {
   }
 
   return (
-    <div>
-      <button onClick={handleNewConversation}>+ Cuộc trò chuyện mới</button>
-
-      <div>
-        {messages.map((m) => (
-          <div key={m.id}>
-            <strong>{m.role === "user" ? "Bạn" : "AI"}:</strong>{" "}
-            {m.parts.map((part, i) => {
-              if (part.type === "text") return <span key={i}>{part.text}</span>;
-
-              if (part.type === "source-document") {
-                return <div key={i}>📄 Nguồn: {part.filename ?? part.title}</div>;
-              }
-
-              if (isToolUIPart(part)) {
-                const name = getToolName(part);
-                if (part.state === "output-available") return <div key={i}>✅ Đã dùng tool: {name}</div>;
-                if (part.state === "output-error") return <div key={i}>⚠️ Lỗi khi gọi tool: {name}</div>;
-                return <div key={i}>🔧 AI đang gọi tool: {name}...</div>;
-              }
-
-              return null;
-            })}
-          </div>
+    <div className="flex h-[calc(100vh-8.5rem)] gap-4">
+      <aside className="flex w-56 shrink-0 flex-col gap-2 overflow-y-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <button
+          onClick={handleNewConversation}
+          className="mb-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+        >
+          + Cuộc trò chuyện mới
+        </button>
+        {conversationList.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => handleSelectConversation(c.id)}
+            className={`truncate rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+              c.id === activeId
+                ? "bg-indigo-600 text-white"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            }`}
+          >
+            {c.title ?? new Date(c.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+          </button>
         ))}
-        {status === "streaming" && <p>AI đang trả lời...</p>}
-      </div>
+      </aside>
 
-      <form onSubmit={handleSubmit}>
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Hỏi về tài liệu của bạn..." />
-        <button type="submit">Gửi</button>
-      </form>
+      <div className="flex flex-1 flex-col rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex-1 space-y-4 overflow-y-auto p-5">
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {messages.length === 0 && (
+            <p className="text-sm text-gray-400 dark:text-gray-500">Hỏi gì đó về tài liệu của bạn để bắt đầu.</p>
+          )}
+          {messages.map((m) => (
+            <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                  m.role === "user"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
+                }`}
+              >
+                {m.parts.map((part, i) => {
+                  if (part.type === "text") return <ChatMarkdown key={i} text={part.text} />;
+
+                  if (part.type === "source-document") {
+                    return (
+                      <div key={i} className="mt-1 text-xs opacity-80">
+                        📄 Nguồn: {part.filename ?? part.title}
+                      </div>
+                    );
+                  }
+
+                  if (isToolUIPart(part)) {
+                    const name = getToolName(part);
+                    if (part.state === "output-available")
+                      return (
+                        <div key={i} className="mt-1 text-xs opacity-80">
+                          ✅ Đã dùng tool: {name}
+                        </div>
+                      );
+                    if (part.state === "output-error")
+                      return (
+                        <div key={i} className="mt-1 text-xs opacity-80">
+                          ⚠️ Lỗi khi gọi tool: {name}
+                        </div>
+                      );
+                    return (
+                      <div key={i} className="mt-1 text-xs opacity-80">
+                        🔧 AI đang gọi tool: {name}...
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
+            </div>
+          ))}
+          {status === "streaming" && <p className="text-xs text-gray-400 dark:text-gray-500">AI đang trả lời...</p>}
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex gap-2 border-t border-gray-100 p-4 dark:border-gray-800">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Hỏi về tài liệu của bạn..."
+            className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-indigo-500/20"
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+          >
+            Gửi
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
