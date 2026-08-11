@@ -1,21 +1,14 @@
-import nodemailer from "nodemailer";
+import { mintBackendToken } from "@/lib/backend-token";
+import { BACKEND_URL } from "@/lib/config";
 
-// Dùng chung tài khoản Gmail với backend-service/src/services/email.ts — 1 hòm thư demo cho cả
-// 2 việc. auth.ts chạy trong tiến trình frontend-app nên cần transporter riêng ở đây, không
-// gọi sang backend-service.
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
-
-export async function sendVerificationEmail(to: string, url: string): Promise<void> {
-  await transporter.sendMail({
-    from: `"AI Personal Knowledge Assistant" <${process.env.GMAIL_USER}>`,
-    to,
-    subject: "Xác nhận tài khoản của bạn",
-    text: `Chào bạn,\n\nVui lòng bấm vào đường dẫn sau để xác nhận tài khoản:\n${url}\n\nNếu bạn không tạo tài khoản này, hãy bỏ qua email này.`,
+// Render (nơi frontend-app chạy) chặn kết nối SMTP ra ngoài để chống spam — nên nhờ backend-service
+// (chạy trên EC2, không bị chặn) gửi email hộ qua HTTP thay vì tự gửi SMTP trực tiếp ở đây.
+export async function sendVerificationEmail(userId: string, to: string, url: string): Promise<void> {
+  const token = await mintBackendToken(userId);
+  const res = await fetch(`${BACKEND_URL}/auth/send-verification-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ to, url }),
   });
+  if (!res.ok) throw new Error("Gửi email xác nhận thất bại");
 }

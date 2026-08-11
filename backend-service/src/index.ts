@@ -18,6 +18,7 @@ import { WebSocketServer } from "ws";
 import documentsRoute from "./routes/documents";
 import orchestratorRoute from "./routes/orchestrator";
 import wsRoute from "./routes/ws";
+import emailRoute from "./routes/email";
 import { jwtAuthMiddleware } from "./middleware/jwt-auth";
 import { startReminderScheduler } from "./scheduler/reminder-scheduler";
 import { startDocumentIngestionWorker } from "./workers/document-ingestion-worker";
@@ -49,6 +50,7 @@ app.use("*", async (c, next) => {
 app.route("/", documentsRoute);
 app.route("/", orchestratorRoute);
 app.route("/", wsRoute);
+app.route("/", emailRoute);
 
 // Bắt lỗi throw từ bất kỳ route nào, log lại đầy đủ nhưng chỉ trả 500 chung ra ngoài — không
 // lộ chi tiết lỗi nội bộ cho client.
