@@ -1,8 +1,7 @@
 import { chunks, documents } from "@ai-assistant/db/src/schema";
 import { sql, eq } from "drizzle-orm";
 import { withUserContext } from "../context";
-
-type NewChunk = { content: string; chunkIndex: number; embedding: number[] };
+import type { NewChunk } from "../../types/chunks";
 
 // Ghi tất cả chunk của 1 tài liệu trong cùng 1 transaction — 1 tài liệu nên ghi hết hoặc không
 // ghi gì, tránh dừng nửa chừng để lại vài chunk mồ côi.

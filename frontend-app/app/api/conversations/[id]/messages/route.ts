@@ -7,7 +7,12 @@ import { withAuthedContext } from "@/lib/with-authed-context";
 // dữ liệu.
 export const GET = withAuthedContext<{ id: string }>(async (req, { tx, params }) => {
   const rows = await tx
-    .select({ role: chatHistory.role, content: chatHistory.content, createdAt: chatHistory.createdAt })
+    .select({
+      role: chatHistory.role,
+      content: chatHistory.content,
+      toolResults: chatHistory.toolResults,
+      createdAt: chatHistory.createdAt,
+    })
     .from(chatHistory)
     .where(eq(chatHistory.conversationId, params.id))
     .orderBy(asc(chatHistory.createdAt));

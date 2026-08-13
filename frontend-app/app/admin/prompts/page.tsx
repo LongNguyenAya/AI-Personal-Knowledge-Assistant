@@ -1,12 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { fetchJson } from "@/lib/fetch-json";
-
-type AgentPrompt = {
-  agentType: "research" | "action" | "orchestrator" | "pdf_extraction";
-  systemPrompt: string;
-  version: number;
-};
+import type { AgentPrompt } from "@/types/admin";
 
 const LABELS: Record<AgentPrompt["agentType"], { title: string; desc: string }> = {
   research: {

@@ -1,9 +1,7 @@
-import { reminders, reminderSourceEnum, tasks, users } from "@ai-assistant/db/src/schema";
+import { reminders, tasks, users, type ReminderSource } from "@ai-assistant/db/src/schema";
 import { and, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { withUserContext } from "../context";
 import { dbAdmin } from "../admin-client";
-
-type ReminderSource = (typeof reminderSourceEnum.enumValues)[number];
 
 export async function createReminder(
   userId: string,
@@ -12,7 +10,6 @@ export async function createReminder(
   const { taskIds, ...reminderData } = data;
   return withUserContext(userId, async (tx) => {
     const [created] = await tx.insert(reminders).values({ userId, ...reminderData }).returning();
-    // Gán reminderId cho các task được liên kết.
     let relinkedFrom: string[] = [];
     if (taskIds && taskIds.length > 0) {
       // 1 task chỉ thuộc được 1 reminder tại 1 thời điểm — đọc trước reminderId cũ để báo lại

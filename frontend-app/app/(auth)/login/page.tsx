@@ -12,7 +12,7 @@ const KNOWN_ERROR_MESSAGES: Record<string, string> = {
 };
 
 // ?error=... xuất hiện khi user bấm link xác nhận email đã hết hạn/không hợp lệ (better-auth tự
-// redirect về callbackURL kèm query này, xem app/page.tsx) — trước đây bị bỏ qua âm thầm.
+// redirect về callbackURL kèm query này, xem app/page.tsx).
 const VERIFY_ERROR_MESSAGE = "Đường dẫn xác nhận không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại để nhận email xác nhận mới.";
 
 function LoginForm() {
@@ -37,7 +37,6 @@ function LoginForm() {
       return;
     }
 
-    // Điều hướng theo role
     if (data.user.role === "admin") {
       router.push("/admin/dashboard");
     } else {

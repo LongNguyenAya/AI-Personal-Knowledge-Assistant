@@ -1,8 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { dbAdmin } from "./db-admin";
-
-type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+import type { Session } from "@/types/auth";
 
 // Song song với with-authed-context.ts nhưng không dùng chung — route admin cần dbAdmin (bypass
 // RLS) thay vì tx theo 1 user, và cần check role="admin" chứ không chỉ check đã đăng nhập.

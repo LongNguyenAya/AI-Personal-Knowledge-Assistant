@@ -2,8 +2,12 @@ import { agentPrompts, users } from "@ai-assistant/db/src/schema";
 import { eq } from "drizzle-orm";
 import { dbAdmin } from "../src/db/admin-client";
 
-// Chạy 1 lần — đưa 3 prompt đang hardcode vào bảng agent_prompts, làm nguồn thật từ giờ trở đi.
+// Chạy 1 lần — đưa 4 prompt đang hardcode vào bảng agent_prompts, làm nguồn thật từ giờ trở đi.
 // Không ghi admin_audit_log vì đây là migration dữ liệu, không phải thao tác qua UI admin.
+//
+// Thiếu PDF_EXTRACTION_TEMPLATE ở đây từng khiến mọi lần upload PDF trên môi trường DB mới
+// (Neon) báo "failed" ngay lập tức — pdf-extraction.ts gọi getActivePrompt("pdf_extraction"),
+// không tìm thấy row nào thì throw, rơi xuống catch chung của processDocumentIngestion.
 
 const RESEARCH_TEMPLATE = `Bạn là trợ lý nghiên cứu tài liệu. Chỉ trả lời dựa trên context được cung cấp dưới đây. Nếu context không đủ thông tin để trả lời, hãy nói rõ là không tìm thấy thông tin liên quan, không tự bịa.
 
@@ -27,6 +31,13 @@ Chỉ trả lời đúng 1 từ trong 4 nhãn trên, không giải thích gì th
 
 Câu: "{{message}}"`;
 
+const PDF_EXTRACTION_TEMPLATE = `Bạn đang đọc một file PDF. Hãy trích xuất TOÀN BỘ nội dung của file theo đúng thứ tự xuất hiện, dưới dạng văn bản thuần, theo các quy tắc sau:
+- Với đoạn text: giữ nguyên nội dung, không tóm tắt, không bỏ sót.
+- Với bảng biểu: chuyển thành text có cấu trúc rõ ràng (mỗi dòng 1 hàng, giữ tên cột).
+- Với hình ảnh, biểu đồ, sơ đồ nhúng trong PDF: chèn 1 đoạn mô tả chi tiết ngay tại vị trí xuất hiện, bắt đầu bằng "[Hình ảnh: ...]", mô tả đầy đủ nội dung, số liệu, chữ trong hình, ý nghĩa của biểu đồ — vì đây là phần AI sau này phải dựa vào để trả lời câu hỏi liên quan đến hình ảnh.
+- Không thêm bình luận, nhận xét, hay lời dẫn của riêng bạn ngoài nội dung trích xuất.
+- Trả về đúng 1 khối văn bản duy nhất.`;
+
 async function main() {
   const adminEmail = process.argv[2];
   if (!adminEmail) {
@@ -40,6 +51,7 @@ async function main() {
     { agentType: "research" as const, systemPrompt: RESEARCH_TEMPLATE },
     { agentType: "action" as const, systemPrompt: ACTION_TEMPLATE },
     { agentType: "orchestrator" as const, systemPrompt: ORCHESTRATOR_TEMPLATE },
+    { agentType: "pdf_extraction" as const, systemPrompt: PDF_EXTRACTION_TEMPLATE },
   ];
 
   for (const row of rows) {

@@ -1,8 +1,6 @@
-import { agentPrompts, agentTypeEnum } from "@ai-assistant/db/src/schema";
+import { agentPrompts, type AgentType } from "@ai-assistant/db/src/schema";
 import { and, eq } from "drizzle-orm";
 import { dbAdmin } from "../admin-client";
-
-export type AgentType = (typeof agentTypeEnum.enumValues)[number];
 
 // agent_prompts là bảng dùng chung, không thuộc về user nào nên không có RLS — đọc qua dbAdmin
 // cho nhất quán với các bảng cross-user khác.

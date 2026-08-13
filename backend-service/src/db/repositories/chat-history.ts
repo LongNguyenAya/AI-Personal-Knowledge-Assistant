@@ -32,7 +32,7 @@ export async function assertConversationOwnership(userId: string, conversationId
 export async function listMessages(userId: string, conversationId: string) {
   return withUserContext(userId, (tx) =>
     tx
-      .select({ role: chatHistory.role, content: chatHistory.content })
+      .select({ role: chatHistory.role, content: chatHistory.content, toolResults: chatHistory.toolResults })
       .from(chatHistory)
       .where(eq(chatHistory.conversationId, conversationId))
       .orderBy(asc(chatHistory.createdAt))
@@ -43,9 +43,18 @@ export async function appendMessage(
   userId: string,
   conversationId: string,
   role: "user" | "assistant",
-  content: string
+  content: string,
+  toolResults?: { toolName: string; output: unknown }[]
 ) {
   return withUserContext(userId, (tx) =>
-    tx.insert(chatHistory).values({ conversationId, userId, role, content })
+    tx.insert(chatHistory).values({
+      conversationId,
+      userId,
+      role,
+      content,
+      // Mảng rỗng thì lưu null thay vì [] — tin nhắn không gọi tool nào nên không có gì để phục
+      // dựng lại, tránh phân biệt nhầm "không gọi tool" với "gọi tool nhưng rỗng kết quả".
+      toolResults: toolResults && toolResults.length > 0 ? toolResults : null,
+    })
   );
 }

@@ -1,6 +1,7 @@
 import { tasks } from "@ai-assistant/db/src/schema";
-import { and, desc, eq, ilike, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, isNull, lte } from "drizzle-orm";
 import { withUserContext } from "../context";
+import type { ListTasksOptions } from "../../types/tasks";
 
 export async function createTask(userId: string, title: string) {
   const [created] = await withUserContext(userId, (tx) =>
@@ -9,16 +10,23 @@ export async function createTask(userId: string, title: string) {
   return created;
 }
 
-export async function listTasks(userId: string, onlyPending?: boolean) {
+export async function listTasks(userId: string, options: ListTasksOptions = {}) {
+  const { onlyDone, from, to } = options;
+  const conditions = [eq(tasks.userId, userId), isNull(tasks.deletedAt)];
+  if (onlyDone !== undefined) conditions.push(eq(tasks.isDone, onlyDone));
+
+  // Lọc theo updatedAt khi hỏi cụ thể task ĐÃ hoàn thành (mốc hoàn thành đáng tin — xem lý do ở
+  // analytics.ts), còn lại lọc theo createdAt vì task chưa hoàn thành không có mốc hoàn thành nào.
+  const dateColumn = onlyDone === true ? tasks.updatedAt : tasks.createdAt;
+  if (from) conditions.push(gte(dateColumn, from));
+  if (to) conditions.push(lte(dateColumn, to));
+
   return withUserContext(userId, (tx) =>
     tx
-      .select({ id: tasks.id, title: tasks.title, isDone: tasks.isDone })
+      .select({ id: tasks.id, title: tasks.title, isDone: tasks.isDone, createdAt: tasks.createdAt, updatedAt: tasks.updatedAt })
       .from(tasks)
-      .where(
-        onlyPending
-          ? and(eq(tasks.userId, userId), eq(tasks.isDone, false), isNull(tasks.deletedAt))
-          : and(eq(tasks.userId, userId), isNull(tasks.deletedAt))
-      )
+      .where(and(...conditions))
+      .orderBy(desc(tasks.createdAt))
   );
 }
 

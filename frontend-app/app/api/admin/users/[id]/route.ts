@@ -5,7 +5,7 @@ import { withAdminContext } from "@/lib/with-admin-context";
 export const PATCH = withAdminContext<{ id: string }>(async (req, { db, session, params }) => {
   const body = await req.json();
 
-  // Chỉ có 1 admin test hiện tại — tự khoá/xoá mình sẽ không còn ai mở lại được, chặn hẳn tình huống này.
+  // Admin tự khoá/xoá chính tài khoản đang đăng nhập có thể khiến không còn ai mở lại được — chặn hẳn tình huống này.
   if (params.id === session.user.id) {
     return new Response("Không thể tự thao tác lên chính tài khoản admin đang đăng nhập", { status: 400 });
   }

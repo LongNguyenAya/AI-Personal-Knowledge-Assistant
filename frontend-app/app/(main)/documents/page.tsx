@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import { UploadDropzone } from "@/components/documents/UploadDropzone";
 import { fetchJson } from "@/lib/fetch-json";
-
-type Document = { id: string; fileName: string; status: string; createdAt: string };
+import type { Document } from "@/types/documents";
 
 const STATUS_STYLE: Record<string, string> = {
   uploaded: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",

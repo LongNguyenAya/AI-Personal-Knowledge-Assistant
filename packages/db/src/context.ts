@@ -7,9 +7,8 @@ export type UserScopedTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 // route streaming + tool-calling có thể ghi DB bất kỳ lúc nào giữa chừng, giữ transaction mở lâu
 // dễ cạn connection pool.
 //
-// (Từng thử sql.reserve() của postgres.js để giữ 1 connection sống suốt request, nhưng không
-// dùng được: drizzle ghi thẳng vào client.options.parsers, còn object reserve() trả về lại không
-// có .options, nên lỗi runtime. db.transaction() không gặp vấn đề này.)
+// (sql.reserve() của postgres.js tưởng cũng giữ được 1 connection suốt request, nhưng object nó
+// trả về thiếu .options mà drizzle cần, gây lỗi runtime — db.transaction() không gặp vấn đề này.)
 //
 // set_config() thay vì "SET LOCAL ... = $1" vì SET không nhận bind parameter. is_local=true để
 // giá trị tự reset khi transaction xong, đúng như ý nghĩa của SET LOCAL.

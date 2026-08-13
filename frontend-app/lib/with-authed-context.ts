@@ -1,8 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { withUserContext, type UserScopedTx } from "./db-context";
-
-type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+import type { Session } from "@/types/auth";
 
 export function withAuthedContext<P = Record<string, never>>(
   handler: (req: Request, ctx: { session: Session; params: P; tx: UserScopedTx }) => Promise<Response>

@@ -1,8 +1,6 @@
-import { agentPrompts, agentTypeEnum, adminAuditLog } from "@ai-assistant/db/src/schema";
+import { agentPrompts, agentTypeEnum, adminAuditLog, type AgentType } from "@ai-assistant/db/src/schema";
 import { and, eq } from "drizzle-orm";
 import { withAdminContext } from "@/lib/with-admin-context";
-
-type AgentType = (typeof agentTypeEnum.enumValues)[number];
 
 export const POST = withAdminContext<{ agentType: string }>(async (req, { db, session, params }) => {
   const agentType = params.agentType as AgentType;
