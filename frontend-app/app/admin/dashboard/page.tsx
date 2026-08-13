@@ -1,25 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchJson } from "@/lib/fetch-json";
-
-type AdminUser = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  deletedAt: string | null;
-  createdAt: string;
-  taskCount: number;
-  reminderCount: number;
-};
-
-type UsersResponse = {
-  users: AdminUser[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+import type { UsersResponse } from "@/types/admin";
 
 const PAGE_SIZE = 20;
 

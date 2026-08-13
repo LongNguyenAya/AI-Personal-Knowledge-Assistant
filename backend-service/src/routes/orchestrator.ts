@@ -24,8 +24,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const chatPerMinute = rateLimiter({ windowMs: 60 * 1000, max: 10, name: "chat-minute" });
 const chatPerDay = rateLimiter({ windowMs: 24 * 60 * 60 * 1000, max: 100, name: "chat-day" });
 
-// Endpoint gốc, không streaming — giữ nguyên để test nhanh qua Postman như trước giờ.
-// Cố ý không có lịch sử hội thoại (chỉ dùng debug/test từng phần).
+// Endpoint gốc, không streaming — giữ lại để test nhanh qua Postman.
+// Cố ý không có lịch sử hội thoại, chỉ dùng debug/test từng phần.
 app.post("/agent/orchestrate", chatPerMinute, chatPerDay, async (c) => {
   const userId = c.get("userId");
   const { message } = await c.req.json();
@@ -59,7 +59,28 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
 
   // Lưu tin nhắn user ngay trước khi xử lý — nếu model lỗi giữa chừng, tin nhắn user vẫn không bị mất.
   const priorMessages = await listMessages(userId, conversationId);
-  const history = priorMessages.map((m) => ({ role: m.role, content: m.content }));
+
+  // Model mặc định chỉ "nhớ" được đúng câu chữ nó tự nói (content) — không thấy lại dữ liệu thật
+  // của chart đã tạo, nên không trả lời được câu hỏi về 1 điểm dữ liệu nó chưa từng nhắc tới. Chèn
+  // thêm dữ liệu đầy đủ vào ĐÚNG 1 tin nhắn — chart GẦN NHẤT — không phải mọi chart từng hiện
+  // trong hội thoại, để tránh phình token vô hạn khi hội thoại dài.
+  let lastChartMessageIndex = -1;
+  for (let i = priorMessages.length - 1; i >= 0; i--) {
+    if (priorMessages[i].toolResults?.some((tr) => tr.toolName === "createChart")) {
+      lastChartMessageIndex = i;
+      break;
+    }
+  }
+
+  const history = priorMessages.map((m, i) => {
+    if (i !== lastChartMessageIndex) return { role: m.role, content: m.content };
+    const chartResult = m.toolResults?.find((tr) => tr.toolName === "createChart");
+    const dataBlock = chartResult
+      ? `\n\n[Dữ liệu đầy đủ của biểu đồ vừa tạo — dùng để trả lời chi tiết nếu user hỏi thêm về bất kỳ điểm nào: ${JSON.stringify(chartResult.output)}]`
+      : "";
+    return { role: m.role, content: m.content + dataBlock };
+  });
+
   await appendMessage(userId, conversationId, "user", message);
 
   const { route } = await routerNode({ message });

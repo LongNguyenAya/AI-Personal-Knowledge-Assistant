@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, vector, boolean, pgEnum, index, integer, uniqueIndex, pgPolicy, pgRole } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, vector, boolean, pgEnum, index, integer, uniqueIndex, pgPolicy, pgRole, jsonb } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
 // Provisioned by docker/initdb/01-roles.sql — .existing() references the role in policies
@@ -11,6 +11,12 @@ export const reminderStatusEnum = pgEnum("reminder_status", ["pending", "sent"])
 export const reminderSourceEnum = pgEnum("reminder_source", ["manual", "ai_created"]);
 export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant", "system"]);
 export const agentTypeEnum = pgEnum("agent_type", ["research", "action", "orchestrator", "pdf_extraction"]);
+
+// Type suy ra từ enum — khai báo 1 lần ở đây, backend-service và frontend-app cùng import thay vì
+// mỗi bên tự viết `(typeof xEnum.enumValues)[number]` riêng.
+export type DocumentStatus = (typeof documentStatusEnum.enumValues)[number];
+export type ReminderSource = (typeof reminderSourceEnum.enumValues)[number];
+export type AgentType = (typeof agentTypeEnum.enumValues)[number];
 
 export const users = pgTable(
   "users",
@@ -116,7 +122,7 @@ export const chunks = pgTable("chunks", {
   documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   chunkIndex: integer("chunk_index").notNull(),
-  embedding: vector("embedding", { dimensions: 768 }), // nhớ kiểm tra đúng số chiều Gemini embedding
+  embedding: vector("embedding", { dimensions: 768 }), // 768 = số chiều embedding của model Gemini đang dùng, đổi model nhớ đổi theo
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   documentIdIdx: index("chunks_document_id_idx").on(table.documentId),
@@ -145,7 +151,14 @@ export const tasks = pgTable("tasks", {
   // vào email/WebSocket của người khác qua attachTaskTitles().
   reminderId: uuid("reminder_id").references(() => reminders.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  // .$onUpdate() bắt buộc phải có — analytics.ts dùng cột này làm mốc "tuần hoàn thành" (task
+  // không có completedAt riêng). Thiếu .$onUpdate(), PATCH /api/tasks/[id] chỉ set isDone mà
+  // không tự bump updatedAt (Postgres không tự làm việc này, defaultNow() chỉ áp dụng lúc INSERT),
+  // khiến mọi task luôn bị tính vào tuần TẠO thay vì tuần HOÀN THÀNH.
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => /* @__PURE__ */ new Date()),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 }, (table) => ({
   // Không cần index riêng cho userId — composite bên dưới (userId, createdAt) đã bao luôn nhờ
@@ -211,6 +224,10 @@ export const chatHistory = pgTable("chat_history", {
   userId: uuid("user_id").notNull().references(() => users.id),
   role: chatRoleEnum("role").notNull(),
   content: text("content").notNull(),
+  // Kết quả tool call (vd createChart) đi kèm câu trả lời — text vẫn là nguồn chính, cột này chỉ
+  // để phục dựng lại UI part (chart...) khi tải lại lịch sử hội thoại, thay vì chỉ còn mỗi chữ.
+  // Nullable — tin nhắn thường (không gọi tool) không có gì để lưu ở đây.
+  toolResults: jsonb("tool_results").$type<{ toolName: string; output: unknown }[]>(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({

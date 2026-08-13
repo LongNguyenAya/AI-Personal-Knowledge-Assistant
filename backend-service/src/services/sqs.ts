@@ -1,17 +1,11 @@
 import { SQSClient, SendMessageCommand, ReceiveMessageCommand, DeleteMessageCommand } from "@aws-sdk/client-sqs";
+import type { DocumentIngestionMessage } from "../types/sqs";
 
 // Không truyền credentials tường minh — SDK tự đọc AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/
 // AWS_REGION từ process.env (default credential provider chain), khớp đúng .env đã cấu hình.
 const sqsClient = new SQSClient({});
 
 const QUEUE_URL = process.env.SQS_QUEUE_URL;
-
-export type DocumentIngestionMessage = {
-  userId: string;
-  documentId: string;
-  key: string;
-  fileName: string;
-};
 
 export async function sendIngestionMessage(payload: DocumentIngestionMessage): Promise<void> {
   if (!QUEUE_URL) {

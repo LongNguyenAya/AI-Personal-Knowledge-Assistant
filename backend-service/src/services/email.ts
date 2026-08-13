@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-// Gmail SMTP qua App Password — miễn phí, không cần dịch vụ email riêng, hợp với demo không tốn phí.
+// Gmail SMTP qua App Password — miễn phí, không cần dựng dịch vụ email riêng.
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {

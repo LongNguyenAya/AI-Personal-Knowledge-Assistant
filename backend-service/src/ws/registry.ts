@@ -1,6 +1,6 @@
 import type { WSContext } from "hono/ws";
 import type { WebSocketLike } from "@hono/node-server";
-import type { WsEvent } from "./events";
+import type { WsEvent } from "../types/ws-events";
 
 // 1 user có thể mở nhiều tab/thiết bị cùng lúc, nên mỗi userId map tới 1 tập hợp socket chứ
 // không phải 1 socket. Map in-memory là đủ cho service chạy 1 process; scale nhiều instance thì

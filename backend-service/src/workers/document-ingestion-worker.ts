@@ -1,6 +1,6 @@
 import { receiveIngestionMessages, deleteIngestionMessage } from "../services/sqs";
 import { processDocumentIngestion } from "../services/document-ingestion";
-import type { DocumentIngestionMessage } from "../services/sqs";
+import type { DocumentIngestionMessage } from "../types/sqs";
 
 // 1 vòng: chờ tối đa 20s (long polling, xem receiveIngestionMessages) để nhận 1 message, xử lý,
 // rồi luôn xoá message khỏi queue dù thành công hay thất bại — processDocumentIngestion tự bắt

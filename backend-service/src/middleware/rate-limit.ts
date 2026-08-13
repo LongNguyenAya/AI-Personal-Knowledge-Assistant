@@ -1,7 +1,6 @@
 import type { Context, MiddlewareHandler, Next } from "hono";
 import type { AppEnv } from "../types";
-
-type Bucket = { count: number; resetAt: number };
+import type { Bucket } from "../types/rate-limit";
 
 const buckets = new Map<string, Bucket>();
 

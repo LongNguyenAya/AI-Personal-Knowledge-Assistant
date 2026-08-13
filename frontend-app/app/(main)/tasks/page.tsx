@@ -1,21 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchJson } from "@/lib/fetch-json";
-
-type Task = {
-  id: string;
-  title: string;
-  isDone: boolean;
-  reminderId: string | null;
-  createdAt: string;
-};
-
-type TasksResponse = {
-  tasks: Task[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
+import type { TasksResponse } from "@/types/tasks";
 
 const PAGE_SIZE = 20;
 

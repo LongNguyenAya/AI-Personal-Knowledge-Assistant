@@ -7,6 +7,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import { fetchJson } from "@/lib/fetch-json";
+import { ChartBlock } from "@/components/chat/ChartBlock";
+import { TaskListBlock } from "@/components/chat/TaskListBlock";
+import type { ChartToolOutput, ListTasksOutput } from "@ai-assistant/shared-types";
+import type { Conversation, StoredMessage } from "@/types/chat";
 
 // remarkBreaks coi 1 dấu xuống dòng như <br> — AI hay xuống dòng đơn giữa các ý, khác quy ước
 // markdown chuẩn (cần 2 dấu mới ngắt đoạn), thiếu plugin này chữ sẽ dính liền thành 1 dòng.
@@ -30,14 +34,22 @@ function ChatMarkdown({ text }: { text: string }) {
   );
 }
 
-type Conversation = { id: string; title: string | null; createdAt: string };
-type StoredMessage = { role: "user" | "assistant" | "system"; content: string; createdAt: string };
-
+// Dựng lại tool part (vd chart) từ toolResults đã lưu — không có bước này thì tin nhắn cũ chỉ còn
+// mỗi chữ AI nói, chart biến mất ngay khi tải lại trang dù lúc stream trực tiếp vẫn hiện đúng.
 function toUIMessages(rows: StoredMessage[]): UIMessage[] {
   return rows.map((r, i) => ({
     id: `history-${i}`,
     role: r.role,
-    parts: [{ type: "text", text: r.content }],
+    parts: [
+      { type: "text", text: r.content },
+      ...(r.toolResults ?? []).map((tr, j) => ({
+        type: `tool-${tr.toolName}` as const,
+        toolCallId: `history-${i}-${j}`,
+        state: "output-available" as const,
+        input: {},
+        output: tr.output,
+      })),
+    ],
   }));
 }
 
@@ -190,12 +202,35 @@ export default function ChatPage() {
 
                   if (isToolUIPart(part)) {
                     const name = getToolName(part);
-                    if (part.state === "output-available")
+                    if (part.state === "output-available") {
+                      if (name === "createChart") {
+                        const output = part.output as ChartToolOutput;
+                        if (output.empty)
+                          return (
+                            <div key={i} className="mt-1 text-xs opacity-80">
+                              {output.emptyReason === "no_data_ever"
+                                ? "Bạn chưa có dữ liệu nào để vẽ biểu đồ này."
+                                : "Không có hoạt động nào trong khoảng thời gian gần đây."}
+                            </div>
+                          );
+                        return <ChartBlock key={i} {...output} />;
+                      }
+                      if (name === "listTasks") {
+                        const output = part.output as ListTasksOutput;
+                        if ("error" in output)
+                          return (
+                            <div key={i} className="mt-1 text-xs opacity-80">
+                              {output.error}
+                            </div>
+                          );
+                        return <TaskListBlock key={i} tasks={output.tasks} count={output.count} />;
+                      }
                       return (
                         <div key={i} className="mt-1 text-xs opacity-80">
                           ✅ Đã dùng tool: {name}
                         </div>
                       );
+                    }
                     if (part.state === "output-error")
                       return (
                         <div key={i} className="mt-1 text-xs opacity-80">
