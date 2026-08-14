@@ -180,7 +180,16 @@ export default function ChatPage() {
           {messages.length === 0 && (
             <p className="text-sm text-gray-400 dark:text-gray-500">Hỏi gì đó về tài liệu của bạn để bắt đầu.</p>
           )}
-          {messages.map((m) => (
+          {messages.map((m) => {
+            // Multi-step tool-calling đôi khi model gọi sai tham số ở bước đầu (lỗi validate, không
+            // phải lỗi thật của tool), rồi tự gọi lại đúng ở bước sau trong CÙNG tin nhắn — cả 2 lần
+            // đều nằm trong parts. Ẩn lỗi tạm thời đó nếu cùng tool đã có kết quả thành công khác,
+            // tránh doạ user bằng lỗi đã tự khắc phục.
+            const succeededTools = new Set(
+              m.parts.filter((p) => isToolUIPart(p) && p.state === "output-available").map((p) => getToolName(p))
+            );
+
+            return (
             <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
@@ -249,12 +258,14 @@ export default function ChatPage() {
                         </div>
                       );
                     }
-                    if (part.state === "output-error")
+                    if (part.state === "output-error") {
+                      if (succeededTools.has(name)) return null;
                       return (
                         <div key={i} className="mt-1 text-xs opacity-80">
                           Lỗi khi gọi tool: {name}
                         </div>
                       );
+                    }
                     return (
                       <div key={i} className="mt-1 text-xs opacity-80">
                         AI đang gọi tool: {name}...
@@ -266,7 +277,8 @@ export default function ChatPage() {
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
           {status === "streaming" && <p className="text-xs text-gray-400 dark:text-gray-500">AI đang trả lời...</p>}
         </div>
 
