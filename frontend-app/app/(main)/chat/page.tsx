@@ -9,7 +9,7 @@ import remarkBreaks from "remark-breaks";
 import { fetchJson } from "@/lib/fetch-json";
 import { ChartBlock } from "@/components/chat/ChartBlock";
 import { TaskListBlock } from "@/components/chat/TaskListBlock";
-import type { ChartToolOutput, ListTasksOutput } from "@ai-assistant/shared-types";
+import type { ChartToolOutput, ListTasksOutput, SearchDocumentsOutput } from "@ai-assistant/shared-types";
 import type { Conversation, StoredMessage } from "@/types/chat";
 
 // remarkBreaks coi 1 dấu xuống dòng như <br> — AI hay xuống dòng đơn giữa các ý, khác quy ước
@@ -195,7 +195,7 @@ export default function ChatPage() {
                   if (part.type === "source-document") {
                     return (
                       <div key={i} className="mt-1 text-xs opacity-80">
-                        📄 Nguồn: {part.filename ?? part.title}
+                        Nguồn: {part.filename ?? part.title}
                       </div>
                     );
                   }
@@ -225,21 +225,39 @@ export default function ChatPage() {
                           );
                         return <TaskListBlock key={i} tasks={output.tasks} count={output.count} />;
                       }
+                      if (name === "searchDocuments") {
+                        // Hiện đúng fileName lấy từ kết quả tool trả về (dữ liệu thật, đã truy
+                        // xuất được) — không dựa vào lời model tự kể lại đã đọc tài liệu nào, vì
+                        // model có thể nhớ nhầm/bịa tên tài liệu.
+                        const output = part.output as SearchDocumentsOutput;
+                        const fileNames = [...new Set(output.results.map((r) => r.fileName))];
+                        if (fileNames.length === 0)
+                          return (
+                            <div key={i} className="mt-1 text-xs opacity-80">
+                              Không tìm thấy thông tin liên quan trong tài liệu.
+                            </div>
+                          );
+                        return (
+                          <div key={i} className="mt-1 text-xs opacity-80">
+                            Nguồn: {fileNames.join(", ")}
+                          </div>
+                        );
+                      }
                       return (
                         <div key={i} className="mt-1 text-xs opacity-80">
-                          ✅ Đã dùng tool: {name}
+                          Đã dùng tool: {name}
                         </div>
                       );
                     }
                     if (part.state === "output-error")
                       return (
                         <div key={i} className="mt-1 text-xs opacity-80">
-                          ⚠️ Lỗi khi gọi tool: {name}
+                          Lỗi khi gọi tool: {name}
                         </div>
                       );
                     return (
                       <div key={i} className="mt-1 text-xs opacity-80">
-                        🔧 AI đang gọi tool: {name}...
+                        AI đang gọi tool: {name}...
                       </div>
                     );
                   }

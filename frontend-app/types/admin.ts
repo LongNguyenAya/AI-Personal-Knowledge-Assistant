@@ -1,9 +1,21 @@
-import type { AgentType } from "@ai-assistant/db/src/schema";
+import type { AgentType, KnowledgeStatus } from "@ai-assistant/db/src/schema";
 
 export type AgentPrompt = {
   agentType: AgentType;
   systemPrompt: string;
   version: number;
+};
+
+export type KnowledgeNote = {
+  id: string;
+  path: string;
+  title: string;
+  content: string;
+  status: KnowledgeStatus;
+  proposedBy: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
 };
 
 export type AdminUser = {

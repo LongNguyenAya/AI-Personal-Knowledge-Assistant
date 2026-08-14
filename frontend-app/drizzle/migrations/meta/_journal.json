@@ -71,6 +71,20 @@
       "when": 1786595309643,
       "tag": "0009_clever_absorbing_man",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786624936192,
+      "tag": "0010_secret_norrin_radd",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786644359344,
+      "tag": "0011_grant_admin_user_knowledge_files",
+      "breakpoints": true
     }
   ]
 }
