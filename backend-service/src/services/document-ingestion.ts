@@ -2,14 +2,36 @@ import { saveFile, readFile } from "../storage/s3-storage";
 import { chunkText } from "../utils/chunk-text";
 import { embedText } from "../utils/embedding";
 import { extractPdfContent } from "../utils/pdf-extraction";
+import { extractDocxContent, extractPptxContent } from "../utils/office-extraction";
 import { updateStatus } from "../db/repositories/documents";
 import { insertChunks } from "../db/repositories/chunks";
 import { sendIngestionMessage } from "./sqs";
 
-// PDF đã có MAX_PDF_BYTES riêng (pdf-extraction.ts) — nhánh .txt/.md thì chưa giới hạn gì, file
-// lớn tuỳ ý sẽ chunk và gọi embedding API không giới hạn. frontend-app có chặn ở tầng của nó,
-// nhưng ai có JWT hợp lệ vẫn gọi thẳng được endpoint này, nên backend không nên chỉ tin tầng gọi.
+// PDF còn bị chặn thêm bởi MAX_PDF_BYTES riêng (pdf-extraction.ts, do giới hạn inline PDF của
+// Gemini) — các định dạng khác chỉ bị chặn bởi giới hạn chung này. frontend-app có chặn ở tầng
+// của nó, nhưng ai có JWT hợp lệ vẫn gọi thẳng được endpoint này, nên backend không nên chỉ tin
+// tầng gọi.
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
+// Định dạng lạ (vd .png, .csv, .doc/.ppt bản cũ dạng binary) PHẢI bị từ chối rõ ràng ở đây — nếu
+// không, nhánh mặc định trước đây sẽ âm thầm đọc buffer nhị phân như UTF-8 text, tạo ra chunk rác,
+// tốn lệnh gọi embedding vô ích, và document vẫn báo "processed" dù nội dung hoàn toàn vô nghĩa.
+async function extractText(fileName: string, buffer: Buffer): Promise<string> {
+  const ext = fileName.toLowerCase().split(".").pop() ?? "";
+  switch (ext) {
+    case "pdf":
+      return extractPdfContent(buffer);
+    case "docx":
+      return extractDocxContent(buffer);
+    case "pptx":
+      return extractPptxContent(buffer);
+    case "txt":
+    case "md":
+      return buffer.toString("utf-8");
+    default:
+      throw new Error(`Định dạng file ".${ext}" không được hỗ trợ — chỉ nhận .pdf, .docx, .pptx, .txt, .md.`);
+  }
+}
 
 // Giai đoạn 1, chạy trong request HTTP — phải nhanh. Chỉ lưu file rồi đẩy 1 message vào SQS,
 // không xử lý (chunk/embed) ở đây. Message chỉ mang key, không mang bytes (giới hạn 1 message
@@ -43,8 +65,7 @@ export async function processDocumentIngestion(
     await updateStatus(userId, documentId, "processing");
 
     const buffer = await readFile(userId, key);
-    const isPdf = fileName.toLowerCase().endsWith(".pdf");
-    const text = isPdf ? await extractPdfContent(buffer) : buffer.toString("utf-8");
+    const text = await extractText(fileName, buffer);
     const textChunks = chunkText(text);
 
     const items = [];

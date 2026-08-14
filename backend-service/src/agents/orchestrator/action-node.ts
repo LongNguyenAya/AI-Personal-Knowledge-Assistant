@@ -6,6 +6,7 @@ import { searchDocumentsTool } from "../tools/search-documents";
 import { createTaskTool } from "../tools/create-task";
 import { listTasksTool } from "../tools/list-tasks";
 import { createChartTool } from "../tools/create-chart";
+import { proposeKnowledgeNoteTool } from "../tools/propose-knowledge-note";
 import { buildActionAgentSystemPrompt } from "../prompts";
 import { OrchestratorState } from "./state";
 import { appendMessage } from "../../db/repositories/chat-history";
@@ -17,6 +18,7 @@ function buildActionTools(userId: string) {
     createTask: createTaskTool(userId),
     listTasks: listTasksTool(userId),
     createChart: createChartTool(userId),
+    proposeKnowledgeNote: proposeKnowledgeNoteTool(userId),
   };
 }
 
@@ -27,7 +29,7 @@ export async function actionNode(state: typeof OrchestratorState.State) {
 
   const { text } = await generateText({
     model: google("gemini-flash-lite-latest"),
-    system: (await buildActionAgentSystemPrompt(new Date().toISOString())) + contextHint,
+    system: (await buildActionAgentSystemPrompt(new Date().toISOString(), state.message)) + contextHint,
     prompt: state.message,
     tools: buildActionTools(state.userId),
     stopWhen: stepCountIs(5),
@@ -52,7 +54,7 @@ export async function streamActionAnswer(state: {
 
   return streamText({
     model: google("gemini-flash-lite-latest"),
-    system: (await buildActionAgentSystemPrompt(new Date().toISOString())) + contextHint,
+    system: (await buildActionAgentSystemPrompt(new Date().toISOString(), state.message)) + contextHint,
     messages: [...state.history, { role: "user", content: state.message }],
     tools: buildActionTools(state.userId),
     stopWhen: stepCountIs(5),

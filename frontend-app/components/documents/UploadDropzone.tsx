@@ -32,7 +32,7 @@ export function UploadDropzone({ onUploaded }: { onUploaded?: () => void }) {
       <label className="cursor-pointer">
         <input
           type="file"
-          accept=".pdf,.txt,.md"
+          accept=".pdf,.docx,.pptx,.txt,.md"
           onChange={handleFileChange}
           disabled={uploading}
           className="hidden"
@@ -41,7 +41,7 @@ export function UploadDropzone({ onUploaded }: { onUploaded?: () => void }) {
           {uploading ? "Đang upload..." : "Chọn file để upload"}
         </span>
       </label>
-      <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Hỗ trợ .pdf, .txt, .md</p>
+      <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Hỗ trợ .pdf, .docx, .pptx, .txt, .md</p>
       {message && (
         <p className={`mt-3 text-sm ${message.ok ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
           {message.text}

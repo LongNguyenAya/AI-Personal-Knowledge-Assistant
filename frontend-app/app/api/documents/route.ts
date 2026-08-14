@@ -17,7 +17,7 @@ export const GET = withAuthedContext(async (req, { session, tx }) => {
   return Response.json(list);
 });
 
-const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // khớp giới hạn PDF inline của Gemini ở backend-service
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // khớp giới hạn chung ở backend-service (document-ingestion.ts)
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });

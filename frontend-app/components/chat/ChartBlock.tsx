@@ -164,7 +164,7 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
         )}
         {outliers.length > 0 ? (
           <p>
-            ⚠️ {outliers[0].label} có giá trị bất thường ({formatValue(outliers[0].value)}), đã loại khỏi tính toán đường xu hướng.
+            Cảnh báo: {outliers[0].label} có giá trị bất thường ({formatValue(outliers[0].value)}), đã loại khỏi tính toán đường xu hướng.
           </p>
         ) : null}
       </figcaption>

@@ -1,0 +1,38 @@
+"use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession, signOut } from "@/lib/auth-client";
+
+export default function AdminHeader() {
+  const router = useRouter();
+  const { data: session } = useSession();
+
+  async function handleSignOut() {
+    await signOut();
+    router.push("/login");
+  }
+
+  return (
+    <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3 dark:border-gray-800 dark:bg-gray-900">
+      <div className="flex items-center gap-6">
+        <span className="text-sm font-bold text-gray-900 dark:text-white">AI Knowledge Assistant</span>
+        <Link
+          href="/chat"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+        >
+          Về ứng dụng
+        </Link>
+      </div>
+
+      <div className="flex items-center gap-3">
+        {session?.user.email && <span className="text-xs text-gray-500 dark:text-gray-400">{session.user.email}</span>}
+        <button
+          onClick={handleSignOut}
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+        >
+          Đăng xuất
+        </button>
+      </div>
+    </header>
+  );
+}

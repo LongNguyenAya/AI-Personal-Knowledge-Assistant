@@ -11,12 +11,14 @@ export const reminderStatusEnum = pgEnum("reminder_status", ["pending", "sent"])
 export const reminderSourceEnum = pgEnum("reminder_source", ["manual", "ai_created"]);
 export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant", "system"]);
 export const agentTypeEnum = pgEnum("agent_type", ["research", "action", "orchestrator", "pdf_extraction"]);
+export const knowledgeStatusEnum = pgEnum("knowledge_status", ["pending", "approved", "rejected", "revoked"]);
 
 // Type suy ra từ enum — khai báo 1 lần ở đây, backend-service và frontend-app cùng import thay vì
 // mỗi bên tự viết `(typeof xEnum.enumValues)[number]` riêng.
 export type DocumentStatus = (typeof documentStatusEnum.enumValues)[number];
 export type ReminderSource = (typeof reminderSourceEnum.enumValues)[number];
 export type AgentType = (typeof agentTypeEnum.enumValues)[number];
+export type KnowledgeStatus = (typeof knowledgeStatusEnum.enumValues)[number];
 
 export const users = pgTable(
   "users",
@@ -262,6 +264,33 @@ export const agentPrompts = pgTable("agent_prompts", {
   onlyOneActivePerType: uniqueIndex("agent_prompts_one_active_per_type")
     .on(table.agentType)
     .where(sql`${table.isActive} = true`),
+}));
+
+// Bộ nhớ dài hạn của agent — GLOBAL, không có RLS (giống agentPrompts), vì áp dụng cho mọi user,
+// không thuộc về riêng ai. Ghi bởi tool proposeKnowledgeNote (mặc định pending), CHỈ có hiệu lực
+// (được findRelevantApprovedNotes trả về) sau khi admin duyệt qua /admin/knowledge — xem cảnh báo
+// rò rỉ thông tin cá nhân ở buildActionAgentSystemPrompt (backend-service/src/agents/prompts.ts).
+export const knowledgeFiles = pgTable("knowledge_files", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  path: text("path").notNull(), // nhãn phân loại tự do kiểu đường dẫn, KHÔNG unique — nhiều note có thể cùng path
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  // Vector riêng của bảng này — KHÔNG liên quan/không so sánh chéo với chunks.embedding (bảng đó
+  // phục vụ search tài liệu user upload, bảng này phục vụ tìm ghi chú kiến thức cho action agent).
+  embedding: vector("embedding", { dimensions: 768 }),
+  status: knowledgeStatusEnum("status").notNull().default("pending"),
+  proposedBy: uuid("proposed_by").references(() => users.id), // chỉ để admin có ngữ cảnh khi duyệt, không dùng lọc quyền
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => /* @__PURE__ */ new Date()),
+}, (table) => ({
+  // buildActionAgentSystemPrompt lọc status='approved' trên MỌI request action agent — thiếu index
+  // sẽ full-scan bảng này mỗi tin nhắn chat trước khi sắp theo khoảng cách vector.
+  statusIdx: index("knowledge_files_status_idx").on(table.status),
 }));
 
 export const userRelations = relations(users, ({ many }) => ({
