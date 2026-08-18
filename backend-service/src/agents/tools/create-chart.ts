@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import type { ChartToolOutput } from "@ai-assistant/shared-types";
-import { findOutliers, isSlopeSignificant, linearRegression } from "../../utils/linear-regression";
+import { findOutliers, isSlopeSignificant, linearRegression, movingAverage, predictionMargin, holtLinear } from "../../utils/linear-regression";
 import {
   getDocumentStatusBreakdown,
   getDocumentUploadsSeries,
@@ -177,6 +177,8 @@ export function createChartTool(userId: string) {
         trend: null,
         trendMessage: null,
         outliers: [],
+        movingAverage: null,
+        softForecast: null,
       };
 
       // KHÔNG kiểm tra data.length === 0 — sau zero-fill, độ dài mảng không bao giờ còn bằng 0
@@ -202,11 +204,28 @@ export function createChartTool(userId: string) {
         const outliers = outlierIdx.map((i) => ({ label: data[i].label, value: data[i].value }));
 
         if (isSlopeSignificant(reg, usablePoints)) {
-          const futurePoints = [1, 2].map((k) => Math.max(0, reg.predict(points.length - 1 + k)));
+          const futureX = [1, 2].map((k) => points.length - 1 + k);
+          const futurePoints = futureX.map((x) => Math.max(0, reg.predict(x)));
+          // Margin tính trên usablePoints — PHẢI khớp đúng tập điểm dùng để fit `reg` (đã loại
+          // outlier nếu có), không phải `points` gốc, để nhất quán với isSlopeSignificant ở trên.
+          const margins = futureX.map((x) => predictionMargin(reg, usablePoints, x));
+          const futureLower = futurePoints.map((v, i) => Math.max(0, v - margins[i]));
+          const futureUpper = futurePoints.map((v, i) => v + margins[i]);
           const futureLabels = buildFutureLabels(lastPeriodStart, 2, resolvedGranularity);
-          return { ...base, trend: { slope: reg.slope, futurePoints, futureLabels }, outliers };
+          return { ...base, trend: { slope: reg.slope, futurePoints, futureLabels, futureLower, futureUpper }, outliers };
         }
-        return { ...base, trendMessage: "Xu hướng chưa rõ ràng", outliers };
+        // Tính trên `points` gốc (khớp 1-1 với `data` hiển thị), không phải cleanPoints đã loại
+        // outlier — moving average/Holt-linear tự có độ mượt riêng, không cần loại outlier trước như OLS.
+        const holt = holtLinear(points);
+        const softForecastPoints = [1, 2].map((h) => Math.max(0, holt.forecast(h)));
+        const softForecastLabels = buildFutureLabels(lastPeriodStart, 2, resolvedGranularity);
+        return {
+          ...base,
+          trendMessage: "Xu hướng chưa rõ ràng",
+          outliers,
+          movingAverage: movingAverage(points),
+          softForecast: { points: softForecastPoints, labels: softForecastLabels },
+        };
       }
 
       return base;

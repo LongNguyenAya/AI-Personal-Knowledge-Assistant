@@ -10,8 +10,20 @@ export async function retrieveRelevantChunks(question: string, userId: string, t
     totalLimit,
   });
 
-  const context = relevantChunks.map((c) => c.content).join("\n\n---\n\n");
+  // Gắn nhãn documentId cho từng đoạn — bắt buộc để model biết ID nào ứng với đoạn nào khi phải
+  // báo cáo citedDocumentIds qua tool submitAnswer (xem tools/submit-answer.ts), không có nhãn này
+  // model không có cách nào biết ID hợp lệ để trích.
+  const context = relevantChunks.map((c) => `[documentId: ${c.documentId}]\n${c.content}`).join("\n\n---\n\n");
   const sources = [...new Map(relevantChunks.map((c) => [c.documentId, c])).values()];
 
-  return { context, sources };
+  // Gom nội dung thật theo documentId — submitAnswerTool cần cái này để so khớp câu trả lời với
+  // ĐÚNG nội dung nguồn đã trích (không chỉ kiểm tra ID có tồn tại), 1 tài liệu có thể góp nhiều chunk.
+  const contentsByDocumentId = new Map<string, string[]>();
+  for (const c of relevantChunks) {
+    const list = contentsByDocumentId.get(c.documentId) ?? [];
+    list.push(c.content);
+    contentsByDocumentId.set(c.documentId, list);
+  }
+
+  return { context, sources, contentsByDocumentId };
 }

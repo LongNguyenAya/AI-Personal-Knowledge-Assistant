@@ -7,6 +7,8 @@ interface ChartBlockProps {
   trend: ChartTrend | null;
   trendMessage: string | null;
   outliers: ChartDatum[];
+  movingAverage: number[] | null;
+  softForecast: { points: number[]; labels: string[] } | null;
 }
 
 // Props có thể tới từ toolResults đã LƯU TỪ TRƯỚC trong DB (chat_history) lúc shape output của
@@ -29,7 +31,7 @@ function formatValue(value: number): string {
   return Math.round(value).toLocaleString("vi-VN");
 }
 
-function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outliers }: ChartBlockProps) {
+function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outliers, movingAverage, softForecast }: ChartBlockProps) {
   const plotWidth = WIDTH - PAD_LEFT - PAD_RIGHT;
   const plotHeight = HEIGHT - PAD_TOP - PAD_BOTTOM;
   const isLine = chartType === "line";
@@ -38,9 +40,16 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
   const outlierLabels = new Set(outliers.map((o) => o.label));
 
   // CHỈ time-series mới có điểm dự đoán tương lai — category (breakdown) không bao giờ có trend.
+  // futureLower/futureUpper mặc định [] cho toolResults cũ lưu trước khi có dải tin cậy (legacy).
   const futurePoints = isLine && !isCategory ? (trend?.futurePoints ?? []) : [];
   const futureLabels = isLine && !isCategory ? (trend?.futureLabels ?? []) : [];
-  const futureCount = futurePoints.length;
+  const futureLower = isLine && !isCategory ? (trend?.futureLower ?? []) : [];
+  const futureUpper = isLine && !isCategory ? (trend?.futureUpper ?? []) : [];
+  // softForecast chỉ tồn tại khi trend=null (loại trừ lẫn nhau) — không bao giờ hiện cùng lúc với
+  // futurePoints, nhưng vẫn cần cộng vào futureCount để xFor() chừa đúng chỗ trên trục x.
+  const softForecastPoints = isLine && !isCategory ? (softForecast?.points ?? []) : [];
+  const softForecastLabels = isLine && !isCategory ? (softForecast?.labels ?? []) : [];
+  const futureCount = futurePoints.length || softForecastPoints.length;
 
   // "category" (breakdown, thường chỉ 2-4 nhóm): chia đều thành các băng, mỗi cột/điểm nằm CHÍNH
   // GIỮA băng của nó — tránh việc dàn theo kiểu "chuỗi thời gian" khiến 2 cột dính sát 2 mép
@@ -56,7 +65,9 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
     xFor = (index: number) => PAD_LEFT + index * stepWidth;
   }
 
-  const allValues = [...data.map((d) => d.value), ...futurePoints];
+  // futureUpper phải nằm trong allValues — không thì dải tin cậy có thể bị cắt cụt phía trên nếu
+  // biên trên vượt quá giá trị dự đoán/dữ liệu thật lớn nhất.
+  const allValues = [...data.map((d) => d.value), ...futurePoints, ...futureUpper, ...softForecastPoints];
   const maxValue = Math.max(...allValues, 1);
   const yFor = (value: number) => PAD_TOP + plotHeight - (value / maxValue) * plotHeight;
 
@@ -67,6 +78,39 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
   const dashedPath =
     futurePointsXY.length > 0 && realPoints.length > 0
       ? [realPoints[realPoints.length - 1], ...futurePointsXY].map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")
+      : null;
+
+  // Dải tin cậy (prediction interval) — hình quạt mở rộng dần từ điểm thật cuối cùng (độ rộng = 0
+  // tại đó) ra tới biên trên/dưới của từng điểm dự đoán. Đúng hướng "càng đoán xa càng kém chắc
+  // chắn" (xem giải thích công thức ở predictionMargin, linear-regression.ts).
+  const bandPath =
+    isLine && futureCount > 0 && futureLower.length === futureCount && futureUpper.length === futureCount && realPoints.length > 0
+      ? (() => {
+          const start = realPoints[realPoints.length - 1];
+          const upperPts = futureUpper.map((v, k) => ({ x: xFor(data.length + k), y: yFor(v) }));
+          const lowerPts = futureLower.map((v, k) => ({ x: xFor(data.length + k), y: yFor(v) }));
+          const ring = [start, ...upperPts, ...[...lowerPts].reverse()];
+          return ring.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ") + " Z";
+        })()
+      : null;
+
+  // Chỉ có giá trị khi OLS không đạt ý nghĩa thống kê (xem create-chart.ts) — vẽ thêm đường mượt
+  // màu khác để vẫn cho thấy xu hướng gần đây, không để user chỉ thấy 1 câu "chưa rõ ràng" trơ trọi.
+  const maPath =
+    isLine && movingAverage
+      ? data.map((_, i) => `${i === 0 ? "M" : "L"} ${xFor(i).toFixed(1)},${yFor(movingAverage[i]).toFixed(1)}`).join(" ")
+      : null;
+
+  // Dự đoán "mềm" bằng Holt-linear — chỉ xuất hiện cùng lúc với maPath (cả 2 chỉ có khi OLS không
+  // đủ ý nghĩa thống kê). Vẽ NÉT ĐỨT (giống quy ước "dự đoán" của OLS) nhưng màu cam (giống nhóm
+  // "phân tích kém chắc chắn hơn" với đường trung bình trượt) — tránh nhầm với dự đoán OLS (nét đứt
+  // xanh, có dải tin cậy) hay đường trung bình trượt (liền nét cam, không dự đoán tương lai).
+  const softForecastPointsXY = softForecastPoints.map((v, k) => ({ x: xFor(data.length + k), y: yFor(v) }));
+  const softForecastPath =
+    isLine && softForecastPointsXY.length > 0 && realPoints.length > 0
+      ? [realPoints[realPoints.length - 1], ...softForecastPointsXY]
+          .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+          .join(" ")
       : null;
 
   const barWidth = isCategory ? Math.min(60, (plotWidth / data.length) * 0.5) : Math.min(28, (plotWidth / data.length) * 0.6);
@@ -106,6 +150,7 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
           </g>
         ))}
 
+        {bandPath && <path d={bandPath} fill="#4f46e5" fillOpacity={0.12} stroke="none" />}
         {isLine && <path d={linePath} fill="none" stroke="#4f46e5" strokeWidth={2} />}
         {isLine &&
           data.map((d, i) => (
@@ -118,7 +163,13 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
             />
           ))}
         {isLine && dashedPath && <path d={dashedPath} fill="none" stroke="#4f46e5" strokeWidth={2} strokeDasharray="4 3" />}
+        {maPath && <path d={maPath} fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeOpacity={0.85} />}
+        {softForecastPath && <path d={softForecastPath} fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="3 3" />}
         {isLine && futurePointsXY.map((p, i) => <circle key={`f${i}`} cx={p.x} cy={p.y} r={2.5} fill="#4f46e5" fillOpacity={0.5} />)}
+        {isLine &&
+          softForecastPointsXY.map((p, i) => (
+            <circle key={`sf${i}`} cx={p.x} cy={p.y} r={2.5} fill="none" stroke="#f59e0b" strokeWidth={1.2} />
+          ))}
 
         {chartType === "bar" &&
           data.map((d, i) => {
@@ -157,9 +208,23 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
       </svg>
       <figcaption className="mt-1 space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
         {trendMessage ? <p>{trendMessage}</p> : null}
+        {maPath ? (
+          <p>
+            <span className="inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ backgroundColor: "#f59e0b" }} /> Đường cam liền nét:
+            trung bình trượt 3 kỳ gần nhất — chỉ mang tính tham khảo, chưa đủ ý nghĩa thống kê để khẳng định xu hướng.
+          </p>
+        ) : null}
+        {softForecastPath ? (
+          <p>
+            Dự đoán tham khảo (đường cam nét đứt):{" "}
+            {softForecastLabels.map((l, i) => `${l} (~${formatValue(softForecastPoints[i])})`).join(", ")} — dựa trên xu hướng gần đây, KHÔNG
+            có bảo chứng thống kê như dự đoán chính thức.
+          </p>
+        ) : null}
         {futurePoints.length > 0 && (
           <p>
             Dự đoán: {futureLabels.map((l, i) => `${l} (~${formatValue(futurePoints[i])})`).join(", ")}
+            {bandPath ? " — vùng tô mờ là khoảng có thể xảy ra, càng xa càng rộng." : ""}
           </p>
         )}
         {outliers.length > 0 ? (
@@ -229,7 +294,7 @@ function PieChart({ data }: { data: ChartDatum[] }) {
   );
 }
 
-export function ChartBlock({ chartType, xAxisType, data, trend, trendMessage, outliers }: LegacyChartBlockProps) {
+export function ChartBlock({ chartType, xAxisType, data, trend, trendMessage, outliers, movingAverage, softForecast }: LegacyChartBlockProps) {
   if (chartType === "pie") return <PieChart data={data} />;
   return (
     <BarOrLineChart
@@ -239,6 +304,8 @@ export function ChartBlock({ chartType, xAxisType, data, trend, trendMessage, ou
       trend={trend ?? null}
       trendMessage={trendMessage ?? null}
       outliers={outliers ?? []}
+      movingAverage={movingAverage ?? null}
+      softForecast={softForecast ?? null}
     />
   );
 }
