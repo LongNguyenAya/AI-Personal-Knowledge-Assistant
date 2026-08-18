@@ -1,9 +1,10 @@
 import { Hono } from "hono";
-import { createUIMessageStreamResponse } from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { runOrchestrator } from "../agents/orchestrator";
 import { routerNode } from "../agents/orchestrator/router-node";
 import { researchNode, streamResearchAnswer } from "../agents/orchestrator/research-node";
 import { streamActionAnswer } from "../agents/orchestrator/action-node";
+import { isRetryableProviderError, toUserFacingErrorMessage, PROVIDER_OVERLOADED_MESSAGE } from "../utils/provider-errors";
 import {
   getLatestConversation,
   createConversation,
@@ -13,6 +14,21 @@ import {
 } from "../db/repositories/chat-history";
 import { rateLimiter } from "../middleware/rate-limit";
 import type { AppEnv } from "../types";
+
+// researchNode() (nhánh "both") KHÔNG chạy trong 1 stream — nếu nó ném lỗi tạm thời của provider,
+// phải tự dựng 1 response dạng UI message stream chỉ chứa đúng thông báo đó, để user thấy đúng
+// dạng tin nhắn quen thuộc thay vì rơi xuống app.onError (JSON 500 chung, không có ngữ cảnh).
+function overloadedResponse() {
+  return createUIMessageStreamResponse({
+    stream: createUIMessageStream({
+      execute: ({ writer }) => {
+        writer.write({ type: "text-start", id: "overloaded" });
+        writer.write({ type: "text-delta", id: "overloaded", delta: PROVIDER_OVERLOADED_MESSAGE });
+        writer.write({ type: "text-end", id: "overloaded" });
+      },
+    }),
+  });
+}
 
 const app = new Hono<AppEnv>();
 
@@ -91,7 +107,13 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
   }
 
   if (route === "both") {
-    const { researchResult } = await researchNode({ userId, message, history });
+    let researchResult: string;
+    try {
+      researchResult = (await researchNode({ userId, message, history })).researchResult;
+    } catch (err) {
+      if (!isRetryableProviderError(err)) throw err; // lỗi khác — để rơi xuống app.onError như bình thường
+      return overloadedResponse();
+    }
     const result = await streamActionAnswer({
       userId,
       message,
@@ -99,12 +121,12 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
       history,
       conversationId,
     });
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({ onError: toUserFacingErrorMessage });
   }
 
   // "action" hoặc "unknown" — action luôn là bước cuối, khớp fallback của routeDecision() ở agents/orchestrator/index.ts
   const result = await streamActionAnswer({ userId, message, history, conversationId });
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({ onError: toUserFacingErrorMessage });
 });
 
 export default app;

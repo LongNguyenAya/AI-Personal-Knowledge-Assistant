@@ -7,6 +7,10 @@ export interface ChartTrend {
   slope: number;
   futurePoints: number[];
   futureLabels: string[];
+  // Dải dự đoán (prediction interval) song song 1-1 với futurePoints — KHÔNG phải confidence
+  // interval của đường hồi quy, mà là khoảng có thể xảy ra cho 1 giá trị tương lai cụ thể.
+  futureLower: number[];
+  futureUpper: number[];
 }
 
 // Output thật của tool createChart (backend-service) — frontend-app render trực tiếp từ đây,
@@ -27,4 +31,11 @@ export interface ChartToolOutput {
   // như gemini-flash-lite dễ tính sai vị trí khi phải tự suy luận chỉ số trong mảng JSON, dẫn tới
   // nói nhầm thời điểm xảy ra bất thường.
   outliers: ChartDatum[];
+  // Song song 1-1 với `data` — chỉ có giá trị khi OLS không đạt ý nghĩa thống kê (trend=null), để
+  // vẫn cho user thấy xu hướng gần đây thay vì chỉ nói "chưa rõ ràng" mà không hiện gì thêm.
+  movingAverage: number[] | null;
+  // Dự đoán "mềm" bằng Holt-linear — chỉ có khi trend=null. Khác `trend` (OLS): KHÔNG có bảo chứng
+  // thống kê (không kiểm định t), nhưng vẫn dựa trên công thức toán rõ ràng, tự thích nghi theo xu
+  // hướng gần đây thay vì cố fit 1 đường thẳng cho toàn bộ dữ liệu như OLS.
+  softForecast: { points: number[]; labels: string[] } | null;
 }

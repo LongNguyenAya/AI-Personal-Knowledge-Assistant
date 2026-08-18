@@ -15,6 +15,7 @@
     "@ai-assistant/db": "*",
     "@ai-assistant/shared-types": "*",
     "@ai-sdk/google": "^4.0.41",
+    "@ai-sdk/groq": "^4.0.28",
     "@aws-sdk/client-s3": "^3.1107.0",
     "@aws-sdk/client-sqs": "^3.1107.0",
     "@google/genai": "^2.15.0",

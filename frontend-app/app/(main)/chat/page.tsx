@@ -79,7 +79,9 @@ export default function ChatPage() {
   );
   /* eslint-enable react-hooks/refs, react-hooks/preserve-manual-memoization */
 
-  const { messages, sendMessage, status, setMessages } = useChat({ transport });
+  // error (đổi tên chatError, tránh trùng state `error` phía trên) — useChat tự set field này khi
+  // stream lỗi (vd Gemini quá tải, provider-errors.ts ở backend trả về), KHÔNG đi qua message.parts.
+  const { messages, sendMessage, status, setMessages, error: chatError } = useChat({ transport });
 
   // requestSeq chặn race condition khi chuyển conversation nhanh — nếu response của A về sau
   // response của B (network không đảm bảo thứ tự), tin nhắn hiển thị sẽ nhầm sang A dù đang xem
@@ -280,6 +282,7 @@ export default function ChatPage() {
             );
           })}
           {status === "streaming" && <p className="text-xs text-gray-400 dark:text-gray-500">AI đang trả lời...</p>}
+          {chatError && <p className="text-sm text-red-600 dark:text-red-400">{chatError.message}</p>}
         </div>
 
         <form onSubmit={handleSubmit} className="flex gap-2 border-t border-gray-100 p-4 dark:border-gray-800">

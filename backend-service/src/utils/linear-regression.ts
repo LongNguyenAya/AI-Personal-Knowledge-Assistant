@@ -71,6 +71,66 @@ export function tCritical(df: number): number {
   return T_CRITICAL_95[nearest];
 }
 
+// Dùng khi OLS không đủ ý nghĩa thống kê để khẳng định xu hướng — không có đường thẳng nào đáng
+// tin, nhưng vẫn có thể cho user thấy xu hướng GẦN ĐÂY qua đường trung bình trượt, thay vì chỉ nói
+// "chưa rõ ràng" mà không hiện gì thêm. windowSize nhỏ (3) cho phản ứng nhanh với vài kỳ gần nhất,
+// hợp với chuỗi ngắn/dao động mạnh (đúng loại dữ liệu khiến OLS không đạt ý nghĩa thống kê).
+export function movingAverage(points: { x: number; y: number }[], windowSize = 3): number[] {
+  return points.map((_, i) => {
+    const window = points.slice(Math.max(0, i - windowSize + 1), i + 1);
+    return window.reduce((sum, p) => sum + p.y, 0) / window.length;
+  });
+}
+
+// Holt-linear (double exponential smoothing) — khác OLS ở chỗ KHÔNG cố fit 1 đường thẳng duy nhất
+// cho toàn bộ dữ liệu, mà tự thích nghi theo xu hướng GẦN ĐÂY qua từng bước (mức L và độ dốc T
+// được cập nhật dần). Dùng làm dự đoán "mềm" khi OLS không đủ ý nghĩa thống kê — moving average chỉ
+// làm mượt dữ liệu ĐÃ CÓ, không dự đoán được tương lai; Holt-linear thì dự đoán được, có công thức
+// toán rõ ràng, nhưng KHÔNG có bảo chứng thống kê (không kiểm định t) như OLS.
+// alpha/beta là giá trị mặc định hợp lý, không "tối ưu" theo từng dữ liệu cụ thể (cần thêm thuật
+// toán dò tham số riêng, không cần thiết ở quy mô này) — alpha cao hơn beta vì MỨC hiện tại nên
+// nhạy với dữ liệu mới, còn XU HƯỚNG nên mượt/ổn định hơn từng điểm riêng lẻ.
+export function holtLinear(
+  points: { x: number; y: number }[],
+  alpha = 0.4,
+  beta = 0.2
+): { level: number; trend: number; forecast: (stepsAhead: number) => number } {
+  if (points.length < 2) {
+    throw new Error("holtLinear cần tối thiểu 2 điểm dữ liệu.");
+  }
+  const sorted = [...points].sort((a, b) => a.x - b.x);
+
+  let level = sorted[0].y;
+  let trend = sorted[1].y - sorted[0].y;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prevLevel = level;
+    level = alpha * sorted[i].y + (1 - alpha) * (level + trend);
+    trend = beta * (level - prevLevel) + (1 - beta) * trend;
+  }
+
+  return { level, trend, forecast: (stepsAhead: number) => level + stepsAhead * trend };
+}
+
+// Độ rộng dải dự đoán (margin) cho 1 điểm MỚI tại x0 — PREDICTION interval cho 1 giá trị tương lai
+// cụ thể, KHÁC với confidence interval của chính đường hồi quy (prediction interval luôn rộng hơn,
+// vì cộng thêm cả nhiễu tự nhiên của dữ liệu quanh đường, không chỉ độ không chắc của đường thẳng).
+// Không tái dùng `se` trong isSlopeSignificant (đó là sai số CỦA ĐỘ DỐC, phục vụ mục đích khác) —
+// tính riêng MSE (sai số dự đoán) rồi ghép công thức chuẩn OLS. Dùng lại đúng tCritical() đã có,
+// không cần bảng số liệu mới.
+export function predictionMargin(reg: RegressionResult, points: { x: number; y: number }[], x0: number): number {
+  const n = points.length;
+  const df = n - 2;
+  if (df < 1) return 0;
+  const meanX = points.reduce((s, p) => s + p.x, 0) / n;
+  const ssX = points.reduce((s, p) => s + (p.x - meanX) ** 2, 0);
+  if (ssX === 0) return 0;
+  const ssRes = points.reduce((s, p) => s + (p.y - reg.predict(p.x)) ** 2, 0);
+  const mse = ssRes / df;
+  const factor = Math.sqrt(1 + 1 / n + (x0 - meanX) ** 2 / ssX);
+  return tCritical(df) * Math.sqrt(mse) * factor;
+}
+
 export function isSlopeSignificant(reg: RegressionResult, points: { x: number; y: number }[]): boolean {
   const n = points.length;
   const df = n - 2;
