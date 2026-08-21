@@ -43,3 +43,12 @@ export async function sendVerificationEmail(to: string, url: string) {
     text: `Chào bạn,\n\nVui lòng bấm vào đường dẫn sau để xác nhận tài khoản:\n${url}\n\nNếu bạn không tạo tài khoản này, hãy bỏ qua email này.`,
   });
 }
+
+export async function sendResetPasswordEmail(to: string, url: string) {
+  await transporter.sendMail({
+    from: `"AI Personal Knowledge Assistant" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: "Đặt lại mật khẩu",
+    text: `Chào bạn,\n\nVui lòng bấm vào đường dẫn sau để đặt lại mật khẩu (hết hạn sau 1 tiếng):\n${url}\n\nNếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.`,
+  });
+}

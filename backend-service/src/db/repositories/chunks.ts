@@ -1,5 +1,5 @@
 import { chunks, documents } from "@ai-assistant/db/src/schema";
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, and } from "drizzle-orm";
 import { withUserContext } from "../context";
 import type { NewChunk } from "../../types/chunks";
 
@@ -47,4 +47,18 @@ export async function findRelevantChunks(
       .orderBy(ranked.distance)
       .limit(totalLimit);
   });
+}
+
+// Lấy TOÀN BỘ chunk của 1 tài liệu, theo đúng thứ tự gốc (chunkIndex) — khác findRelevantChunks
+// (semantic search theo embedding câu hỏi), dùng khi cần quét hết nội dung 1 tài liệu cụ thể (vd
+// trích action item) mà không có "câu hỏi" nào để so khớp độ liên quan.
+export async function getDocumentChunks(userId: string, documentId: string) {
+  return withUserContext(userId, (tx) =>
+    tx
+      .select({ content: chunks.content })
+      .from(chunks)
+      .innerJoin(documents, eq(chunks.documentId, documents.id))
+      .where(and(eq(chunks.documentId, documentId), eq(documents.userId, userId)))
+      .orderBy(chunks.chunkIndex)
+  );
 }

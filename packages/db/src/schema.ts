@@ -293,6 +293,26 @@ export const knowledgeFiles = pgTable("knowledge_files", {
   statusIdx: index("knowledge_files_status_idx").on(table.status),
 }));
 
+export const adminMetricEnum = pgEnum("admin_metric", ["signups", "ai_queries"]);
+export const adminViewEnum = pgEnum("admin_view", ["week", "month", "year"]);
+
+// Kết quả phân tích do AI viết cho biểu đồ thống kê admin — GLOBAL, không RLS (đúng pattern
+// agentPrompts/knowledgeFiles), vì chỉ admin truy cập được (qua dbAdmin, route đã tự chặn role).
+// Luôn INSERT dòng mới mỗi lần admin bấm "Phân tích" (không upsert) — giữ lại lịch sử tự nhiên
+// trong DB, UI chỉ hiện đúng dòng mới nhất (order by createdAt desc limit 1) nhưng không mất các
+// lần phân tích trước.
+export const adminChartAnalyses = pgTable("admin_chart_analyses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  metric: adminMetricEnum("metric").notNull(),
+  view: adminViewEnum("view").notNull(),
+  analysisText: text("analysis_text").notNull(),
+  generatedBy: uuid("generated_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  // Truy vấn luôn lọc metric+view rồi lấy mới nhất — index đúng thứ tự cột lọc trước, sắp sau.
+  metricViewCreatedIdx: index("admin_chart_analyses_metric_view_created_idx").on(table.metric, table.view, table.createdAt),
+}));
+
 export const userRelations = relations(users, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),

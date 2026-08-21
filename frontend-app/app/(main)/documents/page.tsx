@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { UploadDropzone } from "@/components/documents/UploadDropzone";
 import { fetchJson } from "@/lib/fetch-json";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import type { Document } from "@/types/documents";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -16,6 +18,7 @@ const PENDING_STATUSES = new Set(["uploaded", "processing"]);
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function loadDocuments() {
@@ -24,6 +27,8 @@ export default function DocumentsPage() {
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được danh sách tài liệu");
+    } finally {
+      setLoaded(true);
     }
   }
 
@@ -67,38 +72,43 @@ export default function DocumentsPage() {
 
       <UploadDropzone onUploaded={loadDocuments} />
 
-      {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <div className="mt-3">
+          <ErrorBanner message={error} />
+        </div>
+      )}
 
-      <div className="mt-6 flex flex-col gap-2">
-        {documents.length === 0 && (
-          <p className="text-sm text-gray-400 dark:text-gray-500">Chưa có tài liệu nào.</p>
-        )}
+      {!loaded && <p className="mt-6 text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {loaded && documents.length === 0 && (
+        <div className="mt-6">
+          <EmptyState title="Chưa có tài liệu nào" description="Upload tài liệu ở khung phía trên để bắt đầu." />
+        </div>
+      )}
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {documents.map((d) => (
           <div
             key={d.id}
-            className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+            className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-4 shadow-soft dark:border-gray-800 dark:bg-gray-900"
           >
-            <div>
-              <div className="font-medium text-gray-900 dark:text-white">{d.fileName}</div>
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {new Date(d.createdAt).toLocaleString("vi-VN")}
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-start justify-between gap-2">
+              <span className="truncate font-medium text-gray-900 dark:text-white" title={d.fileName}>
+                {d.fileName}
+              </span>
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   STATUS_STYLE[d.status] ?? STATUS_STYLE.uploaded
                 }`}
               >
                 {d.status}
               </span>
-              <button
-                onClick={() => handleDelete(d.id)}
-                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
-              >
-                Xoá
-              </button>
             </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(d.createdAt).toLocaleString("vi-VN")}</div>
+            <button
+              onClick={() => handleDelete(d.id)}
+              className="mt-1 self-start rounded-lg px-2 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
+            >
+              Xoá
+            </button>
           </div>
         ))}
       </div>

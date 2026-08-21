@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchJson } from "@/lib/fetch-json";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import type { TasksResponse } from "@/types/tasks";
 
 const PAGE_SIZE = 20;
@@ -121,45 +123,50 @@ export default function TasksPage() {
         </button>
       </form>
 
-      {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <ErrorBanner message={error} />}
 
-      <div className="flex flex-col gap-2">
-        {tasks.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">Chưa có task nào.</p>}
+      {data === null && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {data !== null && tasks.length === 0 && (
+        <EmptyState title="Chưa có task nào" description="Tạo task ở ô phía trên, hoặc nhờ AI tạo giúp trong lúc chat." />
+      )}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {tasks.map((t) => (
           <div
             key={t.id}
-            className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+            className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-soft dark:border-gray-800 dark:bg-gray-900"
           >
-            <label className="flex flex-1 items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={t.isDone}
-                disabled={pendingId === t.id}
-                onChange={() => handleToggleDone(t.id, t.isDone)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span
-                className={`font-medium ${
-                  t.isDone ? "text-gray-400 line-through dark:text-gray-600" : "text-gray-900 dark:text-white"
-                }`}
+            <div className="flex items-start justify-between gap-2">
+              <label className="flex flex-1 cursor-pointer items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={t.isDone}
+                  disabled={pendingId === t.id}
+                  onChange={() => handleToggleDone(t.id, t.isDone)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span
+                  className={`font-medium ${
+                    t.isDone ? "text-gray-400 line-through dark:text-gray-600" : "text-gray-900 dark:text-white"
+                  }`}
+                >
+                  {t.title}
+                </span>
+              </label>
+              <button
+                onClick={() => handleDelete(t.id)}
+                className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
               >
-                {t.title}
-              </span>
+                Xoá
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
               {t.reminderId && (
-                <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+                <span className="rounded-full bg-indigo-50 px-2 py-0.5 font-medium text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
                   Có reminder
                 </span>
               )}
-            </label>
-            <span className="mr-4 text-xs text-gray-400 dark:text-gray-500">
-              {new Date(t.createdAt).toLocaleDateString("vi-VN")}
-            </span>
-            <button
-              onClick={() => handleDelete(t.id)}
-              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
-            >
-              Xoá
-            </button>
+              <span>{new Date(t.createdAt).toLocaleDateString("vi-VN")}</span>
+            </div>
           </div>
         ))}
       </div>

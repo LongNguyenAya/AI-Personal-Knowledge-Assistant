@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { fetchJson } from "@/lib/fetch-json";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import type { AgentPrompt } from "@/types/admin";
 
 const LABELS: Record<AgentPrompt["agentType"], { title: string; desc: string }> = {
@@ -24,6 +25,7 @@ const LABELS: Record<AgentPrompt["agentType"], { title: string; desc: string }> 
 
 export default function AdminPromptsPage() {
   const [prompts, setPrompts] = useState<AgentPrompt[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingType, setSavingType] = useState<string | null>(null);
   const [savedType, setSavedType] = useState<string | null>(null);
@@ -37,6 +39,8 @@ export default function AdminPromptsPage() {
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được prompt");
+    } finally {
+      setLoaded(true);
     }
   }
 
@@ -73,9 +77,10 @@ export default function AdminPromptsPage() {
         </p>
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <ErrorBanner message={error} />}
 
-      <div className="flex flex-col gap-5">
+      {!loaded && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      <div className="grid gap-5 sm:grid-cols-2">
         {prompts.map((p) => {
           const dirty = drafts[p.agentType] !== p.systemPrompt;
           return (

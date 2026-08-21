@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findOutliers, isSlopeSignificant, linearRegression, tCritical } from "./linear-regression";
+import { findOutliers, isSlopeSignificant, linearRegression, tCritical } from "@ai-assistant/shared-types";
 
 describe("linearRegression", () => {
   it("throws với ít hơn 2 điểm", () => {

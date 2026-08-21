@@ -3,36 +3,12 @@ import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { DefaultChatTransport, isToolUIPart, getToolName } from "ai";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkBreaks from "remark-breaks";
 import { fetchJson } from "@/lib/fetch-json";
 import { ChartBlock } from "@/components/chat/ChartBlock";
 import { TaskListBlock } from "@/components/chat/TaskListBlock";
+import { Markdown } from "@/components/ui/Markdown";
 import type { ChartToolOutput, ListTasksOutput, SearchDocumentsOutput } from "@ai-assistant/shared-types";
 import type { Conversation, StoredMessage } from "@/types/chat";
-
-// remarkBreaks coi 1 dấu xuống dòng như <br> — AI hay xuống dòng đơn giữa các ý, khác quy ước
-// markdown chuẩn (cần 2 dấu mới ngắt đoạn), thiếu plugin này chữ sẽ dính liền thành 1 dòng.
-// Không set màu riêng cho các thẻ, để tự kế thừa màu bong bóng chat.
-function ChatMarkdown({ text }: { text: string }) {
-  return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkBreaks]}
-      components={{
-        p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
-        ul: ({ children }) => <ul className="mb-1.5 list-disc pl-4 last:mb-0">{children}</ul>,
-        ol: ({ children }) => <ol className="mb-1.5 list-decimal pl-4 last:mb-0">{children}</ol>,
-        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-        code: ({ children }) => (
-          <code className="rounded bg-black/10 px-1 py-0.5 font-mono text-[0.85em] dark:bg-white/10">{children}</code>
-        ),
-      }}
-    >
-      {text}
-    </ReactMarkdown>
-  );
-}
 
 // Dựng lại tool part (vd chart) từ toolResults đã lưu — không có bước này thì tin nhắn cũ chỉ còn
 // mỗi chữ AI nói, chart biến mất ngay khi tải lại trang dù lúc stream trực tiếp vẫn hiện đúng.
@@ -62,6 +38,7 @@ export default function ChatPage() {
   const [conversationList, setConversationList] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [convOpen, setConvOpen] = useState(false);
 
   // Pattern chính thức của Vercel AI SDK: body là callback chỉ chạy lúc gửi request thật, không
   // phải lúc render, nên đọc ref ở đây an toàn. Mục đích là giữ transport không bị tạo lại mỗi
@@ -152,31 +129,65 @@ export default function ChatPage() {
     setInput("");
   }
 
+  const activeConversation = conversationList.find((c) => c.id === activeId) ?? null;
+
+  // 4rem = py-8 (2rem trên + 2rem dưới) của <main> — đúng ở md+ (MainNav là sidebar bên cạnh,
+  // không góp thêm chiều cao dọc). Dưới md, MainNav tự render thêm 1 thanh top-bar (~3rem) NẰM
+  // TRÊN <main> (flex-col ở layout.tsx) nên phải trừ thêm, nếu không trang sẽ dư ra ~48px, đẩy
+  // khung chat tràn xuống dưới viewport.
   return (
-    <div className="flex h-[calc(100vh-8.5rem)] gap-4">
-      <aside className="flex w-56 shrink-0 flex-col gap-2 overflow-y-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div className="flex h-[calc(100vh-7rem)] gap-4 md:h-[calc(100vh-4rem)]">
+      {/* Danh sách cuộc trò chuyện chiếm quá nhiều chỗ nếu để cố định trên màn hình hẹp — ẩn mặc
+          định dưới md, hiện dạng overlay khi bấm nút trong thanh tiêu đề (cùng pattern với
+          MainNav/AdminSidebar). */}
+      {convOpen && <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setConvOpen(false)} />}
+      <aside
+        className={`${
+          convOpen ? "flex" : "hidden"
+        } fixed inset-y-0 left-0 z-50 w-64 flex-col gap-2 overflow-y-auto border-r border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900 md:static md:z-auto md:flex md:w-64 md:shrink-0 md:rounded-xl md:border md:shadow-soft`}
+      >
         <button
-          onClick={handleNewConversation}
-          className="mb-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          onClick={() => {
+            handleNewConversation();
+            setConvOpen(false);
+          }}
+          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
         >
           + Cuộc trò chuyện mới
         </button>
         {conversationList.map((c) => (
           <button
             key={c.id}
-            onClick={() => handleSelectConversation(c.id)}
-            className={`truncate rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors ${
+            onClick={() => {
+              handleSelectConversation(c.id);
+              setConvOpen(false);
+            }}
+            className={`flex flex-col items-start gap-0.5 truncate rounded-lg px-3 py-2 text-left transition-colors ${
               c.id === activeId
                 ? "bg-indigo-600 text-white"
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
             }`}
           >
-            {c.title ?? new Date(c.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+            <span className="w-full truncate text-xs font-medium">{c.title ?? "Cuộc trò chuyện mới"}</span>
+            <span className={`text-[11px] ${c.id === activeId ? "text-indigo-100" : "text-gray-400 dark:text-gray-500"}`}>
+              {new Date(c.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+            </span>
           </button>
         ))}
       </aside>
 
-      <div className="flex flex-1 flex-col rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="flex flex-1 flex-col rounded-xl border border-gray-200 bg-white shadow-soft dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3 dark:border-gray-800">
+          <button
+            onClick={() => setConvOpen(true)}
+            className="shrink-0 rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 md:hidden dark:border-gray-700 dark:text-gray-300"
+          >
+            Cuộc trò chuyện
+          </button>
+          <h1 className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+            {activeConversation?.title ?? "Cuộc trò chuyện mới"}
+          </h1>
+        </div>
         <div className="flex-1 space-y-4 overflow-y-auto p-5">
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           {messages.length === 0 && (
@@ -194,14 +205,17 @@ export default function ChatPage() {
             return (
             <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                className={`max-w-[80%] px-4 py-2.5 text-sm ${
                   m.role === "user"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
+                    ? "rounded-2xl rounded-br-md bg-indigo-600 text-white"
+                    : "rounded-2xl rounded-bl-md border-l-2 border-indigo-600 bg-white text-gray-800 shadow-soft dark:bg-gray-900 dark:text-gray-100"
                 }`}
               >
+                {m.role === "assistant" && (
+                  <p className="mb-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400">AI Knowledge Assistant</p>
+                )}
                 {m.parts.map((part, i) => {
-                  if (part.type === "text") return <ChatMarkdown key={i} text={part.text} />;
+                  if (part.type === "text") return <Markdown key={i} text={part.text} />;
 
                   if (part.type === "source-document") {
                     return (

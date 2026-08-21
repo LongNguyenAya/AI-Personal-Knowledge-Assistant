@@ -1,4 +1,9 @@
-import type { RegressionResult } from "../types/linear-regression";
+export interface RegressionResult {
+  slope: number;
+  intercept: number;
+  r2: number;
+  predict: (x: number) => number;
+}
 
 export function linearRegression(points: { x: number; y: number }[]): RegressionResult {
   if (points.length < 2) {

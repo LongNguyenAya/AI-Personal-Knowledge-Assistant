@@ -7,4 +7,3 @@ export * from "./chunks";
 export * from "./knowledge";
 export * from "./tasks";
 export * from "./ws-events";
-export * from "./linear-regression";
