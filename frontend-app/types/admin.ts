@@ -36,3 +36,9 @@ export type UsersResponse = {
   page: number;
   pageSize: number;
 };
+
+export type AdminStats = {
+  totalUsers: number;
+  indexedDocs: number;
+  aiQueries24h: number;
+};

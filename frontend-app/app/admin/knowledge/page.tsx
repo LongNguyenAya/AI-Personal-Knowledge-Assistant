@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { fetchJson } from "@/lib/fetch-json";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import type { KnowledgeNote } from "@/types/admin";
 
 const TABS: { status: KnowledgeNote["status"]; label: string }[] = [
@@ -13,16 +15,20 @@ const TABS: { status: KnowledgeNote["status"]; label: string }[] = [
 export default function AdminKnowledgePage() {
   const [tab, setTab] = useState<KnowledgeNote["status"]>("pending");
   const [notes, setNotes] = useState<KnowledgeNote[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (status: KnowledgeNote["status"]) => {
+    setLoaded(false);
     try {
       const data = await fetchJson<KnowledgeNote[]>(`/api/admin/knowledge?status=${status}`);
       setNotes(data);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được danh sách ghi chú");
+    } finally {
+      setLoaded(true);
     }
   }, []);
 
@@ -59,7 +65,7 @@ export default function AdminKnowledgePage() {
         Cảnh báo: ghi chú sau khi duyệt sẽ hiển thị cho MỌI user — kiểm tra kỹ nội dung không chứa tên, email, hay thông tin cá nhân của bất kỳ ai trước khi duyệt.
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <ErrorBanner message={error} />}
 
       <div className="mb-4 flex gap-2">
         {TABS.map((t) => (
@@ -78,19 +84,27 @@ export default function AdminKnowledgePage() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {notes.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">Không có ghi chú nào.</p>}
+        {!loaded && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+        {loaded && notes.length === 0 && (
+          <EmptyState title={`Không có ghi chú nào ở mục "${TABS.find((t) => t.status === tab)?.label}"`} />
+        )}
         {notes.map((n) => (
           <div
             key={n.id}
-            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+            className="rounded-xl border border-gray-200 bg-white p-4 shadow-soft dark:border-gray-800 dark:bg-gray-900"
           >
-            <div className="mb-1 flex items-center gap-2">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                 {n.path}
               </span>
               <span className="text-xs text-gray-400 dark:text-gray-500">
-                {new Date(n.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+                Đề xuất lúc {new Date(n.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
               </span>
+              {n.reviewedAt && (
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  · Duyệt lúc {new Date(n.reviewedAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+                </span>
+              )}
             </div>
             <h3 className="font-semibold text-gray-900 dark:text-white">{n.title}</h3>
             <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-300">{n.content}</p>

@@ -85,6 +85,20 @@
       "when": 1786644359344,
       "tag": "0011_grant_admin_user_knowledge_files",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787302417023,
+      "tag": "0012_clever_hydra",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1787302797376,
+      "tag": "0013_grant_admin_user_chart_analyses",
+      "breakpoints": true
     }
   ]
 }

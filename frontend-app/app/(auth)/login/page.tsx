@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, useState } from "react";
+import { Bot } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -45,28 +46,53 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
-      <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 px-4 dark:bg-gray-950">
+      <div className="text-center">
+        <span className="flex items-center justify-center gap-2 text-lg font-bold text-indigo-600 dark:text-indigo-400">
+          <Bot className="h-6 w-6" />
+          AI Knowledge Assistant
+        </span>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Trợ lý tri thức cá nhân của bạn</p>
+      </div>
+
+      <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-soft dark:border-gray-800 dark:bg-gray-900">
         <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Đăng nhập</h1>
-        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">AI Personal Knowledge Assistant</p>
+        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">Đăng nhập để truy cập tài liệu, task và reminder của bạn.</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            type="email"
-            required
-            className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-indigo-500/20"
-          />
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mật khẩu"
-            type="password"
-            required
-            className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-indigo-500/20"
-          />
+          <div className="flex flex-col gap-1">
+            <label htmlFor="login-email" className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Email
+            </label>
+            <input
+              id="login-email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="user@example.com"
+              type="email"
+              required
+              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-indigo-500/20"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label htmlFor="login-password" className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                Mật khẩu
+              </label>
+              <Link href="/forgot-password" className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                Quên mật khẩu?
+              </Link>
+            </div>
+            <input
+              id="login-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              type="password"
+              required
+              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-indigo-500/20"
+            />
+          </div>
 
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 

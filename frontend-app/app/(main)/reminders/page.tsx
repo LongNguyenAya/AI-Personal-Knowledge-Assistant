@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchJson } from "@/lib/fetch-json";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import type { RemindersResponse } from "@/types/reminders";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -8,6 +10,14 @@ const STATUS_STYLE: Record<string, string> = {
   sent: "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300",
 };
 const DEFAULT_STATUS_STYLE = "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300";
+
+// source phân biệt reminder user tự gõ vs reminder AI tự trích từ tài liệu (extractActionItems) —
+// trước đây hiện text thô "manual"/"ai_created", không ai đọc hiểu được ý nghĩa thật.
+const SOURCE_LABEL: Record<string, string> = { manual: "Tạo thủ công", ai_created: "AI tạo từ tài liệu" };
+const SOURCE_STYLE: Record<string, string> = {
+  manual: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
+  ai_created: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300",
+};
 
 const PAGE_SIZE = 20;
 
@@ -122,40 +132,47 @@ export default function RemindersPage() {
         </button>
       </form>
 
-      {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <ErrorBanner message={error} />}
 
-      <div className="flex flex-col gap-2">
-        {reminders.length === 0 && (
-          <p className="text-sm text-gray-400 dark:text-gray-500">Chưa có reminder nào.</p>
-        )}
+      {data === null && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {data !== null && reminders.length === 0 && (
+        <EmptyState title="Chưa có reminder nào" description="Tạo reminder ở ô phía trên, hoặc nhờ AI trích từ tài liệu trong lúc chat." />
+      )}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {reminders.map((r) => (
           <div
             key={r.id}
-            className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+            className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-soft dark:border-gray-800 dark:bg-gray-900"
           >
-            <div>
+            <div className="flex items-start justify-between gap-2">
               <div className="font-medium text-gray-900 dark:text-white">{r.title}</div>
-              <div className="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <span>{new Date(r.dueAt).toLocaleString("vi-VN")}</span>
-                <span className="text-gray-300 dark:text-gray-700">•</span>
-                <span>{r.source}</span>
-                <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${
-                    STATUS_STYLE[r.status] ?? DEFAULT_STATUS_STYLE
-                  }`}
-                >
-                  {r.status}
-                </span>
-                <span className="text-gray-300 dark:text-gray-700">•</span>
-                <span>Tạo lúc {new Date(r.createdAt).toLocaleDateString("vi-VN")}</span>
-              </div>
+              <button
+                onClick={() => handleDelete(r.id)}
+                className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
+              >
+                Xoá
+              </button>
             </div>
-            <button
-              onClick={() => handleDelete(r.id)}
-              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
-            >
-              Xoá
-            </button>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(r.dueAt).toLocaleString("vi-VN")}</div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${
+                  SOURCE_STYLE[r.source] ?? DEFAULT_STATUS_STYLE
+                }`}
+              >
+                {SOURCE_LABEL[r.source] ?? r.source}
+              </span>
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${
+                  STATUS_STYLE[r.status] ?? DEFAULT_STATUS_STYLE
+                }`}
+              >
+                {r.status}
+              </span>
+            </div>
+            <div className="text-xs text-gray-400 dark:text-gray-500">
+              Tạo lúc {new Date(r.createdAt).toLocaleDateString("vi-VN")}
+            </div>
           </div>
         ))}
       </div>

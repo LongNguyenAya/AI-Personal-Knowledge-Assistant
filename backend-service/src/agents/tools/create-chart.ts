@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import type { ChartToolOutput } from "@ai-assistant/shared-types";
-import { findOutliers, isSlopeSignificant, linearRegression, movingAverage, predictionMargin, holtLinear } from "../../utils/linear-regression";
+import { findOutliers, isSlopeSignificant, linearRegression, movingAverage, predictionMargin, holtLinear } from "@ai-assistant/shared-types";
 import {
   getDocumentStatusBreakdown,
   getDocumentUploadsSeries,

@@ -50,22 +50,26 @@ export async function POST(req: Request) {
 
   // Forward file thật + trigger xử lý sang backend-service
   const token = await mintBackendToken(session.user.id);
-  const response = await fetch(`${BACKEND_URL}/documents/upload`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      documentId: doc.id, // gửi kèm ID để backend-service biết update đúng dòng nào
-      key,
-      fileName: file.name,
-      base64: buffer.toString("base64"),
-    }),
-  });
-
-  if (!response.ok) {
-    // Nếu forward thất bại, đánh dấu document là failed
+  try {
+    const response = await fetch(`${BACKEND_URL}/documents/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        documentId: doc.id, // gửi kèm ID để backend-service biết update đúng dòng nào
+        key,
+        fileName: file.name,
+        base64: buffer.toString("base64"),
+      }),
+    });
+    if (!response.ok) throw new Error(`backend-service trả về status ${response.status}`);
+  } catch (err) {
+    // fetch() có thể NÉM LỖI (mất kết nối/timeout tới backend-service), không chỉ trả về
+    // !response.ok — nếu không bắt ở đây, dòng document đã insert phía trên (status="uploaded")
+    // sẽ kẹt vĩnh viễn, không ai cập nhật thành "failed", user chỉ còn cách xoá rồi upload lại.
+    console.error("[documents/upload] Forward sang backend-service thất bại:", err);
     await withUserContext(session.user.id, (tx) =>
       tx.update(documents).set({ status: "failed" }).where(eq(documents.id, doc.id))
     );

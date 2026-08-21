@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dbAdmin } from "@/lib/db-admin";
 import { sendVerificationEmail } from "@/lib/send-verification-email";
+import { sendResetPasswordEmail } from "@/lib/send-reset-password-email";
 import * as schema from "@ai-assistant/db/src/schema";
 
 export const auth = betterAuth({
@@ -30,6 +31,12 @@ export const auth = betterAuth({
     // Chặn ngay tại /sign-in/email nếu chưa xác nhận email — hành vi có sẵn của better-auth,
     // không cần tự viết check trong hooks.before.
     requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendResetPasswordEmail(user.id, user.email, url);
+    },
+    // Đặt lại mật khẩu xong thì huỷ hết session cũ — phòng trường hợp mật khẩu bị lộ khiến ai đó
+    // khác đang có session sống trên máy/thiết bị khác, tránh họ vẫn dùng được sau khi user đổi mk.
+    revokeSessionsOnPasswordReset: true,
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
