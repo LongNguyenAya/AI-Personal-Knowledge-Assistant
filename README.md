@@ -2,8 +2,7 @@
 
 Trợ lý cá nhân: upload tài liệu, hỏi đáp có trích dẫn (RAG), tự tạo task/nhắc nhở qua chat, tự học từ những lần ta nhắc lỗi cần cải thiện, và có khu quản trị đầy đủ (settings động, duyệt kiến thức, audit log, dashboard xu hướng).
 
-> **Deployed app**: 
-> **Live demo**:
+> **Deployed app**: https://ai-personal-knowledge-assistant.onrender.com/
 
 ## Tính năng chính
 
@@ -88,6 +87,21 @@ Riêng route "research" (câu hỏi tra cứu thuần, không cần hành độn
 | Rate limit dùng fixed window, không token bucket/sliding log | Đơn giản, đủ cho mục tiêu "chặn spam thô" — đánh đổi: chấp nhận có thể burst nhẹ ở đúng ranh giới cửa sổ |
 | Biểu đồ trong chat tự vẽ SVG tay, không dùng thư viện chart | Cần vẽ đúng hình dạng riêng (dải tin cậy dự đoán, đường trung bình trượt) mà thư viện có sẵn không hỗ trợ đúng ý |
 | System prompt của agent lưu trong DB, không hardcode trong code | Admin sửa hành vi AI ngay qua `/admin/prompts`, không cần deploy lại |
+
+## Database
+
+`packages/db/src/schema.ts` là schema Drizzle duy nhất, dùng chung cho cả `frontend-app` và `backend-service` — không service nào tự định nghĩa lại bảng riêng. Hiện có 17 bảng, migration nằm ở `frontend-app/drizzle/migrations/` (sinh và áp bằng `drizzle-kit`).
+
+**2 role Postgres, không tự lọc `WHERE user_id = ...` trong code:**
+
+| Role | Dùng khi nào | Cách hoạt động |
+|---|---|---|
+| `app_user` | Mọi request người dùng bình thường | RLS tự lọc theo `current_setting('app.current_user_id')`, giá trị này được set qua `withUserContext()` ở đầu mỗi transaction |
+| `admin_user` | Thao tác admin (`/admin/*`) | `BYPASSRLS` — đọc/sửa được dữ liệu của mọi user |
+
+8/17 bảng bật RLS (`documents`, `chunks`, `tasks`, `conversations`, `reminders`, `chat_history`, `user_correction_memories`, `weekly_digests`), mỗi bảng có 1 `pgPolicy` so khớp `user_id` với `current_setting`. 9 bảng còn lại không bật RLS vì là dữ liệu dùng chung/toàn cục: bảng của better-auth (`users`, `session`, `account`, `verification`), hoặc dữ liệu chỉ admin đụng tới (`admin_audit_log`, `agent_prompts`, `knowledge_files`, `admin_chart_analyses`, `system_settings`).
+
+`chunks.embedding` dùng kiểu `vector` (pgvector) — tìm đoạn liên quan cho RAG bằng khoảng cách cosine, không phải full-text search thường.
 
 ## Bắt đầu chạy local
 
