@@ -1,20 +1,21 @@
 # AI Personal Knowledge Assistant
 
-Trợ lý cá nhân: upload tài liệu, hỏi đáp có trích dẫn (RAG), tự tạo task/nhắc nhở qua chat, tự học từ những lần bạn sửa lưng nó, và có khu quản trị đầy đủ (settings động, duyệt kiến thức, audit log, dashboard xu hướng).
+Trợ lý cá nhân: upload tài liệu, hỏi đáp có trích dẫn (RAG), tự tạo task/nhắc nhở qua chat, tự học từ những lần ta nhắc lỗi cần cải thiện, và có khu quản trị đầy đủ (settings động, duyệt kiến thức, audit log, dashboard xu hướng).
 
 Tài liệu kỹ thuật chi tiết (kiến trúc, sơ đồ, giải thích từng kỹ thuật) và bản đồ chức năng-file nằm ở 2 tài liệu riêng — xem mục [Tài liệu thêm](#tài-liệu-thêm) cuối file này.
 
-> **Đọc nhanh trong 5 phút?** Đọc "Tính năng chính" + "Kiến trúc tổng quan" ở đây là đủ hình dung tổng thể. Cần hiểu sâu 1 cơ chế cụ thể (vì sao làm vậy, chạy qua file nào) thì mới cần mở [Field Notes](#tài-liệu-thêm) hoặc [Feature Atlas](#tài-liệu-thêm).
+> **Deployed app**: 
+> **Live demo**:
 
 ## Tính năng chính
 
-- **Chat với AI** có trích dẫn nguồn thật (research) hoặc gọi công cụ hành động (action) — tạo task, tạo nhắc nhở, vẽ biểu đồ số liệu, vẽ sơ đồ quy trình, tìm/đọc tài liệu.
-- **Upload tài liệu** (.pdf, .docx, .pptx, .txt, .md, ảnh) — tự trích văn bản, tự phát hiện prompt injection và cảnh báo trích xuất thiếu.
-- **Đính kèm tài liệu ngay trong lúc chat** — chọn tài liệu có sẵn hoặc upload mới, chờ xử lý xong tự hỏi luôn.
-- **Tasks / Reminders** — tạo thủ công hoặc để AI tạo giúp, nhắc nhở tự đẩy qua WebSocket + email khi tới hạn.
-- **Ghi chú AI (correction memory)** — hệ thống tự học khi bạn sửa lỗi nó, hoặc khi nó tự nhận ra tình huống mơ hồ (chờ bạn duyệt).
-- **Tóm tắt hoạt động hàng tuần** qua email + trang riêng trong app.
-- **Khu quản trị** (`/admin`): quản lý user, sửa system prompt từng loại agent, duyệt/thu hồi kiến thức global, cấu hình hệ thống động (không cần deploy lại), dashboard thống kê kèm phân tích xu hướng thật (hồi quy tuyến tính có kiểm định) + nhận định AI theo yêu cầu, audit log mọi thao tác admin.
+- **Chat với AI**: Có trích dẫn nguồn thật (research) hoặc gọi công cụ hành động (action) — tạo task, tạo nhắc nhở, vẽ biểu đồ số liệu, vẽ sơ đồ quy trình, tìm/đọc tài liệu.
+- **Upload tài liệu**: Hỗ trợ các loại tệp .pdf, .docx, .pptx, .txt, .md, ảnh; tự trích văn bản, tự phát hiện prompt injection và cảnh báo trích xuất thiếu.
+- **Đính kèm tài liệu ngay trong lúc chat**: Chọn tài liệu có sẵn hoặc upload mới, chờ xử lý xong tự hỏi luôn.
+- **Tasks / Reminders**: Tạo thủ công hoặc để AI tạo giúp, nhắc nhở tự đẩy qua WebSocket + email khi tới hạn.
+- **Ghi chú AI (correction memory)**: Hệ thống tự học khi bạn sửa lỗi nó, hoặc khi nó tự nhận ra tình huống mơ hồ (chờ người dùng duyệt).
+- **Tóm tắt hoạt động hàng tuần**: Qua email + trang riêng trong app.
+- **Khu quản trị** (`/admin`): Quản lý user, sửa system prompt từng loại agent, duyệt/thu hồi kiến thức global, cấu hình hệ thống động (không cần deploy lại), dashboard thống kê kèm phân tích xu hướng thật (hồi quy tuyến tính có kiểm định) + nhận định AI theo yêu cầu, audit log mọi thao tác admin.
 
 ## Kiến trúc tổng quan
 
@@ -26,18 +27,18 @@ Monorepo dùng npm workspaces, 2 service độc lập cùng nói chuyện với 
                         └───┬───────┬───┘
                     HTTPS   │       │  WSS — thẳng tới EC2, không qua Render
                             ▼       ▼
-                  ┌──────────────┐   ┌────────────────────┐
-                  │    Render    │──▶│         EC2         │
-                  │ frontend-app │   │   backend-service   │
-                  │  (Next.js)   │   │ (Hono + LangGraph)  │
-                  └──────┬───────┘   └──────────┬──────────┘
+                  ┌──────────────┐    ┌────────────────────┐
+                  │    Render    │──> │         EC2        │
+                  │ frontend-app │    │   backend-service  │
+                  │  (Next.js)   │    │ (Hono + LangGraph) │
+                  └──────┬───────┘    └──────────┬─────────┘
                          │   Drizzle (RLS)       │
                          └───────────┬───────────┘
                                      ▼
-                            ┌─────────────────┐
+                            ┌──────────────────┐
                             │       Neon       │
                             │ Postgres+pgvector│
-                            └─────────────────┘
+                            └──────────────────┘
 ```
 
 `backend-service` còn nói chuyện riêng với **S3** (file gốc), **SQS** (2 hàng đợi: ingest tài liệu + trigger tóm tắt tuần), **EventBridge Scheduler** (cron), **Gemini + Groq**, và **Langfuse** (trace mọi lệnh gọi LLM) — không cái nào trong số này Render/frontend-app chạm tới trực tiếp.
@@ -79,9 +80,9 @@ Action-agent tự chọn gọi tool nào dựa trên câu hỏi, không có lu�
 
 Riêng route "research" (câu hỏi tra cứu thuần, không cần hành động) không dùng tool nào ở trên — nó bị ép buộc trả lời qua `submitAnswer`, có 2 lớp kiểm tra thuần code để chặn bịa nguồn trước khi trả lời được chấp nhận.
 
-## Quyết định thiết kế đáng chú ý
+## Kĩ thuật được áp dụng
 
-| Quyết định | Vì sao |
+| Kĩ thuật | Mục đích |
 |---|---|
 | Row-Level Security ở Postgres, không lọc `WHERE` trong code | Postgres tự chặn ở tầng row bất kể code có lỡ quên gì — an toàn hơn 1 lớp lọc application-level dễ quên |
 | JWT ký bất đối xứng (EdDSA) giữa 2 service | backend-service chỉ *verify* được, không tự *tạo* token giả danh user nào — khác HMAC (khoá dùng chung, rủi ro cao hơn nếu 1 trong 2 service bị lộ) |
@@ -92,9 +93,9 @@ Riêng route "research" (câu hỏi tra cứu thuần, không cần hành độn
 
 ## Bắt đầu chạy local
 
-### Yêu cầu trước khi bắt đầu
+### Yêu cầu trước khi chạy dự án
 
-Đây **không phải** dự án "npm install rồi chạy" đơn giản — `backend-service` từ chối khởi động nếu thiếu cấu hình AWS thật, và nhiều tính năng cần API key thật. Cần chuẩn bị trước:
+Vì `backend-service` từ chối khởi động nếu thiếu cấu hình AWS thật, và nhiều tính năng cần API key thật, nên ta cần chuẩn bị trước:
 
 - Node.js 24+, Docker (chạy Postgres local qua `docker-compose`).
 - 1 bucket **S3** + 1 hàng đợi **SQS** trên AWS (bắt buộc, `backend-service` throw lỗi ngay lúc khởi động nếu thiếu).
@@ -140,7 +141,7 @@ cd frontend-app
 npx drizzle-kit migrate
 ```
 
-> **Lưu ý đã biết:** lệnh trên từng bị treo (không rõ nguyên nhân) trên một số máy. Nếu bị treo, Ctrl+C rồi áp từng file migration thủ công theo đúng thứ tự bằng `psql`:
+> **Lưu ý:** lệnh trên từng bị treo (không rõ nguyên nhân). Nếu bị treo, Ctrl+C rồi áp từng file migration thủ công theo đúng thứ tự bằng `psql`:
 > ```bash
 > for f in frontend-app/drizzle/migrations/*.sql; do psql "$DATABASE_MIGRATION_URL" -f "$f"; done
 > ```
@@ -185,25 +186,14 @@ packages/
 
 ## Triển khai production
 
-frontend-app deploy trên Render, backend-service deploy bằng Docker (`Dockerfile` ở gốc repo) lên EC2, Postgres dùng Neon. `NEXT_PUBLIC_BACKEND_WS_URL` phải đổi từ `ws://localhost:4000` sang `wss://<domain-EC2-thật>` khi lên production. Chi tiết đầy đủ (vì sao 2 nhà cung cấp khác nhau, sơ đồ hạ tầng) — xem Field Notes.
+Frontend-app deploy trên Render, Backend-service deploy bằng Docker (`Dockerfile` ở gốc repo) lên EC2, Postgres dùng Neon. `NEXT_PUBLIC_BACKEND_WS_URL` phải đổi từ `ws://localhost:4000` sang `wss://<domain-EC2-thật>` khi lên production.
 
 ## Phạm vi & giả định
 
-- Thiết kế cho 1 cá nhân dùng, không phải SaaS nhiều tenant lớn — nhiều chỗ tối ưu cho "đúng và đơn giản" hơn là "chịu tải cao" (vd fixed window rate limit, WS registry trong RAM).
-- Chưa có bộ test tự động end-to-end qua trình duyệt, cũng chưa có bộ eval cố định chạy lại được mỗi lần đổi code — phần lớn tính năng được kiểm chứng bằng script/DB thật ngay lúc code xong (throwaway, không giữ lại), không phải bằng 1 quy trình test lặp lại được.
+- Thiết kế cho 1 cá nhân dùng, không phải SaaS nhiều tenant lớn. Vì thế nhiều chỗ tối ưu cho "đúng và đơn giản" hơn là "chịu tải cao" (ví dụ: fixed window rate limit, WS registry trong RAM).
+- Chưa có bộ test tự động end-to-end qua trình duyệt, cũng chưa có bộ eval cố định chạy lại được mỗi lần đổi code. Phần lớn tính năng được kiểm chứng bằng script/DB thật ngay lúc code xong (throwaway, không giữ lại), không phải bằng 1 quy trình test lặp lại được.
 
 ## Giới hạn đã biết
 
 - WebSocket registry sống trong RAM của 1 process — chưa hỗ trợ chạy nhiều instance backend-service cùng lúc, cần thêm Redis pub/sub hoặc tương tự nếu scale ngang.
 - `/corrections`, `/digest`, `/settings` chưa được `middleware.ts` bảo vệ redirect ngay như `/chat`/`/documents`/`/tasks`/`/reminders` — chỉ được chặn ở tầng API, không redirect `/login` ngay lúc vào trang.
-- `npx drizzle-kit migrate` từng bị treo trên một số máy, chưa rõ nguyên nhân gốc (xem cách xử lý ở mục "Bắt đầu chạy local").
-- Danh sách đầy đủ hơn — xem mục "Vận hành & giới hạn đã biết" trong Field Notes.
-
-## Tài liệu thêm
-
-2 tài liệu tổng hợp kiến trúc/chức năng, dựng riêng để đọc nhanh hơn đọc code:
-
-- **[Field Notes](https://claude.ai/code/artifact/4b060a61-a06c-4c93-afe5-99d4772e5639)** — giải thích kiến trúc, từng luồng xử lý, và các kỹ thuật đang dùng (vector search, LCS diff, hồi quy tuyến tính có kiểm định, JWT bất đối xứng...), kèm sơ đồ.
-- **[Feature Atlas](https://claude.ai/code/artifact/bf518d3f-2f5f-4a91-bd92-8b9b26f5f157)** — tra cứu nhanh: 1 chức năng chạm file nào, workflow chạy theo thứ tự nào, có ô lọc theo tên/route/file.
-
-> Cả 2 là trang riêng tư (chỉ bạn xem được trừ khi tự chia sẻ) — nếu sau này đưa repo này lên GitHub public, cân nhắc lại có muốn giữ 2 link này trong README hay không.
