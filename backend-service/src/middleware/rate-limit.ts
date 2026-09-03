@@ -1,11 +1,12 @@
 import type { Context, MiddlewareHandler, Next } from "hono";
 import type { AppEnv } from "../types";
 import type { Bucket } from "../types/rate-limit";
+import { getSettingValue } from "../db/repositories/settings";
+import type { SettingKey } from "@ai-assistant/shared-types";
 
 const buckets = new Map<string, Bucket>();
 
-// Dọn định kỳ để Map không phình vô hạn — backend-service chỉ chạy 1 process nên Map in-memory
-// là đủ, không cần Redis/DB cho việc này. Mất dữ liệu khi restart là chấp nhận được.
+// Dọn định kỳ để Map không phình vô hạn, chỉ chạy 1 process nên không cần Redis/DB.
 setInterval(
   () => {
     const now = Date.now();
@@ -16,15 +17,14 @@ setInterval(
   10 * 60 * 1000
 );
 
-// Key theo userId chứ không phải IP — request tới backend-service đều đi qua frontend-app theo
-// kiểu server-to-server, nên IP nhìn thấy luôn là IP của server đó, không phân biệt được user nào.
+// Key theo userId chứ không phải IP, request luôn đi qua frontend-app nên IP luôn là của server đó.
 export function rateLimiter({
   windowMs,
-  max,
+  maxSettingKey,
   name,
 }: {
   windowMs: number;
-  max: number;
+  maxSettingKey: SettingKey;
   name: string;
 }): MiddlewareHandler<AppEnv> {
   return async (c: Context<AppEnv>, next: Next) => {
@@ -38,6 +38,8 @@ export function rateLimiter({
       return next();
     }
 
+    // Đọc live mỗi request, không cache, admin tự chỉnh qua /admin/settings.
+    const max = Math.round(await getSettingValue(maxSettingKey));
     if (bucket.count >= max) {
       return c.json({ error: "Bạn đang gửi quá nhanh, vui lòng thử lại sau." }, 429);
     }

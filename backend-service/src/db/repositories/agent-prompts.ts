@@ -2,8 +2,7 @@ import { agentPrompts, type AgentType } from "@ai-assistant/db/src/schema";
 import { and, eq } from "drizzle-orm";
 import { dbAdmin } from "../admin-client";
 
-// agent_prompts là bảng dùng chung, không thuộc về user nào nên không có RLS — đọc qua dbAdmin
-// cho nhất quán với các bảng cross-user khác.
+// agent_prompts dùng chung, không thuộc user nào nên không RLS, đọc qua dbAdmin cho nhất quán.
 export async function getActivePrompt(agentType: AgentType) {
   const [row] = await dbAdmin
     .select()

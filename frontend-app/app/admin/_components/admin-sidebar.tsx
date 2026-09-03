@@ -2,9 +2,9 @@
 import { useState } from "react";
 import { Bot, Menu, X } from "lucide-react";
 import AdminNav from "./admin-nav";
+import ThemeToggle from "@/components/ThemeToggle";
 
-// Cùng pattern responsive với MainNav ((main)/_components/main-nav.tsx) — sidebar cố định chỉ
-// hợp lý ở màn hình đủ rộng (md+), dưới đó ẩn mặc định, hiện dạng overlay khi bấm "Menu".
+// Cùng pattern responsive với MainNav, sidebar cố định chỉ hợp lý ở md+, dưới đó ẩn mặc định và hiện dạng overlay.
 export default function AdminSidebar() {
   const [open, setOpen] = useState(false);
 
@@ -44,6 +44,10 @@ export default function AdminSidebar() {
         </div>
         <div onClick={() => setOpen(false)}>
           <AdminNav />
+        </div>
+        <div className="mt-auto flex items-center justify-between border-t border-gray-100 px-3 pt-4 dark:border-gray-800">
+          <span className="text-[13px] text-gray-500 dark:text-gray-400">Giao diện</span>
+          <ThemeToggle variant="inline" />
         </div>
       </aside>
     </>

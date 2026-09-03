@@ -2,8 +2,7 @@ import type { MiddlewareHandler } from "hono";
 import { verifyBackendToken } from "../utils/backend-token";
 import type { AppEnv } from "../types";
 
-// Dùng cho mọi route HTTP thường, token nằm trong header Authorization. Route /ws dùng middleware
-// riêng (ws-auth.ts) vì trình duyệt không set được header lúc nâng cấp WebSocket.
+// Dùng cho mọi route HTTP thường, route /ws dùng middleware riêng (ws-auth.ts) vì lý do khác.
 export const jwtAuthMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
   const authHeader = c.req.header("Authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : null;

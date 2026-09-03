@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import ThemeToggle from "@/components/ThemeToggle";
+import CommandPalette from "@/components/CommandPalette";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
-// subsets "vietnamese" bắt buộc — font này được DESIGN.md chọn riêng vì hỗ trợ tốt dấu tiếng Việt,
-// thiếu subset này chữ có dấu sẽ tự rơi về font hệ thống mặc định.
+// subsets "vietnamese" bắt buộc vì font này được chọn riêng để hỗ trợ tốt dấu tiếng Việt, thiếu subset chữ có dấu sẽ rơi về font mặc định.
 const beVietnamPro = Be_Vietnam_Pro({
   variable: "--font-be-vietnam-pro",
   subsets: ["latin", "vietnamese"],
@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${beVietnamPro.variable} h-full antialiased`}
+      className={`${beVietnamPro.variable} h-full scroll-smooth antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -36,6 +36,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         {children}
         <ThemeToggle />
+        <CommandPalette />
       </body>
     </html>
   );

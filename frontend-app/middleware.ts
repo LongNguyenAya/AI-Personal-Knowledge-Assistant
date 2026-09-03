@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 
-// Trước đây chỉ /admin/* được chặn ở đây — /chat, /documents, /tasks, /reminders không có auth
-// guard nào ở tầng route/layout, chỉ API bên dưới tự chặn. Không lộ dữ liệu (API vẫn đúng), nhưng
-// user chưa đăng nhập vẫn thấy nguyên khung UI (nav, form...) trước khi mới hiện lỗi tải dữ liệu,
-// thay vì được đưa thẳng về /login như /admin đang làm.
+// Trước đây chỉ /admin/* được chặn, các trang khác chỉ có API tự chặn nên user chưa đăng nhập vẫn thấy UI trước khi lỗi tải dữ liệu.
 export async function middleware(req: NextRequest) {
   const isAdminPath = req.nextUrl.pathname.startsWith("/admin");
   const isMainPath = ["/chat", "/documents", "/tasks", "/reminders"].some((p) => req.nextUrl.pathname.startsWith(p));

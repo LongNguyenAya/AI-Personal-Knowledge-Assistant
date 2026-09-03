@@ -5,7 +5,7 @@ import { withAdminContext } from "@/lib/with-admin-context";
 export const PATCH = withAdminContext<{ id: string }>(async (req, { db, session, params }) => {
   const body = await req.json();
 
-  // Admin tự khoá/xoá chính tài khoản đang đăng nhập có thể khiến không còn ai mở lại được — chặn hẳn tình huống này.
+  // Chặn hẳn việc admin tự khoá/xoá chính tài khoản đang đăng nhập, tránh không còn ai mở lại được.
   if (params.id === session.user.id) {
     return new Response("Không thể tự thao tác lên chính tài khoản admin đang đăng nhập", { status: 400 });
   }
@@ -17,8 +17,7 @@ export const PATCH = withAdminContext<{ id: string }>(async (req, { db, session,
         .set({ isActive: body.isActive, updatedAt: new Date() })
         .where(eq(users.id, params.id))
         .returning({ id: users.id });
-      // params.id không tồn tại thì update không đổi dòng nào, nhưng audit log bên dưới vẫn
-      // chạy và ném lỗi FK — kiểm tra sớm để trả 404 sạch thay vì rơi xuống 500 chung.
+      // params.id không tồn tại thì update không đổi dòng nào nhưng audit log vẫn ném lỗi FK, kiểm tra sớm để trả 404 sạch.
       if (updated.length === 0) return true;
       await tx.insert(adminAuditLog).values({
         adminId: session.user.id,
@@ -31,9 +30,7 @@ export const PATCH = withAdminContext<{ id: string }>(async (req, { db, session,
     return Response.json({ ok: true });
   }
 
-  // softDelete=true là xoá mềm, chặn đăng nhập ngay từ hooks.before trong auth.ts. softDelete=false
-  // là khôi phục — chỉ admin chủ động làm mới dùng lại được tài khoản, khác isActive (khoá vẫn
-  // đăng nhập được, chỉ chặn gọi API).
+  // softDelete=true là xoá mềm chặn đăng nhập ngay từ auth.ts, softDelete=false là khôi phục, khác isActive chỉ chặn gọi API.
   if (typeof body.softDelete === "boolean") {
     const notFound = await db.transaction(async (tx) => {
       const updated = await tx

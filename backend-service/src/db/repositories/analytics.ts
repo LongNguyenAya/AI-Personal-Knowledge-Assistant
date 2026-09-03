@@ -3,8 +3,7 @@ import { and, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { withUserContext } from "../context";
 import type { BreakdownRow, TimeSeriesRow, Granularity, GranularityConfig, SeriesOptions } from "../../types/analytics";
 
-// Driver là drizzle-orm/postgres-js — execute() trả về mảng trực tiếp (RowList extends Array),
-// không cần .rows như driver node-postgres.
+// Driver postgres-js, execute() trả về mảng trực tiếp, không cần .rows như driver node-postgres.
 
 const GRANULARITY_CONFIG: Record<Granularity, GranularityConfig> = {
   hour: { intervalAmount: 1, intervalUnit: "hour", labelFormat: "YYYY-MM-DD HH24:00", defaultCount: 24 },
@@ -15,27 +14,21 @@ const GRANULARITY_CONFIG: Record<Granularity, GranularityConfig> = {
   year: { intervalAmount: 1, intervalUnit: "year", labelFormat: "YYYY", defaultCount: 5 },
 };
 
-// Dựng interval ĐỘNG mà KHÔNG dùng sql.raw — amount/unit vẫn đi qua dưới dạng tham số bind bình
-// thường (${...} không phải sql.raw), chỉ ghép chuỗi/cast ở PHÍA POSTGRES, không nội suy vào text
-// câu lệnh ở phía ứng dụng.
+// Dựng interval động không dùng sql.raw, amount/unit vẫn bind qua tham số bình thường.
 function periodInterval(cfg: GranularityConfig): SQL {
   return sql`(${cfg.intervalAmount}::text || ' ' || ${cfg.intervalUnit}::text)::interval`;
 }
 
-// Dựng biên generate_series + điều kiện lọc theo NGÀY — dùng chung cho cả 3 domain (chỉ khác tên
-// bảng/cột nên không gộp hẳn thành 1 hàm, giữ mỗi hàm domain tự chứa dễ đọc như code cũ).
+// Dựng biên generate_series và điều kiện lọc ngày, dùng chung cho cả 3 domain.
 function resolveSeriesBounds(granularity: Granularity, cfg: GranularityConfig, options: SeriesOptions | undefined, dateColumnSql: SQL) {
   const step = periodInterval(cfg);
   const { from, to, count } = options ?? {};
 
   if (from && to) {
-    // postgres-js KHÔNG tự serialize object Date khi bind trực tiếp qua sql`` thô (khác driver
-    // node-postgres) — phải tự gọi .toISOString() trước, nếu không lỗi runtime "must be of type
-    // string ... Received an instance of Date".
+    // postgres-js không tự serialize Date khi bind qua sql thô, phải .toISOString() trước.
     const fromIso = from.toISOString();
     const toIso = to.toISOString();
-    // Khoảng do user chỉ định đã là quá khứ xác định — không cần loại "kỳ hiện tại chưa hoàn tất"
-    // như nhánh mặc định bên dưới (đó là logic riêng cho cửa sổ trượt theo "bây giờ").
+    // Khoảng do user chỉ định đã là quá khứ xác định, không cần loại kỳ hiện tại chưa hoàn tất.
     return {
       startExpr: sql`date_trunc(${granularity}, ${fromIso}::timestamptz AT TIME ZONE 'Asia/Ho_Chi_Minh')`,
       stopExpr: sql`date_trunc(${granularity}, ${toIso}::timestamptz AT TIME ZONE 'Asia/Ho_Chi_Minh')`,
@@ -53,9 +46,7 @@ function resolveSeriesBounds(granularity: Granularity, cfg: GranularityConfig, o
   };
 }
 
-// Task không có completedAt/status nhiều giá trị — chỉ có isDone (boolean). Route PATCH
-// /api/tasks/[id] chỉ cho sửa đúng field này (đã đọc route thật, không có endpoint sửa field
-// khác), nên updatedAt là mốc đáng tin cậy cho "lần gần nhất trạng thái hoàn thành đổi".
+// Task không có completedAt, chỉ có isDone, nên updatedAt là mốc đáng tin cho lần hoàn thành gần nhất.
 export async function getTaskCompletionSeries(userId: string, granularity: Granularity, options?: SeriesOptions) {
   const cfg = GRANULARITY_CONFIG[granularity];
   const { startExpr, stopExpr, step, rangeCondition } = resolveSeriesBounds(granularity, cfg, options, sql`t.updated_at`);
@@ -110,9 +101,7 @@ export async function getDocumentUploadsSeries(userId: string, granularity: Gran
   );
 }
 
-// Breakdown: phân bổ tại thời điểm hiện tại, không có trục thời gian, không có granularity.
-// GROUP BY thuần chỉ trả về giá trị nào có ít nhất 1 bản ghi — merge với hằng số enum thật (đọc
-// từ schema.ts, không đoán) để trạng thái 0 bản ghi vẫn có mặt với value: 0.
+// Breakdown là phân bổ hiện tại, merge với enum thật để trạng thái 0 bản ghi vẫn có mặt.
 export async function getTaskCompletionBreakdown(userId: string): Promise<BreakdownRow[]> {
   const rows = await withUserContext(userId, (tx) =>
     tx
@@ -156,8 +145,7 @@ export async function getDocumentStatusBreakdown(userId: string): Promise<Breakd
   return DOCUMENT_STATUSES.map((status) => ({ label: status, value: map.get(status) ?? 0 }));
 }
 
-// Phân biệt "chưa từng có dữ liệu" với "không hoạt động gần đây" — chỉ cần thiết cho time-series
-// (breakdown không lọc theo thời gian, rỗng luôn nghĩa là chưa từng có).
+// Phân biệt "chưa từng có dữ liệu" với "không hoạt động gần đây", chỉ cần thiết cho time-series.
 export async function hasAnyRecordEver(userId: string, domain: "task" | "reminder" | "document"): Promise<boolean> {
   return withUserContext(userId, async (tx) => {
     if (domain === "task") {

@@ -23,10 +23,7 @@ const VIEWS: { value: View; label: string }[] = [
   { value: "year", label: "1 năm" },
 ];
 
-// Chỉ còn phần biểu đồ/so sánh — phần phân tích AI đã tách sang AdminAnalysisPanel.tsx (dùng
-// chung 1 panel bên phải cho cả 2 khối, chọn metric bằng nút lọc thay vì lặp lại nút "Phân tích"
-// ở từng khối). `view`/`onViewChange` do component cha (admin/dashboard/page.tsx) quản lý — cần
-// nâng state lên cha để AdminAnalysisPanel biết đang xem đúng khoảng thời gian nào của khối này.
+// Chỉ còn phần biểu đồ/so sánh, phần phân tích AI đã tách sang AdminAnalysisPanel.tsx, `view`/`onViewChange` do component cha quản lý.
 export function AdminMetricChart({
   title,
   endpoint,
@@ -84,10 +81,8 @@ export function AdminMetricChart({
 
       {error && <ErrorBanner message={error} />}
 
-      {/* min-h cố định theo trường hợp cao nhất (chart + tối đa ~5 dòng chú thích) — tránh
-          card co giãn/nhảy layout khi đổi tab, vì view "1 tháng" (2 số) và "đang tải" ngắn hơn
-          hẳn view "7 ngày"/"1 năm" (biểu đồ SVG). Căn giữa dọc cho nội dung ngắn để không bị
-          dồn lên đầu một khoảng trống lớn phía dưới. */}
+      {/* min-h cố định theo trường hợp cao nhất — tránh card nhảy layout khi đổi tab giữa view
+          "1 tháng" (ngắn) và "7 ngày"/"1 năm" (biểu đồ SVG). Căn giữa dọc cho nội dung ngắn. */}
       <div className="flex min-h-[340px] flex-col justify-center">
         {view === "month" ? (
           compare ? (

@@ -1,7 +1,4 @@
-// Helper chung cho mọi trang client — gọi fetch().then(res.json()) trực tiếp mà không check
-// res.ok thì khi API trả lỗi dạng text (vd 401 Unauthorized), res.json() ném SyntaxError không
-// ai bắt, trang treo ở "Đang tải..." mãi mà không báo gì cho user. fetchJson luôn throw Error
-// có message rõ ràng khi request thất bại.
+// Helper chung cho mọi trang client, gọi res.json() trực tiếp mà không check res.ok sẽ ném SyntaxError khiến trang treo mãi.
 export async function fetchJson<T = unknown>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const res = await fetch(input, init);
   if (!res.ok) {

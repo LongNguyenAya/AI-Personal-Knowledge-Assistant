@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-// Gmail SMTP qua App Password — miễn phí, không cần dựng dịch vụ email riêng.
+// Gmail SMTP qua App Password, miễn phí, không cần dựng dịch vụ email riêng.
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -32,9 +32,7 @@ export async function sendReminderEmail(
   });
 }
 
-// frontend-app (chạy trên Render) gọi sang đây để gửi email xác nhận đăng ký — Render chặn kết
-// nối SMTP ra ngoài để chống spam, còn EC2 thì không (AWS chỉ chặn cổng 25 mặc định, không chặn
-// cổng Gmail SMTP dùng), nên việc gửi email thật luôn nằm ở backend-service.
+// frontend-app (Render) gọi sang đây gửi email vì Render chặn SMTP ra ngoài, EC2 thì không.
 export async function sendVerificationEmail(to: string, url: string) {
   await transporter.sendMail({
     from: `"AI Personal Knowledge Assistant" <${process.env.GMAIL_USER}>`,
@@ -50,5 +48,29 @@ export async function sendResetPasswordEmail(to: string, url: string) {
     to,
     subject: "Đặt lại mật khẩu",
     text: `Chào bạn,\n\nVui lòng bấm vào đường dẫn sau để đặt lại mật khẩu (hết hạn sau 1 tiếng):\n${url}\n\nNếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.`,
+  });
+}
+
+// Gửi kèm bên cạnh lưu DB, không thay thế, không gắn link về app vì backend-service không có sẵn URL đó.
+export async function sendWeeklyDigestEmail(
+  to: string,
+  weekStart: Date,
+  weekEnd: Date,
+  summaryText: string,
+  stats: { documentsProcessed: number; tasksCompleted: number; tasksOverdue: number; conversationsStarted: number }
+) {
+  const fmt = (d: Date) => d.toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+  const statLines = [
+    stats.documentsProcessed > 0 ? `- Tài liệu đã xử lý xong: ${stats.documentsProcessed}` : null,
+    stats.tasksCompleted > 0 ? `- Task đã hoàn thành: ${stats.tasksCompleted}` : null,
+    stats.tasksOverdue > 0 ? `- Task còn quá hạn: ${stats.tasksOverdue}` : null,
+    stats.conversationsStarted > 0 ? `- Cuộc trò chuyện mới: ${stats.conversationsStarted}` : null,
+  ].filter((l): l is string => l !== null);
+
+  await transporter.sendMail({
+    from: `"AI Personal Knowledge Assistant" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: `Tóm tắt tuần của bạn (${fmt(weekStart)} - ${fmt(weekEnd)})`,
+    text: `${summaryText}\n\n${statLines.join("\n")}\n\nXem lại đầy đủ trong mục "Tóm tắt tuần" của ứng dụng.`,
   });
 }

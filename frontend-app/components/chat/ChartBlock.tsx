@@ -1,4 +1,33 @@
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { ChartDatum, ChartTrend } from "@ai-assistant/shared-types";
+
+// Badge pill lấy màu/icon từ số liệu thật (trend.slope hoặc moving average), không suy đoán từ chuỗi trendMessage.
+type TrendDirection = "up" | "down" | "flat";
+
+function getTrendDirection(trend: ChartTrend | null, movingAverage: number[] | null): TrendDirection | null {
+  if (trend) return trend.slope > 0 ? "up" : trend.slope < 0 ? "down" : "flat";
+  if (movingAverage && movingAverage.length >= 2) {
+    const delta = movingAverage[movingAverage.length - 1] - movingAverage[0];
+    return delta > 0 ? "up" : delta < 0 ? "down" : "flat";
+  }
+  return null;
+}
+
+const TREND_BADGE_STYLE: Record<TrendDirection, { icon: typeof TrendingUp; className: string }> = {
+  up: { icon: TrendingUp, className: "bg-green-500/10 text-green-600 border-green-500/30 dark:text-green-400" },
+  down: { icon: TrendingDown, className: "bg-red-500/10 text-red-600 border-red-500/30 dark:text-red-400" },
+  flat: { icon: Minus, className: "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700" },
+};
+
+function TrendBadge({ direction, message }: { direction: TrendDirection; message: string }) {
+  const { icon: Icon, className } = TREND_BADGE_STYLE[direction];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${className}`}>
+      <Icon className="h-3.5 w-3.5" />
+      {message}
+    </span>
+  );
+}
 
 interface ChartBlockProps {
   chartType: "bar" | "line" | "pie";
@@ -11,10 +40,7 @@ interface ChartBlockProps {
   softForecast: { points: number[]; labels: string[] } | null;
 }
 
-// Props có thể tới từ toolResults đã LƯU TỪ TRƯỚC trong DB (chat_history) lúc shape output của
-// createChart còn khác (vd chưa có xAxisType/outliers) — khác với lúc đang stream trực tiếp (luôn
-// đủ field vì tool vừa trả ra). Không thể ép hội thoại cũ khớp shape mới, nên nhận input thiếu
-// field và tự có giá trị mặc định an toàn thay vì crash cả trang.
+// Props có thể tới từ toolResults cũ lúc shape output createChart còn thiếu xAxisType/outliers, cần giá trị mặc định an toàn.
 type LegacyChartBlockProps = Partial<Omit<ChartBlockProps, "chartType" | "data">> & Pick<ChartBlockProps, "chartType" | "data">;
 
 const PIE_COLORS = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#0ea5e9", "#a855f7"];
@@ -39,22 +65,17 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
 
   const outlierLabels = new Set(outliers.map((o) => o.label));
 
-  // CHỈ time-series mới có điểm dự đoán tương lai — category (breakdown) không bao giờ có trend.
-  // futureLower/futureUpper mặc định [] cho toolResults cũ lưu trước khi có dải tin cậy (legacy).
+  // Chỉ time-series mới có điểm dự đoán tương lai, futureLower/futureUpper mặc định [] cho toolResults cũ.
   const futurePoints = isLine && !isCategory ? (trend?.futurePoints ?? []) : [];
   const futureLabels = isLine && !isCategory ? (trend?.futureLabels ?? []) : [];
   const futureLower = isLine && !isCategory ? (trend?.futureLower ?? []) : [];
   const futureUpper = isLine && !isCategory ? (trend?.futureUpper ?? []) : [];
-  // softForecast chỉ tồn tại khi trend=null (loại trừ lẫn nhau) — không bao giờ hiện cùng lúc với
-  // futurePoints, nhưng vẫn cần cộng vào futureCount để xFor() chừa đúng chỗ trên trục x.
+  // softForecast chỉ tồn tại khi trend=null nên không bao giờ hiện cùng futurePoints, nhưng vẫn cộng vào futureCount cho xFor().
   const softForecastPoints = isLine && !isCategory ? (softForecast?.points ?? []) : [];
   const softForecastLabels = isLine && !isCategory ? (softForecast?.labels ?? []) : [];
   const futureCount = futurePoints.length || softForecastPoints.length;
 
-  // "category" (breakdown, thường chỉ 2-4 nhóm): chia đều thành các băng, mỗi cột/điểm nằm CHÍNH
-  // GIỮA băng của nó — tránh việc dàn theo kiểu "chuỗi thời gian" khiến 2 cột dính sát 2 mép
-  // trái/phải, khoảng trống lớn ở giữa trông rất lạ.
-  // "time" (chuỗi thời gian liên tiếp): dàn đều sát 2 mép như cũ, có chỗ cho đoạn dự đoán nối tiếp.
+  // "category": chia đều thành băng, mỗi cột nằm chính giữa băng, khác "time" là dàn đều sát 2 mép để chừa chỗ dự đoán.
   let xFor: (index: number) => number;
   if (isCategory) {
     const bandWidth = plotWidth / data.length;
@@ -65,8 +86,7 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
     xFor = (index: number) => PAD_LEFT + index * stepWidth;
   }
 
-  // futureUpper phải nằm trong allValues — không thì dải tin cậy có thể bị cắt cụt phía trên nếu
-  // biên trên vượt quá giá trị dự đoán/dữ liệu thật lớn nhất.
+  // futureUpper phải nằm trong allValues, nếu không dải tin cậy có thể bị cắt cụt khi biên trên vượt giá trị lớn nhất.
   const allValues = [...data.map((d) => d.value), ...futurePoints, ...futureUpper, ...softForecastPoints];
   const maxValue = Math.max(...allValues, 1);
   const yFor = (value: number) => PAD_TOP + plotHeight - (value / maxValue) * plotHeight;
@@ -80,9 +100,7 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
       ? [realPoints[realPoints.length - 1], ...futurePointsXY].map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")
       : null;
 
-  // Dải tin cậy (prediction interval) — hình quạt mở rộng dần từ điểm thật cuối cùng (độ rộng = 0
-  // tại đó) ra tới biên trên/dưới của từng điểm dự đoán. Đúng hướng "càng đoán xa càng kém chắc
-  // chắn" (xem giải thích công thức ở predictionMargin, linear-regression.ts).
+  // Dải tin cậy mở rộng dần từ điểm thật cuối cùng (độ rộng=0) ra biên trên/dưới, theo predictionMargin.
   const bandPath =
     isLine && futureCount > 0 && futureLower.length === futureCount && futureUpper.length === futureCount && realPoints.length > 0
       ? (() => {
@@ -94,17 +112,13 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
         })()
       : null;
 
-  // Chỉ có giá trị khi OLS không đạt ý nghĩa thống kê (xem create-chart.ts) — vẽ thêm đường mượt
-  // màu khác để vẫn cho thấy xu hướng gần đây, không để user chỉ thấy 1 câu "chưa rõ ràng" trơ trọi.
+  // Chỉ có giá trị khi OLS không đạt ý nghĩa thống kê, vẽ thêm đường mượt màu khác để vẫn cho thấy xu hướng gần đây.
   const maPath =
     isLine && movingAverage
       ? data.map((_, i) => `${i === 0 ? "M" : "L"} ${xFor(i).toFixed(1)},${yFor(movingAverage[i]).toFixed(1)}`).join(" ")
       : null;
 
-  // Dự đoán "mềm" bằng Holt-linear — chỉ xuất hiện cùng lúc với maPath (cả 2 chỉ có khi OLS không
-  // đủ ý nghĩa thống kê). Vẽ NÉT ĐỨT (giống quy ước "dự đoán" của OLS) nhưng màu cam (giống nhóm
-  // "phân tích kém chắc chắn hơn" với đường trung bình trượt) — tránh nhầm với dự đoán OLS (nét đứt
-  // xanh, có dải tin cậy) hay đường trung bình trượt (liền nét cam, không dự đoán tương lai).
+  // Dự đoán "mềm" bằng Holt-linear chỉ xuất hiện cùng maPath, vẽ nét đứt cam để không nhầm với OLS (nét đứt xanh).
   const softForecastPointsXY = softForecastPoints.map((v, k) => ({ x: xFor(data.length + k), y: yFor(v) }));
   const softForecastPath =
     isLine && softForecastPointsXY.length > 0 && realPoints.length > 0
@@ -115,8 +129,7 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
 
   const barWidth = isCategory ? Math.min(60, (plotWidth / data.length) * 0.5) : Math.min(28, (plotWidth / data.length) * 0.6);
 
-  // Thưa bớt nhãn trục x nếu quá nhiều điểm — luôn giữ điểm đầu và điểm cuối, các điểm giữa cách
-  // đều nhau theo bước nhảy. Category (thường ≤4 nhóm) luôn hiện đủ, không bao giờ cần thưa.
+  // Thưa bớt nhãn trục x nếu quá nhiều điểm, luôn giữ điểm đầu/cuối, category (thường ít nhóm) luôn hiện đủ.
   const labelStep = isCategory ? 1 : Math.max(1, Math.ceil(data.length / MAX_X_LABELS));
   const labeledIndexes = new Set<number>();
   for (let i = 0; i < data.length; i += labelStep) labeledIndexes.add(i);
@@ -151,7 +164,7 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
         ))}
 
         {bandPath && <path d={bandPath} fill="#4f46e5" fillOpacity={0.12} stroke="none" />}
-        {isLine && <path d={linePath} fill="none" stroke="#4f46e5" strokeWidth={2} />}
+        {isLine && <path className="chart-draw" pathLength={1} d={linePath} fill="none" stroke="#4f46e5" strokeWidth={2} />}
         {isLine &&
           data.map((d, i) => (
             <circle
@@ -162,8 +175,10 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
               fill={outlierLabels.has(d.label) ? "#ef4444" : "#4f46e5"}
             />
           ))}
+        {/* dashedPath/softForecastPath KHÔNG dùng chart-draw — class đó set stroke-dasharray:1 qua
+            CSS (ưu tiên hơn XML strokeDasharray), sẽ đè mất hoa văn nét đứt thật nếu áp dụng chung. */}
         {isLine && dashedPath && <path d={dashedPath} fill="none" stroke="#4f46e5" strokeWidth={2} strokeDasharray="4 3" />}
-        {maPath && <path d={maPath} fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeOpacity={0.85} />}
+        {maPath && <path className="chart-draw" pathLength={1} d={maPath} fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeOpacity={0.85} />}
         {softForecastPath && <path d={softForecastPath} fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="3 3" />}
         {isLine && futurePointsXY.map((p, i) => <circle key={`f${i}`} cx={p.x} cy={p.y} r={2.5} fill="#4f46e5" fillOpacity={0.5} />)}
         {isLine &&
@@ -206,8 +221,17 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
           ) : null
         )}
       </svg>
-      <figcaption className="mt-1 space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
-        {trendMessage ? <p>{trendMessage}</p> : null}
+      <figcaption className="mt-1 space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+        {trendMessage
+          ? (() => {
+              const direction = getTrendDirection(trend, movingAverage);
+              return direction ? (
+                <TrendBadge direction={direction} message={trendMessage} />
+              ) : (
+                <p>{trendMessage}</p>
+              );
+            })()
+          : null}
         {maPath ? (
           <p>
             <span className="inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ backgroundColor: "#f59e0b" }} /> Đường cam liền nét:
@@ -244,8 +268,7 @@ function PieChart({ data }: { data: ChartDatum[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   const nonZero = data.filter((d) => d.value > 0);
 
-  // 1 nhóm chiếm 100% → góc cung = 360°, điểm đầu trùng điểm cuối, path cung tròn suy biến
-  // không vẽ ra gì. Vẽ circle thay vì path trong ca này.
+  // 1 nhóm chiếm 100% thì góc cung = 360°, path cung tròn suy biến không vẽ ra gì, phải vẽ circle thay vì path.
   const singleSlice = nonZero.length === 1 ? nonZero[0] : null;
   const singleColor = singleSlice ? PIE_COLORS[data.findIndex((d) => d.label === singleSlice.label) % PIE_COLORS.length] : null;
 

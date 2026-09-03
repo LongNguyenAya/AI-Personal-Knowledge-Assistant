@@ -18,15 +18,13 @@ export function createReminderTool(userId: string) {
         ),
     }),
     execute: async ({ title, content, dueAt, taskTitles }) => {
-      // dueAt do LLM tự sinh, cần validate trước khi dùng — model đôi lúc trả chuỗi không parse
-      // được, ném lỗi thô thay vì trả về lỗi có cấu trúc như nhánh "không tìm thấy task" bên dưới.
+      // dueAt do model tự sinh, validate trước để tránh ném lỗi thô khi sai định dạng.
       const parsedDueAt = new Date(dueAt);
       if (Number.isNaN(parsedDueAt.getTime())) {
         return { success: false, error: `Thời gian "${dueAt}" không hợp lệ (không đúng định dạng ISO 8601). Reminder chưa được tạo.` };
       }
 
-      // Chỉ cần 1 task không tìm thấy theo tên là dừng hẳn, không tạo reminder — tránh tạo ra
-      // reminder thiếu liên kết mà AI/user tưởng đã gắn thành công.
+      // Dừng hẳn nếu có 1 task không tìm thấy, tránh tạo reminder thiếu liên kết mà tưởng đã gắn.
       const resolvedTaskIds: string[] = [];
       for (const t of taskTitles ?? []) {
         const task = await findTaskByTitle(userId, t);
@@ -50,8 +48,7 @@ export function createReminderTool(userId: string) {
         title: created.title,
         dueAt: created.dueAt.toISOString(),
         linkedTaskTitles: taskTitles ?? [],
-        // Báo lại nếu có task nào vừa bị chuyển từ reminder khác sang reminder này (1 task chỉ
-        // thuộc 1 reminder tại 1 thời điểm).
+        // Báo lại nếu có task bị chuyển từ reminder cũ sang (1 task chỉ thuộc 1 reminder/thời điểm).
         note:
           created.relinkedTaskIds.length > 0
             ? "Một số task đã được chuyển liên kết từ reminder cũ sang reminder mới này."

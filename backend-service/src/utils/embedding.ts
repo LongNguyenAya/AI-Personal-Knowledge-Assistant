@@ -15,7 +15,7 @@ export async function embedText(text: string): Promise<number[]> {
   return normalizeVector(values);
 }
 
-// Chuẩn hóa vector — bắt buộc khi dùng outputDimensionality khác 3072 mặc định
+// Chuẩn hoá vector, bắt buộc khi dùng outputDimensionality khác 3072 mặc định
 function normalizeVector(vec: number[]): number[] {
   const norm = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0));
   return vec.map((v) => v / norm);

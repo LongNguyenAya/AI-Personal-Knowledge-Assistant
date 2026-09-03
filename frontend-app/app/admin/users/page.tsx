@@ -1,44 +1,26 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { fetchJson } from "@/lib/fetch-json";
+import { usePagedFetch } from "@/lib/use-paged-fetch";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { PaginationControls } from "@/components/ui/PaginationControls";
 import { useSession } from "@/lib/auth-client";
-import type { UsersResponse } from "@/types/admin";
+import type { AdminUser, UsersResponse } from "@/types/admin";
 
 const PAGE_SIZE = 20;
 
 export default function AdminUsersPage() {
   const { data: session } = useSession();
-  const [data, setData] = useState<UsersResponse | null>(null);
-  const [page, setPage] = useState(1);
+  const { page, setPage, data, error, setError, totalPages, reload } = usePagedFetch<AdminUser>(async (targetPage) => {
+    const result = await fetchJson<UsersResponse>(`/api/admin/users?page=${targetPage}&pageSize=${PAGE_SIZE}`);
+    return { items: result.users, total: result.total, page: result.page, pageSize: result.pageSize };
+  });
+
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<{ id: string; email: string } | null>(null);
 
-  // Chặn race condition khi bấm "Trước"/"Sau" nhanh — cùng pattern ở chat/tasks/reminders. Không
-  // cần tự lùi trang khi rỗng như 2 trang kia, vì khoá/xoá mềm không đổi total (user vẫn hiện,
-  // chỉ đổi trạng thái).
-  const requestSeqRef = useRef(0);
-  const loadUsers = useCallback(async (targetPage: number) => {
-    const seq = ++requestSeqRef.current;
-    try {
-      const result = await fetchJson<UsersResponse>(`/api/admin/users?page=${targetPage}&pageSize=${PAGE_SIZE}`);
-      if (requestSeqRef.current !== seq) return;
-      setData(result);
-      setError(null);
-    } catch (err) {
-      if (requestSeqRef.current !== seq) return;
-      setError(err instanceof Error ? err.message : "Không tải được danh sách user");
-    }
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      await loadUsers(page);
-    })();
-  }, [page, loadUsers]);
-
-  const userList = data?.users ?? null;
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
+  const userList = data?.items ?? null;
 
   async function patchUser(id: string, body: Record<string, boolean>) {
     setPendingId(id);
@@ -48,7 +30,7 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      await loadUsers(page);
+      await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Thao tác thất bại");
     } finally {
@@ -90,9 +72,7 @@ export default function AdminUsersPage() {
             )}
             {userList?.map((u) => {
               const isDeleted = !!u.deletedAt;
-              // Backend đã chặn cứng việc admin tự khoá/xoá chính mình (400) — ẩn nút ở đây chỉ để
-              // UX rõ ràng hơn (biết ngay lý do thay vì bấm rồi mới thấy lỗi), KHÔNG phải lớp bảo
-              // vệ duy nhất, vẫn còn nguyên chặn ở API.
+              // Backend đã chặn cứng việc admin tự khoá/xoá chính mình, ẩn nút ở đây chỉ để UX rõ ràng hơn, không phải lớp bảo vệ duy nhất.
               const isSelf = u.id === session?.user.id;
               return (
                 <tr key={u.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40">
@@ -163,7 +143,7 @@ export default function AdminUsersPage() {
                             {pendingId === u.id ? "..." : u.isActive ? "Khoá" : "Mở khoá"}
                           </button>
                           <button
-                            onClick={() => patchUser(u.id, { softDelete: true })}
+                            onClick={() => setConfirmTarget({ id: u.id, email: u.email })}
                             disabled={pendingId === u.id}
                             className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-800 hover:text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                           >
@@ -180,29 +160,22 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
-      {data && data.total > 0 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-          <span>
-            Trang {page}/{totalPages}
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/40"
-            >
-              Trước
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/40"
-            >
-              Sau
-            </button>
-          </div>
-        </div>
-      )}
+      {data && <PaginationControls page={page} totalPages={totalPages} total={data.total} onPageChange={setPage} />}
+
+      <ConfirmModal
+        open={confirmTarget !== null}
+        title="Xoá tài khoản này?"
+        description={
+          confirmTarget
+            ? `Tài khoản "${confirmTarget.email}" sẽ bị khoá và ẩn khỏi hệ thống ngay lập tức. Có thể khôi phục lại sau.`
+            : ""
+        }
+        onCancel={() => setConfirmTarget(null)}
+        onConfirm={() => {
+          if (confirmTarget) patchUser(confirmTarget.id, { softDelete: true });
+          setConfirmTarget(null);
+        }}
+      />
     </div>
   );
 }

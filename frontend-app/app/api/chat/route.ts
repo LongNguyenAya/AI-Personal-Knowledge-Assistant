@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   if (session.user.isActive === false) return new Response("Account locked", { status: 403 });
   if (session.user.deletedAt) return new Response("Account deleted", { status: 403 });
 
-  const { messages, conversationId } = await req.json();
+  const { messages, conversationId, attachedDocumentId } = await req.json();
   const lastMessage = messages[messages.length - 1];
   const question =
     lastMessage.parts?.find((p: { type: string }) => p.type === "text")?.text ?? "";
@@ -21,12 +21,10 @@ export async function POST(req: Request) {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`,
     },
-    body: JSON.stringify({ message: question, conversationId }),
+    body: JSON.stringify({ message: question, conversationId, attachedDocumentId }),
   });
 
-  // Forward thẳng response kể cả khi backend lỗi sẽ khiến client (useChat) nhận stream sai
-  // định dạng, lỗi hiển thị mù mờ hoặc im lặng — check response.ok trước, giống pattern ở
-  // documents/route.ts.
+  // Forward thẳng response khi backend lỗi sẽ khiến client nhận stream sai định dạng, phải check response.ok trước.
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     return new Response(text || "Backend service lỗi", { status: response.status });

@@ -13,11 +13,7 @@ const METRICS: { value: Metric; label: string }[] = [
   { value: "ai-queries", label: "Lượt hỏi" },
 ];
 
-// Panel dùng CHUNG cho cả 2 khối "Người dùng mới"/"Lượt hỏi AI" — chọn metric bằng nút lọc (giống
-// tab, chọn 1 thì nút còn lại mờ đi) thay vì lặp lại nút "Phân tích" riêng ở từng khối biểu đồ.
-// `view` để phân tích LUÔN khớp đúng khoảng thời gian đang xem ở khối biểu đồ tương ứng — nhận từ
-// component cha (admin/dashboard/page.tsx, nơi giữ state view của cả 2 khối) thay vì tự có view
-// riêng, tránh tình huống biểu đồ xem "1 năm" nhưng phân tích lại đang nói về "7 ngày".
+// Panel dùng chung cho cả 2 khối, chọn metric bằng nút lọc thay vì lặp nút "Phân tích" riêng, `view` nhận từ component cha.
 export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView: View; aiQueriesView: View }) {
   const [metric, setMetric] = useState<Metric>("signups");
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -32,8 +28,7 @@ export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView
     setError(null);
     (async () => {
       try {
-        // Chỉ ĐỌC kết quả đã lưu từ lần bấm gần nhất — không tự chạy AI mới khi đổi metric/view,
-        // giữ đúng yêu cầu "chỉ chạy khi admin chủ động bấm nút".
+        // Chỉ đọc kết quả đã lưu từ lần bấm gần nhất, không tự chạy AI mới khi đổi metric/view.
         setAnalysis(await fetchJson<Analysis | null>(`${endpoint}?view=${view}`));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Không tải được kết quả phân tích");

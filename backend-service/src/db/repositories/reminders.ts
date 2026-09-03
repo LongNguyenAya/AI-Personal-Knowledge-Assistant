@@ -12,8 +12,7 @@ export async function createReminder(
     const [created] = await tx.insert(reminders).values({ userId, ...reminderData }).returning();
     let relinkedFrom: string[] = [];
     if (taskIds && taskIds.length > 0) {
-      // 1 task chỉ thuộc được 1 reminder tại 1 thời điểm — đọc trước reminderId cũ để báo lại
-      // cho caller biết task nào vừa bị "cướp" khỏi reminder trước, tránh ghi đè âm thầm.
+      // 1 task chỉ thuộc 1 reminder, đọc trước reminderId cũ để báo caller task nào vừa bị đổi.
       const previouslyLinked = await tx
         .select({ id: tasks.id })
         .from(tasks)
@@ -26,8 +25,7 @@ export async function createReminder(
   });
 }
 
-// Không JOIN trực tiếp sang tasks (1 reminder nhiều task sẽ nhân dòng) — lấy tên task qua query
-// riêng rồi merge bằng Map, giống cách đã làm ở admin/users.
+// Không JOIN trực tiếp sang tasks (nhân dòng), lấy tên task qua query riêng rồi merge bằng Map.
 async function attachTaskTitles<T extends { id: string }>(rows: T[]): Promise<(T & { taskTitles: string[] })[]> {
   if (rows.length === 0) return [];
   // Phải lọc isNull(deletedAt), không thì push WebSocket/email vẫn nhắc tên task user đã xoá.
@@ -44,8 +42,7 @@ async function attachTaskTitles<T extends { id: string }>(rows: T[]): Promise<(T
   return rows.map((r) => ({ ...r, taskTitles: map.get(r.id) ?? [] }));
 }
 
-// Scheduler quét reminder tới hạn của tất cả user cùng lúc, withUserContext chỉ thấy 1 user
-// nên phải dùng dbAdmin.
+// Scheduler quét tất cả user cùng lúc, withUserContext chỉ thấy 1 user nên phải dùng dbAdmin.
 export async function findDueReminders() {
   const due = await dbAdmin
     .select()
@@ -54,14 +51,12 @@ export async function findDueReminders() {
   return attachTaskTitles(due);
 }
 
-// Đánh dấu ngay sau khi tìm thấy, tránh scheduler quét trúng reminder này lần nữa ở lượt sau.
-// emailSentAt là cột riêng, không đụng ở đây.
+// Đánh dấu ngay sau khi tìm thấy để scheduler không quét trúng lần nữa, emailSentAt là cột riêng.
 export async function markReminderSent(reminderId: string) {
   return dbAdmin.update(reminders).set({ status: "sent" }).where(eq(reminders.id, reminderId));
 }
 
-// Quét độc lập với status (status có thể đã đổi "sent" từ nhánh WebSocket rồi) — email vẫn cần
-// gửi kể cả khi không ai mở app lúc tới hạn. Join sang users luôn để lấy email nhận.
+// Quét độc lập với status vì email vẫn cần gửi dù không ai mở app, join users để lấy email.
 export async function findRemindersNeedingEmail() {
   const due = await dbAdmin
     .select({

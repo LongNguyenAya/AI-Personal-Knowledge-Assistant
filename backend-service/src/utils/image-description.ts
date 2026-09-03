@@ -6,9 +6,7 @@ const PROMPT =
   "thông tin thực sự có trong ảnh (số liệu, biểu đồ, sơ đồ, ảnh chụp...), không suy đoán thêm " +
   "ngoài những gì nhìn thấy được.";
 
-// Tách riêng khỏi extractPdfContent — PDF gửi thẳng cả file cho Gemini đọc (model tự hiểu ảnh lẫn
-// trong đó), nhưng .docx/.pptx được đọc cục bộ (mammoth/JSZip) nên ảnh nhúng bên trong phải tách
-// ra rồi mô tả riêng từng cái mới không bị bỏ sót.
+// Tách riêng khỏi extractPdfContent vì .docx/.pptx đọc cục bộ nên ảnh nhúng phải tách ra mô tả riêng.
 export async function describeImage(buffer: Buffer, mediaType: string): Promise<string> {
   const { text } = await generateText({
     model: google("gemini-flash-lite-latest"),

@@ -27,10 +27,7 @@ export function listTasksTool(userId: string) {
       }
 
       const results = await listTasks(userId, { onlyDone, from: parsedFrom, to: parsedTo });
-      // Phải serialize Date thành ISO string — AI SDK validate nghiêm khi dựng lại prompt cho
-      // bước tool-call tiếp theo trong 1 lượt nhiều bước (Zod chỉ chấp nhận string/number/boolean/
-      // null/record/array, không chấp nhận object Date thô). Để lọt Date thô làm sập CẢ request
-      // (AI_InvalidPromptError), lỗi bị đổ oan cho bất kỳ tool nào chạy sau đó trong cùng lượt.
+      // Serialize Date thành ISO string, AI SDK không chấp nhận Date thô, để lọt sẽ sập cả request.
       const tasks = results.map((t) => ({ ...t, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() }));
       return { tasks, count: tasks.length };
     },

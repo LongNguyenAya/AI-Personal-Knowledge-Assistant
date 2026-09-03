@@ -6,18 +6,24 @@ import { withUserContext } from "@/lib/db-context";
 import { withAuthedContext } from "@/lib/with-authed-context";
 import { mintBackendToken } from "@/lib/backend-token";
 import { BACKEND_URL } from "@/lib/config";
+import { getSettingValue } from "@/lib/settings";
 
 export const GET = withAuthedContext(async (req, { session, tx }) => {
   const list = await tx
-    .select({ id: documents.id, fileName: documents.fileName, status: documents.status, createdAt: documents.createdAt })
+    .select({
+      id: documents.id,
+      fileName: documents.fileName,
+      status: documents.status,
+      createdAt: documents.createdAt,
+      flaggedSuspicious: documents.flaggedSuspicious,
+      flagReason: documents.flagReason,
+    })
     .from(documents)
     .where(eq(documents.userId, session.user.id))
     .orderBy(desc(documents.createdAt));
 
   return Response.json(list);
 });
-
-const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // khớp giới hạn chung ở backend-service (document-ingestion.ts)
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -30,15 +36,17 @@ export async function POST(req: Request) {
   if (!(file instanceof File) || file.size === 0) {
     return new Response("Thiếu file hoặc file rỗng", { status: 400 });
   }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return new Response(`File quá lớn — tối đa ${MAX_UPLOAD_BYTES / 1024 / 1024}MB`, { status: 400 });
+
+  // Admin tự chỉnh qua /admin/settings, khớp "maxUploadMb" phía backend-service.
+  const maxUploadMb = await getSettingValue("maxUploadMb");
+  if (file.size > maxUploadMb * 1024 * 1024) {
+    return new Response(`File quá lớn — tối đa ${maxUploadMb}MB`, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const key = `uploads/${session.user.id}/documents/${Date.now()}-${file.name}`;
 
-  // Insert trong 1 transaction ngắn — không dùng withAuthedContext ở đây vì nó sẽ giữ
-  // transaction mở suốt cuộc gọi fetch bên dưới, mà embedding có thể mất vài giây.
+  // Insert trong 1 transaction ngắn, không dùng withAuthedContext vì nó sẽ giữ transaction mở suốt cuộc gọi fetch embedding.
   const [doc] = await withUserContext(session.user.id, (tx) =>
     tx.insert(documents).values({
       userId: session.user.id,
@@ -66,9 +74,7 @@ export async function POST(req: Request) {
     });
     if (!response.ok) throw new Error(`backend-service trả về status ${response.status}`);
   } catch (err) {
-    // fetch() có thể NÉM LỖI (mất kết nối/timeout tới backend-service), không chỉ trả về
-    // !response.ok — nếu không bắt ở đây, dòng document đã insert phía trên (status="uploaded")
-    // sẽ kẹt vĩnh viễn, không ai cập nhật thành "failed", user chỉ còn cách xoá rồi upload lại.
+    // fetch() có thể ném lỗi (mất kết nối/timeout) chứ không chỉ trả !response.ok, không bắt thì document kẹt vĩnh viễn ở "uploaded".
     console.error("[documents/upload] Forward sang backend-service thất bại:", err);
     await withUserContext(session.user.id, (tx) =>
       tx.update(documents).set({ status: "failed" }).where(eq(documents.id, doc.id))

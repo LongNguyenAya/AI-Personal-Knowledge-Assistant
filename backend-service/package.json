@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
-    "dev": "tsx watch --env-file=.env src/index.ts"
+    "dev": "tsx watch --env-file=.env src/index.ts",
+    "eval:router": "tsx --env-file=.env scripts/eval-router.ts"
   },
   "keywords": [],
   "author": "",
