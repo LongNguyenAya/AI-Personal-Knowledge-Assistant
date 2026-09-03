@@ -11,10 +11,12 @@ function routeDecision(state: typeof OrchestratorState.State) {
   return "action"; // "unknown" -> fallback, để action tự xử lý hoặc trả lời chung chung
 }
 
+// "both" cần chạy tiếp action sau khi research xong, các route khác kết thúc luôn.
 function afterResearch(state: typeof OrchestratorState.State) {
   return state.route === "both" ? "action" : "finalize";
 }
 
+// Gộp kết quả cuối, ưu tiên actionResult vì đã bao gồm cả research nếu route both.
 function finalizeNode(state: typeof OrchestratorState.State) {
   const finalResponse = state.actionResult || state.researchResult || "Xin lỗi, tôi chưa hiểu ý bạn.";
   return { finalResponse };

@@ -2,10 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { getDocumentChunks } from "../../db/repositories/chunks";
 
-// Không gọi AI bên trong (khác extractActionItemsTool) — chỉ trả về nội dung THÔ của (các) tài
-// liệu được nêu tên, để chính agent đang chạy (đã thấy câu hỏi gốc: tóm tắt hay so sánh) tự viết
-// câu trả lời cuối cùng — tránh tốn thêm 1 lệnh AI lồng bên trong tool, vì kết quả ở đây là văn
-// bản tự do, không cần ép cấu trúc JSON như extractActionItems (dùng tiếp cho createReminder).
+// Không gọi AI bên trong, chỉ trả nội dung thô để agent đang chạy tự tóm tắt/so sánh.
 export function readFullDocumentsTool(userId: string) {
   return tool({
     description:
@@ -25,11 +22,11 @@ export function readFullDocumentsTool(userId: string) {
       const results = await Promise.all(
         documentIds.map(async (documentId) => {
           const docChunks = await getDocumentChunks(userId, documentId);
-          return { documentId, content: docChunks.map((c) => c.content).join("\n\n") };
+          return { documentId, rawContent: docChunks.map((c) => c.content).join("\n\n") };
         })
       );
 
-      const missing = results.filter((r) => r.content.length === 0);
+      const missing = results.filter((r) => r.rawContent.length === 0);
       if (missing.length > 0) {
         return {
           success: false as const,
@@ -37,7 +34,13 @@ export function readFullDocumentsTool(userId: string) {
         };
       }
 
-      return { success: true as const, documents: results };
+      // Bọc <document_content>, action prompt đã dặn coi đây là dữ liệu chứ không phải lệnh.
+      const documentsOut = results.map((r) => ({
+        documentId: r.documentId,
+        content: `<document_content>\n${r.rawContent}\n</document_content>`,
+      }));
+
+      return { success: true as const, documents: documentsOut };
     },
   });
 }

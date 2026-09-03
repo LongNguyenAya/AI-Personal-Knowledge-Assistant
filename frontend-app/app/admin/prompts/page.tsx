@@ -21,6 +21,10 @@ const LABELS: Record<AgentPrompt["agentType"], { title: string; desc: string }> 
     title: "PDF Extraction",
     desc: "Trích xuất nội dung + mô tả ảnh khi upload PDF",
   },
+  image_extraction: {
+    title: "Image Extraction",
+    desc: "Trích xuất nội dung khi upload ảnh chụp (ghi chú, bảng trắng, ảnh chụp trang tài liệu...)",
+  },
 };
 
 export default function AdminPromptsPage() {

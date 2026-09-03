@@ -2,18 +2,10 @@ import { tool, generateObject } from "ai";
 import { groq } from "@ai-sdk/groq";
 import { z } from "zod";
 
-// Model riêng, rẻ/nhanh, chỉ dùng cho việc so khớp — không cần model mạnh cho tác vụ nhị phân này.
-// Cố tình dùng nhà cung cấp KHÁC Gemini (không phải để né rate-limit — dùng free tier riêng của
-// Groq cho đúng mục đích của họ), tách biệt hoàn toàn khỏi quota chính đang dùng cho sinh câu trả lời.
-// PHẢI là openai/gpt-oss-20b (hoặc -120b) — đây là 2 model DUY NHẤT trên Groq hỗ trợ
-// response_format json_schema mà generateObject cần; llama-3.1-8b-instant trả lỗi 400 ngay lập tức.
+// Model riêng (Groq), rẻ và nhanh, openai/gpt-oss-20b là 1 trong 2 model Groq hỗ trợ json_schema.
 const VERIFICATION_MODEL = "openai/gpt-oss-20b";
 
-// Lớp kiểm tra THỨ 2, sau khi đã qua kiểm tra ID (citedDocumentIds có tồn tại) — lớp này kiểm tra
-// NỘI DUNG câu trả lời có thực sự được suy ra đúng từ nguồn hay không (lỗi loại 1/2: gán nhầm ý,
-// pha trộn kiến thức ngoài nguồn), thứ kiểm tra ID không bắt được. Fail gracefully — nếu Groq lỗi/
-// rate-limit, KHÔNG chặn câu trả lời chính, vì lớp kiểm tra ID (code thuần, không phụ thuộc Groq)
-// vẫn đang bảo vệ độc lập.
+// Lớp kiểm tra thứ 2, xem nội dung có suy ra đúng từ nguồn không, fail gracefully nếu Groq lỗi.
 async function verifyContentMatch(answer: string, sourceContents: string[]): Promise<{ supported: boolean; reason: string | null }> {
   if (sourceContents.length === 0) return { supported: true, reason: null };
 
@@ -37,10 +29,7 @@ async function verifyContentMatch(answer: string, sourceContents: string[]): Pro
   }
 }
 
-// Bắt buộc research agent trả lời qua tool này (toolChoice ép trong research-node.ts) thay vì
-// text tự do — cho phép code kiểm tra citedDocumentIds trước khi chấp nhận câu trả lời, thay vì
-// tin lời model tự nói đã dùng nguồn nào. So sánh tập hợp thuần (0 lệnh gọi AI) — nếu có ID lạ,
-// trả lỗi để model tự viết lại ở bước sau (retry qua multi-step, không phải lệnh gọi AI mới).
+// Ép trả lời qua tool này để code kiểm tra citedDocumentIds thật, ID lạ thì trả lỗi cho model viết lại.
 export function submitAnswerTool(contentsByDocumentId: Map<string, string[]>) {
   const retrievedDocumentIds = new Set(contentsByDocumentId.keys());
 
@@ -78,12 +67,7 @@ export function submitAnswerTool(contentsByDocumentId: Map<string, string[]>) {
   });
 }
 
-// toolChoice ép gọi submitAnswer MỖI bước (không có cách nào để model tự "kết thúc lượt" bằng
-// text thường) — nên nếu chỉ dùng stepCountIs(3) làm điều kiện dừng DUY NHẤT, model bị buộc phải
-// gọi submitAnswer đủ 3 LẦN dù lần đầu đã accepted=true, tốn gấp 3 lệnh gọi Gemini (và cả Groq,
-// nếu có trích nguồn) một cách vô ích — phát hiện được qua Langfuse (3 GENERATION + 3 TOOL call
-// cho 1 câu hỏi vốn chỉ cần 1). Thêm điều kiện dừng SỚM này để kết hợp cùng stepCountIs(3) (dùng
-// dạng mảng, dừng khi có 1 điều kiện đúng): dừng ngay khi bước gần nhất đã accepted=true.
+// Thiếu điều kiện dừng sớm này, model bị buộc gọi đủ 3 lần dù đã accepted từ lần đầu.
 export function stopWhenAnswerAccepted({ steps }: { steps: { toolResults: { toolName: string; output: unknown }[] }[] }): boolean {
   const lastStep = steps[steps.length - 1];
   return lastStep?.toolResults.some(
@@ -91,12 +75,7 @@ export function stopWhenAnswerAccepted({ steps }: { steps: { toolResults: { tool
   ) ?? false;
 }
 
-// toolResults của generateText đã có sẵn cả input (args gốc) lẫn output (kết quả execute) cho mỗi
-// lần gọi — không cần dò riêng mảng toolCalls để khớp toolCallId.
-// Trả kèm citedDocumentIds (không chỉ answer) — bên gọi cần nó để lọc lại phần "Nguồn" hiện cho
-// user đúng bằng những gì model THỰC SỰ trích (đã qua kiểm tra), không phải mọi tài liệu đã truy
-// xuất — 2 tập này khác nhau, nhầm lẫn giữa chúng từng khiến "Nguồn" hiện cả tài liệu không liên
-// quan, kể cả khi model từ chối trả lời vì không tìm thấy thông tin.
+// Trả kèm citedDocumentIds để hiện đúng "Nguồn", tránh nhầm với tập "đã truy xuất" từng hiện sai.
 export function extractGroundedAnswer(
   toolResults: { toolName: string; input: unknown; output: unknown }[]
 ): { answer: string; citedDocumentIds: string[] } | null {

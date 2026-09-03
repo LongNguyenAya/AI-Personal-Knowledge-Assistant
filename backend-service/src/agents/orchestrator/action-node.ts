@@ -9,6 +9,8 @@ import { createChartTool } from "../tools/create-chart";
 import { proposeKnowledgeNoteTool } from "../tools/propose-knowledge-note";
 import { extractActionItemsTool } from "../tools/extract-action-items";
 import { readFullDocumentsTool } from "../tools/read-full-documents";
+import { noteObservationTool } from "../tools/note-observation";
+import { createDiagramTool } from "../tools/create-diagram";
 import { buildActionAgentSystemPrompt } from "../prompts";
 import { OrchestratorState } from "./state";
 import { appendMessage } from "../../db/repositories/chat-history";
@@ -23,9 +25,12 @@ function buildActionTools(userId: string) {
     proposeKnowledgeNote: proposeKnowledgeNoteTool(userId),
     extractActionItems: extractActionItemsTool(userId),
     readFullDocuments: readFullDocumentsTool(userId),
+    noteObservation: noteObservationTool(userId),
+    createDiagram: createDiagramTool(),
   };
 }
 
+// Bản không streaming, dùng cho route both (research trước, action sau).
 export async function actionNode(state: typeof OrchestratorState.State) {
   const contextHint = state.researchResult
     ? `\n\nThông tin đã tra cứu được trước đó: ${state.researchResult}`
@@ -43,8 +48,7 @@ export async function actionNode(state: typeof OrchestratorState.State) {
   return { actionResult: text };
 }
 
-// Bản streaming của actionNode — dùng làm bước trả lời cuối cho user (route "action" hoặc
-// "both"), lấy researchResult làm ngữ cảnh nếu có.
+// Bản streaming của actionNode, dùng làm bước trả lời cuối, lấy researchResult làm ngữ cảnh nếu có.
 export async function streamActionAnswer(state: {
   userId: string;
   message: string;
@@ -64,13 +68,12 @@ export async function streamActionAnswer(state: {
     stopWhen: stepCountIs(5),
     telemetry: { functionId: "action-node-stream" },
     onFinish: ({ text, toolResults }) => {
-      // Lưu kèm kết quả tool call (vd createChart) để phục dựng lại UI part khi tải lại lịch sử
-      // hội thoại — không thì chart chỉ hiện được lúc đang stream trực tiếp, mất ngay khi reload.
+      // Lưu kèm input/output tool call để phục dựng UI part và hiện trace khi tải lại lịch sử.
       const persistedToolResults = toolResults
         .filter((r) => r.type === "tool-result")
-        .map((r) => ({ toolName: r.toolName, output: r.output }));
+        .map((r) => ({ toolName: r.toolName, input: r.input, output: r.output }));
 
-      // .catch() bắt buộc — xem giải thích trong orchestrator/research-node.ts's streamResearchAnswer.
+      // .catch() bắt buộc, xem giải thích trong research-node.ts streamResearchAnswer.
       appendMessage(state.userId, state.conversationId, "assistant", text, persistedToolResults).catch((err) =>
         console.error("[action-node] Lỗi khi lưu tin nhắn assistant:", err)
       );

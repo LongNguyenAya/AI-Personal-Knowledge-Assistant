@@ -2,12 +2,8 @@ import { agentPrompts, users } from "@ai-assistant/db/src/schema";
 import { eq } from "drizzle-orm";
 import { dbAdmin } from "../src/db/admin-client";
 
-// Chạy 1 lần — đưa 4 prompt đang hardcode vào bảng agent_prompts, làm nguồn thật từ giờ trở đi.
-// Không ghi admin_audit_log vì đây là migration dữ liệu, không phải thao tác qua UI admin.
-//
-// Thiếu PDF_EXTRACTION_TEMPLATE ở đây từng khiến mọi lần upload PDF trên môi trường DB mới
-// (Neon) báo "failed" ngay lập tức — pdf-extraction.ts gọi getActivePrompt("pdf_extraction"),
-// không tìm thấy row nào thì throw, rơi xuống catch chung của processDocumentIngestion.
+// Chạy 1 lần — đưa 4 prompt đang hardcode vào bảng agent_prompts, làm nguồn thật từ giờ. Thiếu
+// PDF_EXTRACTION_TEMPLATE từng khiến mọi upload PDF trên DB mới (Neon) báo "failed" ngay lập tức.
 
 const RESEARCH_TEMPLATE = `Bạn là trợ lý nghiên cứu tài liệu. Chỉ trả lời dựa trên context được cung cấp dưới đây. Nếu context không đủ thông tin để trả lời, hãy nói rõ là không tìm thấy thông tin liên quan, không tự bịa.
 

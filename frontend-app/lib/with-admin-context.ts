@@ -3,10 +3,7 @@ import { headers } from "next/headers";
 import { dbAdmin } from "./db-admin";
 import type { Session } from "@/types/auth";
 
-// Song song với with-authed-context.ts nhưng không dùng chung — route admin cần dbAdmin (bypass
-// RLS) thay vì tx theo 1 user, và cần check role="admin" chứ không chỉ check đã đăng nhập.
-// middleware.ts chỉ chặn "/admin/*", không chặn "/api/admin/*" (khác prefix), nên route admin
-// phải tự check quyền ở đây, không dựa vào middleware.
+// Song song với with-authed-context.ts nhưng không dùng chung, vì middleware.ts không chặn "/api/admin/*" nên phải tự check quyền.
 export function withAdminContext<P = Record<string, never>>(
   handler: (req: Request, ctx: { session: Session; params: P; db: typeof dbAdmin }) => Promise<Response>
 ) {

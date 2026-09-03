@@ -1,17 +1,16 @@
 import MainNav from "./_components/main-nav";
+import { WsProvider } from "@/components/WsProvider";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  // flex-col trên mobile — MainNav tự render 1 thanh top-bar (không phải sidebar) khi màn hình hẹp,
-  // phải xếp CHỒNG lên trên <main> thay vì nằm CẠNH (flex-row) như ở md+, nếu không thanh top-bar
-  // sẽ bị đẩy thành 1 cột hẹp đứng cạnh main do là flex item cùng hàng.
+  // flex-col trên mobile để MainNav xếp chồng lên <main>, h-screen chốt cứng 100vh, WsProvider đặt ở đây vì WS chỉ cần cho khu vực đã đăng nhập.
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 md:flex-row dark:bg-gray-950">
-      <MainNav />
-      {/* Không giới hạn max-width ở đây nữa — trang chat cần dùng hết chiều rộng còn lại (đúng bố
-          cục trong ảnh mẫu), trong khi các trang danh sách đơn giản (tasks/reminders/documents) tự
-          giới hạn max-w-4xl ngay trong chính file của chúng, vì chỉ những trang đó mới cần đọc dễ
-          hơn khi bị bó hẹp lại. */}
-      <main className="flex-1 overflow-x-auto px-6 py-8">{children}</main>
-    </div>
+    <WsProvider>
+      <div className="flex h-screen flex-col overflow-hidden bg-gray-50 md:flex-row dark:bg-gray-950">
+        <MainNav />
+        {/* Không giới hạn max-width ở đây — trang chat cần dùng hết chiều rộng còn lại, còn các
+            trang danh sách (tasks/reminders/documents) tự giới hạn max-w-4xl trong chính file chúng. */}
+        <main className="min-h-0 flex-1 overflow-x-auto overflow-y-auto px-6 py-8">{children}</main>
+      </div>
+    </WsProvider>
   );
 }

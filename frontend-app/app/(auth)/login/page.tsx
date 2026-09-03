@@ -5,15 +5,13 @@ import { signIn } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-// better-auth trả nguyên văn tiếng Anh cho các mã lỗi cố định — dịch lại cho khớp phần còn lại
-// của UI, giữ nguyên (hiển thị thẳng) các lỗi khác không nằm trong danh sách này.
+// better-auth trả nguyên văn tiếng Anh cho các mã lỗi cố định, dịch lại cho khớp UI, giữ nguyên các lỗi khác.
 const KNOWN_ERROR_MESSAGES: Record<string, string> = {
   "Email not verified": "Tài khoản chưa xác nhận email — chúng tôi vừa gửi lại 1 email xác nhận mới, vui lòng kiểm tra hộp thư.",
   "Invalid email or password": "Sai email hoặc mật khẩu.",
 };
 
-// ?error=... xuất hiện khi user bấm link xác nhận email đã hết hạn/không hợp lệ (better-auth tự
-// redirect về callbackURL kèm query này, xem app/page.tsx).
+// ?error=... xuất hiện khi user bấm link xác nhận email đã hết hạn/không hợp lệ, better-auth tự redirect kèm query này.
 const VERIFY_ERROR_MESSAGE = "Đường dẫn xác nhận không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại để nhận email xác nhận mới.";
 
 function LoginForm() {
@@ -21,9 +19,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Lazy initializer thay vì useEffect+setState — ?error= chỉ cần đọc 1 lần lúc mount, không
-  // phải state đồng bộ hoá liên tục với searchParams (tránh cascading render, cũng tránh lỗi
-  // react-hooks/set-state-in-effect của React Compiler).
+  // Lazy initializer thay vì useEffect+setState, vì ?error= chỉ cần đọc 1 lần lúc mount, tránh cascading render.
   const [error, setError] = useState<string | null>(() => (searchParams.get("error") ? VERIFY_ERROR_MESSAGE : null));
   const [loading, setLoading] = useState(false);
 

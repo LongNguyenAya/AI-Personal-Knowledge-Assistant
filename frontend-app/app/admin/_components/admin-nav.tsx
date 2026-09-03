@@ -1,13 +1,15 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Sparkles, BookOpen } from "lucide-react";
+import { LayoutDashboard, Users, Sparkles, BookOpen, SlidersHorizontal, ScrollText } from "lucide-react";
 
 const LINKS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/prompts", label: "Prompts", icon: Sparkles },
   { href: "/admin/knowledge", label: "Knowledge base", icon: BookOpen },
+  { href: "/admin/settings", label: "Settings", icon: SlidersHorizontal },
+  { href: "/admin/audit", label: "Audit Log", icon: ScrollText },
 ];
 
 export default function AdminNav() {

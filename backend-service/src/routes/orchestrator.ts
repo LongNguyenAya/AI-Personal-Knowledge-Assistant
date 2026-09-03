@@ -11,13 +11,12 @@ import {
   assertConversationOwnership,
   listMessages,
   appendMessage,
+  setConversationTitleIfEmpty,
 } from "../db/repositories/chat-history";
 import { rateLimiter } from "../middleware/rate-limit";
 import type { AppEnv } from "../types";
 
-// researchNode() (nhánh "both") KHÔNG chạy trong 1 stream — nếu nó ném lỗi tạm thời của provider,
-// phải tự dựng 1 response dạng UI message stream chỉ chứa đúng thông báo đó, để user thấy đúng
-// dạng tin nhắn quen thuộc thay vì rơi xuống app.onError (JSON 500 chung, không có ngữ cảnh).
+// researchNode() nhánh both không chạy trong stream, lỗi provider tạm thời thì tự dựng UI message stream.
 function overloadedResponse() {
   return createUIMessageStreamResponse({
     stream: createUIMessageStream({
@@ -34,14 +33,11 @@ const app = new Hono<AppEnv>();
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Dùng chung 1 cặp bucket "chat-minute"/"chat-day" cho cả 2 endpoint — 1 tin nhắn chat đã tốn
-// 2-7 lệnh gọi Gemini (router + research/action, action lại cho phép tối đa 5 vòng tool-calling),
-// nên không cho user lách giới hạn bằng cách gọi endpoint debug thay vì endpoint stream.
-const chatPerMinute = rateLimiter({ windowMs: 60 * 1000, max: 10, name: "chat-minute" });
-const chatPerDay = rateLimiter({ windowMs: 24 * 60 * 60 * 1000, max: 100, name: "chat-day" });
+// Dùng chung 1 cặp bucket cho cả 2 endpoint để không cho user lách giới hạn qua endpoint debug.
+const chatPerMinute = rateLimiter({ windowMs: 60 * 1000, maxSettingKey: "chatPerMinuteLimit", name: "chat-minute" });
+const chatPerDay = rateLimiter({ windowMs: 24 * 60 * 60 * 1000, maxSettingKey: "chatPerDayLimit", name: "chat-day" });
 
-// Endpoint gốc, không streaming — giữ lại để test nhanh qua Postman.
-// Cố ý không có lịch sử hội thoại, chỉ dùng debug/test từng phần.
+// Endpoint gốc không streaming, giữ lại để test nhanh qua Postman, cố ý không có lịch sử hội thoại.
 app.post("/agent/orchestrate", chatPerMinute, chatPerDay, async (c) => {
   const userId = c.get("userId");
   const { message } = await c.req.json();
@@ -50,18 +46,15 @@ app.post("/agent/orchestrate", chatPerMinute, chatPerDay, async (c) => {
   return c.json({ response });
 });
 
-// Endpoint streaming — dùng bởi chat UI thật. Router quyết định route trước (nhanh, không
-// streaming), rồi node tương ứng stream câu trả lời cuối cùng thẳng cho client.
+// Endpoint streaming dùng bởi chat UI thật, router quyết định route trước rồi mới stream câu trả lời.
 app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
   const userId = c.get("userId");
-  const { message, conversationId: requestedConversationId } = await c.req.json();
+  const { message, conversationId: requestedConversationId, attachedDocumentId } = await c.req.json();
 
-  // frontend-app quyết định cuộc hội thoại nào đang active (nút "Cuộc trò chuyện mới" tạo
-  // conversation ở đó) — ở đây chỉ xác minh conversationId gửi lên thật sự thuộc về user này.
+  // frontend-app quyết định conversation nào đang active, ở đây chỉ xác minh nó thuộc về user này.
   let conversationId: string;
   if (requestedConversationId) {
-    // Validate format trước khi query — chuỗi không phải UUID sẽ khiến Postgres ném lỗi, rơi
-    // xuống global onError thành 500, trong khi ý định thật ở đây là trả 400.
+    // Validate format trước khi query, chuỗi không phải UUID sẽ khiến Postgres ném lỗi 500 thay vì 400.
     if (!UUID_RE.test(requestedConversationId)) {
       return c.json({ error: "Invalid conversationId" }, 400);
     }
@@ -73,13 +66,10 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
     conversationId = latest ? latest.id : (await createConversation(userId)).id;
   }
 
-  // Lưu tin nhắn user ngay trước khi xử lý — nếu model lỗi giữa chừng, tin nhắn user vẫn không bị mất.
+  // Lưu tin nhắn user ngay trước khi xử lý, model lỗi giữa chừng thì tin nhắn vẫn không mất.
   const priorMessages = await listMessages(userId, conversationId);
 
-  // Model mặc định chỉ "nhớ" được đúng câu chữ nó tự nói (content) — không thấy lại dữ liệu thật
-  // của chart đã tạo, nên không trả lời được câu hỏi về 1 điểm dữ liệu nó chưa từng nhắc tới. Chèn
-  // thêm dữ liệu đầy đủ vào ĐÚNG 1 tin nhắn — chart GẦN NHẤT — không phải mọi chart từng hiện
-  // trong hội thoại, để tránh phình token vô hạn khi hội thoại dài.
+  // Model không thấy lại dữ liệu thật của chart cũ, chèn thêm dữ liệu vào đúng tin nhắn chart gần nhất.
   let lastChartMessageIndex = -1;
   for (let i = priorMessages.length - 1; i >= 0; i--) {
     if (priorMessages[i].toolResults?.some((tr) => tr.toolName === "createChart")) {
@@ -98,6 +88,16 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
   });
 
   await appendMessage(userId, conversationId, "user", message);
+  // Không chặn response chờ bước này, đặt tên chỉ là phụ trợ hiển thị, lỗi ở đây không đáng trì hoãn.
+  setConversationTitleIfEmpty(userId, conversationId, message).catch((err) =>
+    console.error("[orchestrator] Không đặt được tên cuộc trò chuyện:", err)
+  );
+
+  // Đính kèm tài liệu trong composer thì bỏ qua router, luôn coi là research trong đúng tài liệu đó.
+  if (attachedDocumentId) {
+    const stream = await streamResearchAnswer({ userId, message, history, conversationId, documentId: attachedDocumentId });
+    return createUIMessageStreamResponse({ stream });
+  }
 
   const { route } = await routerNode({ message });
 
@@ -124,7 +124,7 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
     return result.toUIMessageStreamResponse({ onError: toUserFacingErrorMessage });
   }
 
-  // "action" hoặc "unknown" — action luôn là bước cuối, khớp fallback của routeDecision() ở agents/orchestrator/index.ts
+  // action hoặc unknown, action luôn là bước cuối, khớp fallback của routeDecision() ở index.ts
   const result = await streamActionAnswer({ userId, message, history, conversationId });
   return result.toUIMessageStreamResponse({ onError: toUserFacingErrorMessage });
 });

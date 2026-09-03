@@ -1,8 +1,7 @@
 import { SQSClient, SendMessageCommand, ReceiveMessageCommand, DeleteMessageCommand } from "@aws-sdk/client-sqs";
 import type { DocumentIngestionMessage } from "../types/sqs";
 
-// Không truyền credentials tường minh — SDK tự đọc AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/
-// AWS_REGION từ process.env (default credential provider chain), khớp đúng .env đã cấu hình.
+// Không truyền credentials tường minh, SDK tự đọc từ process.env theo default credential provider chain.
 const sqsClient = new SQSClient({});
 
 const QUEUE_URL = process.env.SQS_QUEUE_URL;
@@ -19,8 +18,7 @@ export async function sendIngestionMessage(payload: DocumentIngestionMessage): P
   );
 }
 
-// WaitTimeSeconds: 20 = long polling — SQS giữ kết nối chờ tới 20s nếu chưa có message, thay vì
-// trả rỗng ngay rồi phải tự lặp lại liên tục (short polling tốn nhiều lệnh gọi API hơn hẳn).
+// WaitTimeSeconds: 20 là long polling, SQS giữ kết nối chờ thay vì trả rỗng ngay như short polling.
 export async function receiveIngestionMessages() {
   if (!QUEUE_URL) {
     throw new Error("SQS_QUEUE_URL chưa được set trong .env.");
@@ -38,4 +36,26 @@ export async function receiveIngestionMessages() {
 export async function deleteIngestionMessage(receiptHandle: string): Promise<void> {
   if (!QUEUE_URL) return;
   await sqsClient.send(new DeleteMessageCommand({ QueueUrl: QUEUE_URL, ReceiptHandle: receiptHandle }));
+}
+
+// Queue riêng cho digest tuần, không có hàm send vì bên gửi là AWS EventBridge Scheduler.
+const DIGEST_QUEUE_URL = process.env.WEEKLY_DIGEST_QUEUE_URL;
+
+export async function receiveDigestTriggerMessages() {
+  if (!DIGEST_QUEUE_URL) {
+    throw new Error("WEEKLY_DIGEST_QUEUE_URL chưa được set trong .env.");
+  }
+  const { Messages } = await sqsClient.send(
+    new ReceiveMessageCommand({
+      QueueUrl: DIGEST_QUEUE_URL,
+      MaxNumberOfMessages: 1,
+      WaitTimeSeconds: 20,
+    })
+  );
+  return Messages ?? [];
+}
+
+export async function deleteDigestTriggerMessage(receiptHandle: string): Promise<void> {
+  if (!DIGEST_QUEUE_URL) return;
+  await sqsClient.send(new DeleteMessageCommand({ QueueUrl: DIGEST_QUEUE_URL, ReceiptHandle: receiptHandle }));
 }

@@ -28,33 +28,26 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    // Chặn ngay tại /sign-in/email nếu chưa xác nhận email — hành vi có sẵn của better-auth,
-    // không cần tự viết check trong hooks.before.
+    // Chặn ngay tại /sign-in/email nếu chưa xác nhận email, đây là hành vi có sẵn của better-auth.
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
       await sendResetPasswordEmail(user.id, user.email, url);
     },
-    // Đặt lại mật khẩu xong thì huỷ hết session cũ — phòng trường hợp mật khẩu bị lộ khiến ai đó
-    // khác đang có session sống trên máy/thiết bị khác, tránh họ vẫn dùng được sau khi user đổi mk.
+    // Đặt lại mật khẩu xong thì huỷ hết session cũ, phòng trường hợp mật khẩu bị lộ và ai đó khác đang có session sống.
     revokeSessionsOnPasswordReset: true,
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
       await sendVerificationEmail(user.id, user.email, url);
     },
-    // Tự gửi email ngay sau /sign-up/email — không cần client tự gọi thêm API riêng.
+    // Tự gửi email ngay sau /sign-up/email, không cần client tự gọi thêm API riêng.
     sendOnSignUp: true,
-    // Link xác nhận hết hạn sau 1 tiếng, và việc gửi email cũng có thể lỗi — app chưa có nút
-    // "gửi lại" nào. Bật cờ này thì mỗi lần user cố đăng nhập lúc chưa xác nhận, better-auth tự
-    // gửi 1 email mới — coi như đường phục hồi duy nhất, đỡ phải xây riêng 1 trang/API cho việc đó.
+    // App chưa có nút "gửi lại" nên bật cờ này để better-auth tự gửi email mới mỗi lần cố đăng nhập lúc chưa xác nhận.
     sendOnSignIn: true,
-    // Bấm link xác nhận trong email xong là có session luôn, không cần đăng nhập lại lần nữa.
-    // callbackURL mặc định "/" khớp sẵn với app/page.tsx.
+    // Bấm link xác nhận trong email xong là có session luôn, callbackURL mặc định "/" khớp sẵn với app/page.tsx.
     autoSignInAfterVerification: true,
   },
-  // Chặn ngay ở bước sign-in, khác isActive (vẫn cho đăng nhập, chỉ chặn gọi API sau đó). Phải
-  // dùng dbAdmin vì lúc này chưa xác thực xong, chưa có current_user_id cho RLS dựa vào — dùng
-  // `db` thường thì RLS lọc sạch mọi dòng, check này sẽ luôn báo sai là "không tìm thấy user".
+  // Phải dùng dbAdmin vì chưa xác thực xong nên chưa có current_user_id cho RLS, `db` thường sẽ luôn báo sai "không tìm thấy user".
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== "/sign-in/email") return;
@@ -79,9 +72,7 @@ export const auth = betterAuth({
         defaultValue: true,
         input: false,
       },
-      // Soft-delete trước đây chỉ chặn được lúc đăng nhập mới (qua hooks.before ở trên) — user
-      // có session sẵn (tự gia hạn mỗi 6h hoạt động) vẫn dùng app bình thường vô thời hạn. Đưa
-      // deletedAt vào session.user để các route tự check ngay, không cần query DB riêng mỗi lần.
+      // Soft-delete trước đây chỉ chặn lúc đăng nhập mới, đưa deletedAt vào session.user để route tự check ngay cả session cũ.
       deletedAt: {
         type: "date",
         required: false,

@@ -3,8 +3,7 @@ import { sql, eq, and } from "drizzle-orm";
 import { withUserContext } from "../context";
 import type { NewChunk } from "../../types/chunks";
 
-// Ghi tất cả chunk của 1 tài liệu trong cùng 1 transaction — 1 tài liệu nên ghi hết hoặc không
-// ghi gì, tránh dừng nửa chừng để lại vài chunk mồ côi.
+// Ghi tất cả chunk trong cùng 1 transaction, tránh dừng nửa chừng để lại chunk mồ côi.
 export async function insertChunks(userId: string, documentId: string, items: NewChunk[]) {
   return withUserContext(userId, async (tx) => {
     for (const item of items) {
@@ -13,18 +12,18 @@ export async function insertChunks(userId: string, documentId: string, items: Ne
   });
 }
 
-// Giới hạn tối đa maxPerDocument chunk/tài liệu trước khi lấy top totalLimit, để tài liệu dài
-// (nhiều chunk) không nuốt hết chỗ của tài liệu ngắn trong top-K dù cả hai đều liên quan — dùng
-// ROW_NUMBER() OVER (PARTITION BY document_id ...) để đánh số thứ hạng chunk trong từng tài liệu.
+// Giới hạn maxPerDocument trước khi lấy top totalLimit, tránh tài liệu dài nuốt hết chỗ tài liệu ngắn.
 export async function findRelevantChunks(
   userId: string,
   embedding: number[],
-  options: { maxPerDocument: number; totalLimit: number }
+  options: { maxPerDocument: number; totalLimit: number; documentId?: string }
 ) {
-  const { maxPerDocument, totalLimit } = options;
+  const { maxPerDocument, totalLimit, documentId } = options;
   const embeddingLiteral = JSON.stringify(embedding);
 
   return withUserContext(userId, (tx) => {
+    // Có documentId nghĩa là user đã đính kèm rõ, ép cứng chỉ tìm trong đó, không rơi về tìm toàn bộ.
+    const scope = documentId ? and(eq(documents.userId, userId), eq(documents.id, documentId)) : eq(documents.userId, userId);
     const ranked = tx
       .select({
         content: chunks.content,
@@ -37,7 +36,7 @@ export async function findRelevantChunks(
       })
       .from(chunks)
       .innerJoin(documents, eq(chunks.documentId, documents.id))
-      .where(eq(documents.userId, userId))
+      .where(scope)
       .as("ranked");
 
     return tx
@@ -49,13 +48,11 @@ export async function findRelevantChunks(
   });
 }
 
-// Lấy TOÀN BỘ chunk của 1 tài liệu, theo đúng thứ tự gốc (chunkIndex) — khác findRelevantChunks
-// (semantic search theo embedding câu hỏi), dùng khi cần quét hết nội dung 1 tài liệu cụ thể (vd
-// trích action item) mà không có "câu hỏi" nào để so khớp độ liên quan.
+// Lấy toàn bộ chunk theo thứ tự gốc, kèm flaggedSuspicious để extractActionItemsTool ép hạ confidence.
 export async function getDocumentChunks(userId: string, documentId: string) {
   return withUserContext(userId, (tx) =>
     tx
-      .select({ content: chunks.content })
+      .select({ content: chunks.content, flaggedSuspicious: documents.flaggedSuspicious })
       .from(chunks)
       .innerJoin(documents, eq(chunks.documentId, documents.id))
       .where(and(eq(chunks.documentId, documentId), eq(documents.userId, userId)))

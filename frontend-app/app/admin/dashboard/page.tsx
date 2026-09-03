@@ -9,8 +9,7 @@ import type { AdminStats } from "@/types/admin";
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Nâng state view lên đây (thay vì để mỗi AdminMetricChart tự giữ) — AdminAnalysisPanel cần biết
-  // đang xem đúng khoảng thời gian nào của từng khối để phân tích luôn khớp với biểu đồ hiện tại.
+  // Nâng state view lên đây thay vì để mỗi AdminMetricChart tự giữ, để AdminAnalysisPanel phân tích luôn khớp biểu đồ hiện tại.
   const [signupsView, setSignupsView] = useState<View>("week");
   const [aiQueriesView, setAiQueriesView] = useState<View>("week");
 
@@ -41,17 +40,23 @@ export default function AdminDashboardPage() {
           {/* Cố tình KHÔNG có ô "System Health" như ảnh mẫu — hệ thống chưa có cơ chế theo dõi
               uptime/tỷ lệ lỗi nào lưu vào DB để tính ra con số thật, thêm vào sẽ phải bịa số liệu. */}
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-soft dark:border-gray-800 dark:bg-gray-900">
+            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-soft transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Tổng tài khoản</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">{stats ? stats.totalUsers : "—"}</p>
+              <p className="mt-1 bg-gradient-to-r from-indigo-600 to-amber-500 bg-clip-text text-3xl font-extrabold text-transparent">
+                {stats ? stats.totalUsers : "—"}
+              </p>
             </div>
-            <div className="rounded-xl border-l-4 border-indigo-600 border-y border-r border-gray-200 bg-white p-4 shadow-soft dark:border-gray-800 dark:bg-gray-900">
+            <div className="rounded-xl border-l-4 border-indigo-600 border-y border-r border-gray-200 bg-white p-4 shadow-soft transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Tài liệu đã xử lý xong</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">{stats ? stats.indexedDocs : "—"}</p>
+              <p className="mt-1 bg-gradient-to-r from-indigo-600 to-amber-500 bg-clip-text text-3xl font-extrabold text-transparent">
+                {stats ? stats.indexedDocs : "—"}
+              </p>
             </div>
-            <div className="rounded-xl border-l-4 border-amber-500 border-y border-r border-gray-200 bg-white p-4 shadow-soft dark:border-gray-800 dark:bg-gray-900">
+            <div className="rounded-xl border-l-4 border-amber-500 border-y border-r border-gray-200 bg-white p-4 shadow-soft transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Lượt hỏi AI (24h)</p>
-              <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">{stats ? stats.aiQueries24h : "—"}</p>
+              <p className="mt-1 bg-gradient-to-r from-indigo-600 to-amber-500 bg-clip-text text-3xl font-extrabold text-transparent">
+                {stats ? stats.aiQueries24h : "—"}
+              </p>
             </div>
           </div>
 

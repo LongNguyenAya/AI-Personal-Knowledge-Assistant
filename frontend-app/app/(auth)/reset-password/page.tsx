@@ -5,9 +5,7 @@ import { authClient } from "@/lib/auth-client";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-// better-auth chuyển hướng người dùng về đây kèm ?token=... nếu link hợp lệ, hoặc
-// ?error=INVALID_TOKEN nếu token sai/đã hết hạn/đã dùng rồi (xem requestPasswordReset ở
-// lib/auth.ts và trang forgot-password).
+// better-auth chuyển hướng về đây kèm ?token=... nếu link hợp lệ, hoặc ?error=INVALID_TOKEN nếu token sai/hết hạn/đã dùng.
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");

@@ -13,11 +13,7 @@ import type { ChartDatum, ChartTrend } from "@ai-assistant/shared-types";
 type Db = typeof dbAdmin;
 type Granularity = "day" | "month";
 
-// Cùng kỹ thuật zero-fill với backend-service/src/db/repositories/analytics.ts (generate_series +
-// date_trunc + LEFT JOIN) — viết lại riêng ở đây vì file gốc nằm trong backend-service, không phải
-// package dùng chung, frontend-app không import được. Khác bản gốc: KHÔNG loại trừ kỳ hiện tại
-// (dashboard theo dõi cần thấy số liệu tới hiện tại, không phải dự đoán nên không ngại kỳ chưa qua
-// hết). roleFilterUser dùng riêng cho chat_history (đếm SỐ CÂU HỎI, không đếm cả câu trả lời).
+// Cùng kỹ thuật zero-fill với backend-service/db/repositories/analytics.ts, viết lại riêng vì không import được, và không loại trừ kỳ hiện tại.
 export async function getSeries(
   db: Db,
   table: "users" | "chat_history",
@@ -63,10 +59,7 @@ export async function getMonthComparison(
   return { current: current.n, previous: previous.n, changePercent };
 }
 
-// Chỉ cần 2 granularity (day/month, khớp đúng 2 view có chart) — không cần bản tổng quát nhiều
-// granularity như buildFutureLabels bên backend-service/agents/tools/create-chart.ts (hour/week/
-// quarter/year không dùng ở đây), nên viết riêng bản rút gọn thay vì chuyển cả file đó sang dùng
-// chung — xem lý do đánh đổi trong kế hoạch.
+// Bản rút gọn của buildFutureLabels bên create-chart.ts, chỉ cần 2 granularity (day/month) khớp 2 view có chart.
 function addPeriod(label: string, granularity: Granularity, count: number): string {
   if (granularity === "day") {
     const d = new Date(`${label}T00:00:00Z`);
@@ -78,10 +71,7 @@ function addPeriod(label: string, granularity: Granularity, count: number): stri
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-// Wiring y hệt nhánh isTimeSeries trong create-chart.ts (backend-service) — cùng công thức, cùng
-// thứ tự bước (fit OLS → loại outlier → kiểm định → rẽ nhánh trend/moving-average). Trùng lặp có
-// chủ đích ~30 dòng orchestration, KHÔNG trùng lặp phần toán (đã dùng chung qua shared-types) —
-// xem lý do trong kế hoạch.
+// Wiring y hệt nhánh isTimeSeries trong create-chart.ts, trùng lặp có chủ đích, phần toán đã dùng chung qua shared-types.
 export function analyzeSeries(
   data: ChartDatum[],
   granularity: Granularity

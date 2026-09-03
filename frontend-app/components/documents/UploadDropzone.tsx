@@ -18,9 +18,7 @@ export function UploadDropzone({ onUploaded }: { onUploaded?: () => void }) {
     setUploading(false);
     e.target.value = "";
 
-    // POST đợi backend chạy xong toàn bộ pipeline (chunk+embed+insert+update status) rồi mới
-    // response — document đã ở status cuối cùng ngay lúc này, chỉ cần refetch 1 lần, không
-    // cần polling.
+    // Upload thật xử lý bất đồng bộ qua SQS, POST chỉ trả về khi đã enqueue xong, poll tới khi xử lý xong do trang cha tự làm.
     setMessage(
       res.ok ? { text: "Upload thành công, đã xử lý xong.", ok: true } : { text: "Upload thất bại", ok: false }
     );
@@ -32,7 +30,7 @@ export function UploadDropzone({ onUploaded }: { onUploaded?: () => void }) {
       <label className="cursor-pointer">
         <input
           type="file"
-          accept=".pdf,.docx,.pptx,.txt,.md"
+          accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp"
           onChange={handleFileChange}
           disabled={uploading}
           className="hidden"
@@ -41,7 +39,7 @@ export function UploadDropzone({ onUploaded }: { onUploaded?: () => void }) {
           {uploading ? "Đang upload..." : "Chọn file để upload"}
         </span>
       </label>
-      <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Hỗ trợ .pdf, .docx, .pptx, .txt, .md</p>
+      <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Hỗ trợ .pdf, .docx, .pptx, .txt, .md, .png, .jpg, .jpeg, .webp</p>
       {message && (
         <p className={`mt-3 text-sm ${message.ok ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
           {message.text}

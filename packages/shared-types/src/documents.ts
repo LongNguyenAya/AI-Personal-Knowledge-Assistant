@@ -4,7 +4,5 @@ export interface DocumentSearchResult {
   fileName: string;
 }
 
-// Output thật của tool searchDocuments (backend-service) — có documentId/fileName kèm content để
-// FE hiện được nguồn thật sự đã dùng (giống source-document ở research agent), thay vì chỉ có
-// chuỗi content trơn mà cả model lẫn FE đều không biết trích từ tài liệu nào.
+// Output tool searchDocuments, kèm documentId/fileName để FE hiện được nguồn thật, không chỉ content trơn.
 export type SearchDocumentsOutput = { results: DocumentSearchResult[] };

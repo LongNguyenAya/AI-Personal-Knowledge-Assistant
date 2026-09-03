@@ -17,9 +17,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
 
-    // 8 = minPasswordLength mặc định của better-auth (options.emailAndPassword.minPasswordLength,
-    // không override ở lib/auth.ts) — validate luôn phía client cho phản hồi ngay, thay vì đợi API
-    // trả về lỗi PASSWORD_TOO_SHORT sau 1 round-trip.
+    // 8 = minPasswordLength mặc định của better-auth, validate luôn phía client cho phản hồi ngay thay vì đợi API.
     if (password.length < 8) {
       setError("Mật khẩu phải có ít nhất 8 ký tự");
       return;
@@ -37,8 +35,7 @@ export default function RegisterPage() {
       return;
     }
 
-    // requireEmailVerification=true -> signUp không tạo session ngay, phải xác nhận qua email
-    // trước mới đăng nhập được (xem lib/auth.ts).
+    // requireEmailVerification=true nên signUp không tạo session ngay, phải xác nhận qua email trước mới đăng nhập được.
     setRegistered(true);
   }
 

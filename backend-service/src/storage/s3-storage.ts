@@ -8,8 +8,7 @@ function requireBucket(): string {
   return BUCKET;
 }
 
-// S3 key chỉ là 1 chuỗi phẳng, không có khái niệm resolve/".." như đường dẫn filesystem — nên
-// check đúng tiền tố là đủ, không dính lỗ hổng traversal từng phải vá ở bản local-storage.ts cũ.
+// S3 key chỉ là 1 chuỗi phẳng, check đúng tiền tố là đủ, không dính lỗ hổng traversal như trước.
 export function assertOwnedKey(userId: string, key: string): void {
   if (!key.startsWith(`uploads/${userId}/`)) {
     throw new Error(`Key không hợp lệ hoặc không thuộc về user hiện tại: ${key}`);
@@ -23,12 +22,11 @@ export async function saveFile(userId: string, key: string, buffer: Buffer): Pro
 
 export async function deleteFile(userId: string, key: string): Promise<void> {
   assertOwnedKey(userId, key);
-  // DeleteObject vốn idempotent — key không tồn tại vẫn trả về thành công, không cần tự bắt lỗi.
+  // DeleteObject vốn idempotent, key không tồn tại vẫn trả về thành công.
   await s3.send(new DeleteObjectCommand({ Bucket: requireBucket(), Key: key }));
 }
 
-// Worker xử lý SQS đọc lại file ở đây — message trong queue chỉ mang key, không mang theo bytes
-// (file có thể tới 15MB, vượt xa giới hạn 256KB của 1 message SQS).
+// Worker đọc lại file ở đây, message SQS chỉ mang key vì giới hạn 256KB không đủ chứa bytes file.
 export async function readFile(userId: string, key: string): Promise<Buffer> {
   assertOwnedKey(userId, key);
   const { Body } = await s3.send(new GetObjectCommand({ Bucket: requireBucket(), Key: key }));

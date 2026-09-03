@@ -1,18 +1,11 @@
-export type ThemeMode = "light" | "dark" | "system";
+// Bỏ "system", chỉ còn đúng 2 trạng thái sáng/tối gạt trực tiếp qua nút switch, theo yêu cầu người dùng.
+export type ThemeMode = "light" | "dark";
 
 export const THEME_STORAGE_KEY = "theme";
 
-export function resolveIsDark(mode: ThemeMode): boolean {
-  if (mode === "system") return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return mode === "dark";
-}
-
 export function applyTheme(mode: ThemeMode) {
-  document.documentElement.classList.toggle("dark", resolveIsDark(mode));
+  document.documentElement.classList.toggle("dark", mode === "dark");
 }
 
-// Dùng làm chuỗi script nhúng thẳng vào <head> (xem app/layout.tsx) — PHẢI chạy đồng bộ trước khi
-// React hydrate, nếu không màn hình sẽ nháy sai theme 1 khoảnh khắc (đọc theme sau khi đã render
-// xong theo mặc định sáng). Vì chạy trước khi bundle JS tải xong nên không thể import trực tiếp
-// hàm applyTheme ở trên — phải lặp lại logic dưới dạng chuỗi thuần, KHÔNG dùng chung code được.
-export const THEME_INIT_SCRIPT = `(function(){try{var m=localStorage.getItem('${THEME_STORAGE_KEY}')||'system';var d=m==='dark'||(m==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;
+// Chuỗi script nhúng vào <head>, phải chạy đồng bộ trước hydrate nên lặp lại logic applyTheme, vẫn tôn trọng theme hệ điều hành lần đầu.
+export const THEME_INIT_SCRIPT = `(function(){try{var m=localStorage.getItem('${THEME_STORAGE_KEY}');var d=m?m==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;

@@ -3,22 +3,33 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Bot, MessageSquare, FileText, CheckSquare, Bell, ShieldCheck, Menu, X, LogOut } from "lucide-react";
+import { Bot, MessageSquare, FileText, CheckSquare, Bell, Sparkles, NotebookPen, UserRound, ShieldCheck, Menu, X, LogOut } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
+
+// Logo dạng ô vuông gradient thay icon Bot trơn trước đây, dùng chung cho cả top-bar mobile lẫn header sidebar desktop.
+function Logo() {
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-indigo-600 to-amber-500">
+      <Bot className="h-[18px] w-[18px] text-white" />
+    </span>
+  );
+}
 
 const LINKS = [
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/documents", label: "Tài liệu", icon: FileText },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/reminders", label: "Reminders", icon: Bell },
+  { href: "/digest", label: "Tóm tắt tuần", icon: Sparkles },
+  { href: "/corrections", label: "Ghi chú AI", icon: NotebookPen },
+  { href: "/settings", label: "Hồ sơ cá nhân", icon: UserRound },
 ];
 
 export default function MainNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
-  // Sidebar cố định chỉ hợp lý ở màn hình đủ rộng (md+) — dưới đó nó chiếm gần hết chiều ngang,
-  // nên mặc định ẩn trên mobile, hiện dạng overlay khi bấm "Menu" (đúng gợi ý "full-screen
-  // overlay" cho mobile trong DESIGN.md).
+  // Sidebar cố định chỉ hợp lý ở màn hình đủ rộng (md+), mặc định ẩn trên mobile và hiện dạng overlay khi bấm "Menu".
   const [open, setOpen] = useState(false);
 
   async function handleSignOut() {
@@ -29,8 +40,8 @@ export default function MainNav() {
   return (
     <>
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:hidden dark:border-gray-800 dark:bg-gray-900">
-        <span className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-          <Bot className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+        <span className="flex items-center gap-2.5 text-sm font-bold text-gray-900 dark:text-white">
+          <Logo />
           AI Knowledge Assistant
         </span>
         <button
@@ -50,8 +61,8 @@ export default function MainNav() {
         } fixed inset-y-0 left-0 z-50 w-64 flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 md:static md:z-auto md:flex md:w-60 md:shrink-0`}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
-          <span className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
-            <Bot className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+          <span className="flex items-center gap-2.5 text-sm font-bold text-gray-900 dark:text-white">
+            <Logo />
             AI Knowledge Assistant
           </span>
           <button
@@ -102,6 +113,10 @@ export default function MainNav() {
           {session?.user.email && (
             <p className="truncate px-3 pb-2 text-xs text-gray-500 dark:text-gray-400">{session.user.email}</p>
           )}
+          <div className="mb-1 flex items-center justify-between rounded-lg px-3 py-2">
+            <span className="text-[13px] text-gray-500 dark:text-gray-400">Giao diện</span>
+            <ThemeToggle variant="inline" />
+          </div>
           <button
             onClick={handleSignOut}
             className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
