@@ -2,8 +2,6 @@
 
 Trợ lý cá nhân: upload tài liệu, hỏi đáp có trích dẫn (RAG), tự tạo task/nhắc nhở qua chat, tự học từ những lần ta nhắc lỗi cần cải thiện, và có khu quản trị đầy đủ (settings động, duyệt kiến thức, audit log, dashboard xu hướng).
 
-Tài liệu kỹ thuật chi tiết (kiến trúc, sơ đồ, giải thích từng kỹ thuật) và bản đồ chức năng-file nằm ở 2 tài liệu riêng — xem mục [Tài liệu thêm](#tài-liệu-thêm) cuối file này.
-
 > **Deployed app**: 
 > **Live demo**:
 
