@@ -23,31 +23,31 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24, // 1 ngày (mặc định của better-auth là 7 ngày)
-    updateAge: 60 * 60 * 6, // tự gia hạn nếu còn hoạt động trong vòng 6 tiếng gần nhất
+    expiresIn: 60 * 60 * 24, // 1 day (better-auth's default is 7 days)
+    updateAge: 60 * 60 * 6, // auto-renews if there's been activity within the last 6 hours
   },
   emailAndPassword: {
     enabled: true,
-    // Chặn ngay tại /sign-in/email nếu chưa xác nhận email, đây là hành vi có sẵn của better-auth.
+    // Blocks right at /sign-in/email if the email isn't verified yet, this is built-in better-auth behavior.
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
       await sendResetPasswordEmail(user.id, user.email, url);
     },
-    // Đặt lại mật khẩu xong thì huỷ hết session cũ, phòng trường hợp mật khẩu bị lộ và ai đó khác đang có session sống.
+    // Revokes every old session once the password is reset, in case the password was leaked and someone else has a live session.
     revokeSessionsOnPasswordReset: true,
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
       await sendVerificationEmail(user.id, user.email, url);
     },
-    // Tự gửi email ngay sau /sign-up/email, không cần client tự gọi thêm API riêng.
+    // Sends the email automatically right after /sign-up/email, the client doesn't need to call a separate API.
     sendOnSignUp: true,
-    // App chưa có nút "gửi lại" nên bật cờ này để better-auth tự gửi email mới mỗi lần cố đăng nhập lúc chưa xác nhận.
+    // The app has no "resend" button yet so this flag is on to let better-auth send a fresh email every time someone tries to log in unverified.
     sendOnSignIn: true,
-    // Bấm link xác nhận trong email xong là có session luôn, callbackURL mặc định "/" khớp sẵn với app/page.tsx.
+    // Clicking the verification link in the email creates a session right away, the default callbackURL "/" already matches app/page.tsx.
     autoSignInAfterVerification: true,
   },
-  // Phải dùng dbAdmin vì chưa xác thực xong nên chưa có current_user_id cho RLS, `db` thường sẽ luôn báo sai "không tìm thấy user".
+  // Has to use dbAdmin since authentication isn't done yet so there's no current_user_id for RLS, the regular `db` would always wrongly report "user not found".
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== "/sign-in/email") return;
@@ -65,14 +65,14 @@ export const auth = betterAuth({
       role: {
         type: "string",
         defaultValue: "user",
-        input: false, // không cho phép user tự set role lúc đăng ký
+        input: false, // doesn't allow the user to set their own role at sign-up
       },
       isActive: {
         type: "boolean",
         defaultValue: true,
         input: false,
       },
-      // Soft-delete trước đây chỉ chặn lúc đăng nhập mới, đưa deletedAt vào session.user để route tự check ngay cả session cũ.
+      // Soft-delete used to only block a fresh login, deletedAt is put into session.user so routes can check it even for an existing session.
       deletedAt: {
         type: "date",
         required: false,

@@ -3,7 +3,7 @@ import { and, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { withUserContext } from "../context";
 import type { BreakdownRow, TimeSeriesRow, Granularity, GranularityConfig, SeriesOptions } from "../../types/analytics";
 
-// Driver postgres-js, execute() trả về mảng trực tiếp, không cần .rows như driver node-postgres.
+// The postgres-js driver, execute() returns an array directly, no need for .rows like the node-postgres driver.
 
 const GRANULARITY_CONFIG: Record<Granularity, GranularityConfig> = {
   hour: { intervalAmount: 1, intervalUnit: "hour", labelFormat: "YYYY-MM-DD HH24:00", defaultCount: 24 },
@@ -14,21 +14,21 @@ const GRANULARITY_CONFIG: Record<Granularity, GranularityConfig> = {
   year: { intervalAmount: 1, intervalUnit: "year", labelFormat: "YYYY", defaultCount: 5 },
 };
 
-// Dựng interval động không dùng sql.raw, amount/unit vẫn bind qua tham số bình thường.
+// Builds the interval dynamically without sql.raw, amount/unit are still bound as normal parameters.
 function periodInterval(cfg: GranularityConfig): SQL {
   return sql`(${cfg.intervalAmount}::text || ' ' || ${cfg.intervalUnit}::text)::interval`;
 }
 
-// Dựng biên generate_series và điều kiện lọc ngày, dùng chung cho cả 3 domain.
+// Builds the generate_series bounds and date filter condition, shared across all 3 domains.
 function resolveSeriesBounds(granularity: Granularity, cfg: GranularityConfig, options: SeriesOptions | undefined, dateColumnSql: SQL) {
   const step = periodInterval(cfg);
   const { from, to, count } = options ?? {};
 
   if (from && to) {
-    // postgres-js không tự serialize Date khi bind qua sql thô, phải .toISOString() trước.
+    // postgres-js doesn't auto-serialize Date when binding through raw sql, has to .toISOString() first.
     const fromIso = from.toISOString();
     const toIso = to.toISOString();
-    // Khoảng do user chỉ định đã là quá khứ xác định, không cần loại kỳ hiện tại chưa hoàn tất.
+    // A range explicitly given by the user is already a fixed past period, no need to exclude the current incomplete period.
     return {
       startExpr: sql`date_trunc(${granularity}, ${fromIso}::timestamptz AT TIME ZONE 'Asia/Ho_Chi_Minh')`,
       stopExpr: sql`date_trunc(${granularity}, ${toIso}::timestamptz AT TIME ZONE 'Asia/Ho_Chi_Minh')`,
@@ -46,7 +46,7 @@ function resolveSeriesBounds(granularity: Granularity, cfg: GranularityConfig, o
   };
 }
 
-// Task không có completedAt, chỉ có isDone, nên updatedAt là mốc đáng tin cho lần hoàn thành gần nhất.
+// Tasks have no completedAt, only isDone, so updatedAt is the reliable marker for the most recent completion.
 export async function getTaskCompletionSeries(userId: string, granularity: Granularity, options?: SeriesOptions) {
   const cfg = GRANULARITY_CONFIG[granularity];
   const { startExpr, stopExpr, step, rangeCondition } = resolveSeriesBounds(granularity, cfg, options, sql`t.updated_at`);
@@ -101,7 +101,7 @@ export async function getDocumentUploadsSeries(userId: string, granularity: Gran
   );
 }
 
-// Breakdown là phân bổ hiện tại, merge với enum thật để trạng thái 0 bản ghi vẫn có mặt.
+// Breakdown is the current distribution, merged with the real enum so a status with 0 records still shows up.
 export async function getTaskCompletionBreakdown(userId: string): Promise<BreakdownRow[]> {
   const rows = await withUserContext(userId, (tx) =>
     tx
@@ -117,7 +117,7 @@ export async function getTaskCompletionBreakdown(userId: string): Promise<Breakd
   ];
 }
 
-const REMINDER_STATUSES = ["pending", "sent"] as const; // đúng theo reminderStatusEnum trong schema.ts
+const REMINDER_STATUSES = ["pending", "sent"] as const; // matches reminderStatusEnum in schema.ts
 
 export async function getReminderStatusBreakdown(userId: string): Promise<BreakdownRow[]> {
   const rows = await withUserContext(userId, (tx) =>
@@ -131,7 +131,7 @@ export async function getReminderStatusBreakdown(userId: string): Promise<Breakd
   return REMINDER_STATUSES.map((status) => ({ label: status, value: map.get(status) ?? 0 }));
 }
 
-const DOCUMENT_STATUSES = ["uploaded", "processing", "processed", "failed"] as const; // đúng theo documentStatusEnum trong schema.ts
+const DOCUMENT_STATUSES = ["uploaded", "processing", "processed", "failed"] as const; // matches documentStatusEnum in schema.ts
 
 export async function getDocumentStatusBreakdown(userId: string): Promise<BreakdownRow[]> {
   const rows = await withUserContext(userId, (tx) =>
@@ -145,7 +145,7 @@ export async function getDocumentStatusBreakdown(userId: string): Promise<Breakd
   return DOCUMENT_STATUSES.map((status) => ({ label: status, value: map.get(status) ?? 0 }));
 }
 
-// Phân biệt "chưa từng có dữ liệu" với "không hoạt động gần đây", chỉ cần thiết cho time-series.
+// Distinguishes "never had any data" from "no recent activity", only needed for time-series.
 export async function hasAnyRecordEver(userId: string, domain: "task" | "reminder" | "document"): Promise<boolean> {
   return withUserContext(userId, async (tx) => {
     if (domain === "task") {

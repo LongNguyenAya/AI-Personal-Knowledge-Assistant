@@ -5,7 +5,7 @@ import { withAdminContext } from "@/lib/with-admin-context";
 export const PATCH = withAdminContext<{ id: string }>(async (req, { db, session, params }) => {
   const body = await req.json();
 
-  // Chặn hẳn việc admin tự khoá/xoá chính tài khoản đang đăng nhập, tránh không còn ai mở lại được.
+  // Fully blocks an admin from locking/deleting their own logged-in account, avoiding a lockout nobody can undo.
   if (params.id === session.user.id) {
     return new Response("Không thể tự thao tác lên chính tài khoản admin đang đăng nhập", { status: 400 });
   }
@@ -17,7 +17,7 @@ export const PATCH = withAdminContext<{ id: string }>(async (req, { db, session,
         .set({ isActive: body.isActive, updatedAt: new Date() })
         .where(eq(users.id, params.id))
         .returning({ id: users.id });
-      // params.id không tồn tại thì update không đổi dòng nào nhưng audit log vẫn ném lỗi FK, kiểm tra sớm để trả 404 sạch.
+      // If params.id doesn't exist the update changes no rows but the audit log still throws an FK error, checked early to return a clean 404.
       if (updated.length === 0) return true;
       await tx.insert(adminAuditLog).values({
         adminId: session.user.id,
@@ -30,7 +30,7 @@ export const PATCH = withAdminContext<{ id: string }>(async (req, { db, session,
     return Response.json({ ok: true });
   }
 
-  // softDelete=true là xoá mềm chặn đăng nhập ngay từ auth.ts, softDelete=false là khôi phục, khác isActive chỉ chặn gọi API.
+  // softDelete=true is a soft delete that blocks login right at auth.ts, softDelete=false restores it, unlike isActive which only blocks API calls.
   if (typeof body.softDelete === "boolean") {
     const notFound = await db.transaction(async (tx) => {
       const updated = await tx

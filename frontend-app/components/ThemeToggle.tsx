@@ -3,12 +3,12 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { applyTheme, THEME_STORAGE_KEY, type ThemeMode } from "@/lib/theme";
 
-// Trang đã có chỗ đặt riêng (navbar, sidebar) thì không hiện thêm bản nổi, tránh trùng 2 nút.
+// A page that already places one itself (navbar, sidebar) doesn't get an extra floating one too, avoiding 2 duplicate buttons.
 const HAS_OWN_PLACEMENT_PREFIXES = ["/chat", "/documents", "/tasks", "/reminders", "/digest", "/corrections", "/settings", "/admin"];
 
 export default function ThemeToggle({ variant = "floating" }: { variant?: "floating" | "inline" }) {
   const pathname = usePathname();
-  // Khởi tạo null vì THEME_INIT_SCRIPT đã set đúng class .dark trước hydrate, effect dưới chỉ đọc lại để đồng bộ nút.
+  // Initialized to null since THEME_INIT_SCRIPT already sets the .dark class correctly before hydration, the effect below just reads it back to sync the button.
   const [mode, setMode] = useState<ThemeMode | null>(null);
 
   useEffect(() => {
@@ -24,11 +24,11 @@ export default function ThemeToggle({ variant = "floating" }: { variant?: "float
     setMode(next);
   }
 
-  // Đặt sau mọi hook (Rules of Hooks), return sớm trước đó sẽ khiến React báo "Rendered fewer hooks than expected".
+  // Placed after every hook (Rules of Hooks), an early return before this would make React report "Rendered fewer hooks than expected".
   const hasOwnPlacement = pathname === "/" || HAS_OWN_PLACEMENT_PREFIXES.some((p) => pathname?.startsWith(p));
   if (variant === "floating" && hasOwnPlacement) return null;
 
-  // isDark=false khi mode=null (nhịp render đầu, chưa đọc xong localStorage), khớp mặc định sáng của app để tránh nháy nút.
+  // isDark=false when mode=null (the first render pass, before localStorage has been read), matching the app's light default to avoid a flash of the button.
   const isDark = mode === "dark";
 
   return (

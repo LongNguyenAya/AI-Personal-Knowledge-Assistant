@@ -6,10 +6,10 @@ import { withAdminContext } from "@/lib/with-admin-context";
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
-// 4 nhóm action thật đang tồn tại, dùng làm tab lọc ở /admin/audit, khớp đúng tiền tố trước dấu "." trong cột action.
+// The 4 action groups that actually exist, used as filter tabs on /admin/audit, matching the exact prefix before the "." in the action column.
 const VALID_CATEGORIES = ["user", "agent_prompt", "system_setting", "knowledge_file"] as const;
 
-// admin_audit_log không RLS, chỉ đọc qua dbAdmin, adminId/targetUserId cùng trỏ về users nên phải alias 2 lần mới join được.
+// admin_audit_log has no RLS, only read through dbAdmin, adminId/targetUserId both point to users so it needs 2 aliases to join.
 export const GET = withAdminContext(async (req, { db }) => {
   const url = new URL(req.url);
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);

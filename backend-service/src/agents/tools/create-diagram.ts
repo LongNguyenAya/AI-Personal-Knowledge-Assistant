@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { DiagramToolOutput } from "@ai-assistant/shared-types";
 
-// Khác createChart (tự query DB), ở đây model tự viết mã Mermaid, tool chỉ chuyển tiếp để vẽ.
+// Unlike createChart (which queries the DB itself), here the model writes the Mermaid code itself and this tool just forwards it to render.
 export function createDiagramTool() {
   return tool({
     description:

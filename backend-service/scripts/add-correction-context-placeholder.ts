@@ -2,8 +2,7 @@ import { agentPrompts, users } from "@ai-assistant/db/src/schema";
 import { and, eq } from "drizzle-orm";
 import { dbAdmin } from "../src/db/admin-client";
 
-// Chạy 1 lần — action prompt hiện tại chưa có placeholder {{correctionContext}} mà prompts.ts đã
-// đọc/thay thế từ trước, nghĩa là correction hint tính ra rồi bị VỨT ĐI. Thêm vào cuối "Ghi nhớ kiến thức dài hạn".
+// Chạy 1 lần, action prompt thiếu placeholder {{correctionContext}} nên correction hint tính ra rồi bị vứt đi.
 
 async function main() {
   const adminEmail = process.argv[2];

@@ -3,7 +3,7 @@ import { findDueReminders, markReminderSent, findRemindersNeedingEmail, markEmai
 import { sendToUser } from "../ws/registry";
 import { sendReminderEmail } from "../services/email";
 
-// Quét bằng setInterval ngay trong process, backend-service chạy liên tục nên hợp để tự canh giờ.
+// Scans via setInterval right inside the process, backend-service runs continuously so it's a good fit for self-timing.
 const POLL_INTERVAL_MS = 60_000;
 
 async function checkDueReminders() {
@@ -19,10 +19,10 @@ async function checkDueReminders() {
           taskTitles: reminder.taskTitles,
         });
 
-        // Đánh dấu ngay sau khi đẩy dù không ai mở app, không đổi status thì scheduler sẽ đẩy lại mỗi phút.
+        // Marked right after pushing even if no one has the app open, without a status change the scheduler would push it again every minute.
         await markReminderSent(reminder.id);
       } catch (err) {
-        // try/catch riêng từng reminder, thiếu nó 1 lỗi DB sẽ văng khỏi vòng for và bỏ lỡ các reminder khác.
+        // A separate try/catch per reminder, without it 1 DB error would throw out of the for loop and skip the other reminders.
         log.error(`[scheduler] Lỗi khi xử lý reminder ${reminder.id}, sẽ thử lại lượt sau:`, err);
       }
     }
@@ -31,7 +31,7 @@ async function checkDueReminders() {
   }
 }
 
-// Quét độc lập với checkDueReminders, dựa trên emailSentAt vì status có thể đã đổi từ nhánh WebSocket.
+// Scanned independently of checkDueReminders, relies on emailSentAt because status may already have changed via the WebSocket branch.
 async function checkRemindersNeedingEmail() {
   try {
     const due = await findRemindersNeedingEmail();
@@ -49,7 +49,7 @@ async function checkRemindersNeedingEmail() {
 }
 
 export function startReminderScheduler() {
-  // isRunning chặn 2 lượt quét chồng nhau khi 1 lượt chạy lâu hơn POLL_INTERVAL_MS.
+  // isRunning blocks 2 overlapping scan passes when 1 pass takes longer than POLL_INTERVAL_MS.
   let isRunning = false;
   const tick = async () => {
     if (isRunning) {
@@ -63,7 +63,7 @@ export function startReminderScheduler() {
       isRunning = false;
     }
   };
-  tick(); // chạy ngay lúc khởi động — bắt kịp reminder tới hạn trong lúc service tắt
+  tick(); // runs right at startup, catching up on reminders that came due while the service was down
   setInterval(tick, POLL_INTERVAL_MS);
   log.info(`[scheduler] Reminder scheduler đã khởi động, quét mỗi ${POLL_INTERVAL_MS / 1000}s.`);
 }

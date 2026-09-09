@@ -3,7 +3,7 @@ import { sql, eq, and, lt } from "drizzle-orm";
 import type { UserScopedTx } from "./db-context";
 import { getSettingValue } from "./settings";
 
-// max-chunk-pair: với mỗi đoạn tìm đoạn gần nhất ở tài liệu khác, liên quan nếu có ít nhất 1 cặp đủ gần, tránh bị pha loãng.
+// max-chunk-pair: for each chunk it finds the closest chunk in another document, related if at least 1 pair is close enough, avoiding dilution.
 export async function findRelatedDocuments(
   tx: UserScopedTx,
   userId: string,
@@ -19,14 +19,14 @@ export async function findRelatedDocuments(
   const embeddings = embeddingRows.map((r) => r.embedding).filter((e): e is number[] => e !== null);
   if (embeddings.length === 0) return [];
 
-  // Ngưỡng cosine hiệu chỉnh ban đầu bằng số đo thật, admin tự chỉnh qua /admin/settings nếu mẫu test nhỏ không còn đúng.
+  // The cosine threshold was initially calibrated with real measurements, admin can adjust it via /admin/settings if the small test sample stops being accurate.
   const relatedDistanceThreshold = await getSettingValue("relatedDistanceThreshold");
 
-  // LEAST(...) qua toàn bộ embedding của tài liệu đang xem, mỗi đoạn ứng viên ra khoảng cách tới đoạn gần nhất.
+  // LEAST(...) across every embedding of the document being viewed, each candidate chunk gets the distance to its closest match.
   const distanceExprs = embeddings.map((emb) => sql`${chunks.embedding} <=> ${JSON.stringify(emb)}::vector`);
   const minDistance = sql<number>`least(${sql.join(distanceExprs, sql`, `)})`;
 
-  // Rút gọn về 1 dòng/tài liệu bằng ROW_NUMBER() OVER PARTITION BY document_id, cùng kỹ thuật ở findRelevantChunks.
+  // Collapsed to 1 row per document using ROW_NUMBER() OVER PARTITION BY document_id, the same technique used in findRelevantChunks.
   const ranked = tx
     .select({
       documentId: documents.id,

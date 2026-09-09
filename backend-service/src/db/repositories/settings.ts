@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { dbAdmin } from "../admin-client";
 import { SETTINGS_REGISTRY, type SettingKey } from "@ai-assistant/shared-types";
 
-// system_settings dùng chung không RLS, chưa từng bị chỉnh thì rơi về default trong SETTINGS_REGISTRY.
+// system_settings is shared with no RLS, falls back to the default in SETTINGS_REGISTRY if never edited.
 export async function getSettingValue(key: SettingKey): Promise<number> {
   const [row] = await dbAdmin.select({ value: systemSettings.value }).from(systemSettings).where(eq(systemSettings.key, key));
   if (!row) return SETTINGS_REGISTRY[key].default;

@@ -23,7 +23,7 @@ const METRIC_DOMAIN: Record<Metric, "task" | "reminder" | "document"> = {
   document_status_breakdown: "document",
 };
 
-// Mỗi domain có 1 granularity mặc định, model chỉ override khi câu hỏi nhắc cụ thể.
+// Each domain has 1 default granularity, the model only overrides it when the question specifies one.
 const DEFAULT_GRANULARITY: Record<TimeSeriesMetric, Granularity> = {
   task_completion: "week",
   reminder_creation: "week",
@@ -57,7 +57,7 @@ function fetchBreakdown(userId: string, metric: Exclude<Metric, TimeSeriesMetric
   }
 }
 
-// Tính nhãn điểm dự đoán tương lai từ periodStart thô, không parse ngược label đã format.
+// Computes future forecast point labels from the raw periodStart, doesn't parse the already-formatted label backward.
 function addPeriod(date: Date, granularity: Granularity, count: number): Date {
   const d = new Date(date);
   switch (granularity) {
@@ -105,12 +105,12 @@ function formatPeriodLabel(date: Date, granularity: Granularity): string {
 }
 
 function buildFutureLabels(lastPeriodStart: string, count: number, granularity: Granularity): string[] {
-  // periodStart từ SQL thiếu hậu tố Z, thêm vào chỉ để Date parse được, không phải quy đổi timezone.
+  // periodStart from SQL is missing the Z suffix, added only so Date can parse it, not a timezone conversion.
   const last = new Date(`${lastPeriodStart}Z`);
   return Array.from({ length: count }, (_, k) => formatPeriodLabel(addPeriod(last, granularity, k + 1), granularity));
 }
 
-// Tool vẽ biểu đồ, query DB thật rồi tính xu hướng, model chỉ chọn metric không tự bịa số liệu.
+// The chart tool, queries the real DB then computes the trend, the model only picks the metric and never makes up numbers.
 export function createChartTool(userId: string) {
   return tool({
     description:
@@ -123,13 +123,13 @@ export function createChartTool(userId: string) {
         .enum(["hour", "day", "week", "month", "quarter", "year"])
         .optional()
         .describe(
-          "Đơn vị thời gian (kích thước từng cột/điểm), CHỈ áp dụng cho metric time-series (task_completion/reminder_creation/document_uploads). Suy ra từ câu hỏi user (vd 'theo tháng' → month, 'theo giờ' → hour). Bỏ trống nếu user không nói rõ hoặc metric là *_breakdown."
+          "Đơn vị thời gian (kích thước từng cột/điểm), CHỈ áp dụng cho metric time-series (task_completion/reminder_creation/document_uploads). Suy ra từ câu hỏi user (vd 'theo tháng' thì ghi month, 'theo giờ' thì ghi hour). Bỏ trống nếu user không nói rõ hoặc metric là *_breakdown."
         ),
       from: z
         .string()
         .optional()
         .describe(
-          "Mốc bắt đầu khoảng thời gian CỤ THỂ user hỏi (vd user hỏi 'tháng 7' → đầu tháng 7), ISO 8601. CHỈ điền khi user hỏi về 1 khoảng thời gian đã xác định rõ ràng — nếu user chỉ hỏi 'gần đây'/'xu hướng' chung chung không nói rõ mốc, để trống cả from lẫn to để tự lấy N kỳ gần nhất."
+          "Mốc bắt đầu khoảng thời gian CỤ THỂ user hỏi (vd user hỏi 'tháng 7' thì lấy đầu tháng 7), ISO 8601. CHỈ điền khi user hỏi về 1 khoảng thời gian đã xác định rõ ràng — nếu user chỉ hỏi 'gần đây'/'xu hướng' chung chung không nói rõ mốc, để trống cả from lẫn to để tự lấy N kỳ gần nhất."
         ),
       to: z.string().optional().describe("Mốc kết thúc khoảng thời gian, ISO 8601, đi kèm với from (phải điền cả 2 hoặc để trống cả 2)."),
       chartType: z
@@ -141,7 +141,7 @@ export function createChartTool(userId: string) {
     }),
     execute: async ({ metric, granularity, from, to, chartType }): Promise<ChartToolOutput> => {
       const isTimeSeries = (TIME_SERIES_METRICS as readonly string[]).includes(metric);
-      // Time-series luôn vẽ line, model tự chọn không ổn định dù prompt đã ghi rõ.
+      // Time-series always renders as a line, letting the model pick its own is unreliable even when the prompt states it clearly.
       const resolvedChartType = isTimeSeries ? "line" : (chartType ?? "bar");
       const parsedFrom = from ? new Date(from) : undefined;
       const parsedTo = to ? new Date(to) : undefined;
@@ -176,7 +176,7 @@ export function createChartTool(userId: string) {
         softForecast: null,
       };
 
-      // Không kiểm tra data.length vì sau zero-fill mảng không bao giờ rỗng, phải kiểm tra toàn bộ giá trị.
+      // Doesn't check data.length because after zero-fill the array is never empty, has to check every value instead.
       const hasAnyData = data.some((r) => r.value > 0);
       if (!hasAnyData) {
         const emptyReason = isTimeSeries
@@ -190,7 +190,7 @@ export function createChartTool(userId: string) {
         const initialReg = linearRegression(points);
         const outlierIdx = findOutliers(points, initialReg);
 
-        // Loại điểm ngoại lai trước khi tính hồi quy dự đoán, không thì đường dự đoán vẫn bị bẻ cong.
+        // Removes outliers before computing the forecast regression, otherwise the forecast line still gets bent out of shape.
         const cleanPoints = points.filter((_, i) => !outlierIdx.includes(i));
         const usablePoints = cleanPoints.length >= 3 ? cleanPoints : points;
         const reg = cleanPoints.length >= 3 ? linearRegression(cleanPoints) : initialReg;
@@ -199,14 +199,14 @@ export function createChartTool(userId: string) {
         if (isSlopeSignificant(reg, usablePoints)) {
           const futureX = [1, 2].map((k) => points.length - 1 + k);
           const futurePoints = futureX.map((x) => Math.max(0, reg.predict(x)));
-          // Margin tính trên usablePoints để khớp đúng tập điểm dùng fit reg, không phải points gốc.
+          // The margin is computed on usablePoints to match the exact point set used to fit the regression, not the original points.
           const margins = futureX.map((x) => predictionMargin(reg, usablePoints, x));
           const futureLower = futurePoints.map((v, i) => Math.max(0, v - margins[i]));
           const futureUpper = futurePoints.map((v, i) => v + margins[i]);
           const futureLabels = buildFutureLabels(lastPeriodStart, 2, resolvedGranularity);
           return { ...base, trend: { slope: reg.slope, futurePoints, futureLabels, futureLower, futureUpper }, outliers };
         }
-        // Tính trên points gốc, không phải cleanPoints, vì 2 hàm này tự có độ mượt riêng.
+        // Computed on the original points, not cleanPoints, because these 2 functions each have their own smoothing.
         const holt = holtLinear(points);
         const softForecastPoints = [1, 2].map((h) => Math.max(0, holt.forecast(h)));
         const softForecastLabels = buildFutureLabels(lastPeriodStart, 2, resolvedGranularity);

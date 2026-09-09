@@ -5,7 +5,7 @@ import { authClient } from "@/lib/auth-client";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-// better-auth chuyển hướng về đây kèm ?token=... nếu link hợp lệ, hoặc ?error=INVALID_TOKEN nếu token sai/hết hạn/đã dùng.
+// better-auth redirects back here with ?token=... if the link is valid, or ?error=INVALID_TOKEN if the token is wrong/expired/already used.
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -21,7 +21,7 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError(null);
 
-    // 8 = minPasswordLength mặc định của better-auth, giống validate ở trang đăng ký.
+    // 8 = better-auth's default minPasswordLength, matching the validation on the register page.
     if (password.length < 8) {
       setError("Mật khẩu phải có ít nhất 8 ký tự");
       return;

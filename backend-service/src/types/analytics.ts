@@ -1,11 +1,11 @@
 export type BreakdownRow = { label: string; value: number };
 export type TimeSeriesRow = { label: string; periodStart: string; value: number };
 
-// Đơn vị thời gian cho biểu đồ, không fix cứng để user hỏi gì cũng ra được.
+// The time unit for the chart, not hardcoded so it can handle whatever the user asks.
 export type Granularity = "hour" | "day" | "week" | "month" | "quarter" | "year";
 
 export interface GranularityConfig {
-  // interval literal của Postgres không hiểu "quarter", quy đổi thành 3 tháng khi cần dựng động.
+  // Postgres's interval literal doesn't understand "quarter", converted to 3 months whenever it needs to be built dynamically.
   intervalAmount: number;
   intervalUnit: "hour" | "day" | "week" | "month" | "year";
   labelFormat: string;
@@ -14,7 +14,7 @@ export interface GranularityConfig {
 
 export interface SeriesOptions {
   count?: number;
-  // Khoảng thời gian tường minh, có thì ưu tiên dùng thay vì lấy N kỳ gần nhất từ hiện tại.
+  // An explicit time range, used in preference over taking the N most recent periods from now when present.
   from?: Date;
   to?: Date;
 }

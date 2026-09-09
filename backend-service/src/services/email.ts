@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-// Gmail SMTP qua App Password, miễn phí, không cần dựng dịch vụ email riêng.
+// Gmail SMTP via an App Password, free, no need to stand up a dedicated email service.
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -32,7 +32,7 @@ export async function sendReminderEmail(
   });
 }
 
-// frontend-app (Render) gọi sang đây gửi email vì Render chặn SMTP ra ngoài, EC2 thì không.
+// frontend-app (on Render) calls over here to send email because Render blocks outbound SMTP, EC2 doesn't.
 export async function sendVerificationEmail(to: string, url: string) {
   await transporter.sendMail({
     from: `"AI Personal Knowledge Assistant" <${process.env.GMAIL_USER}>`,
@@ -51,7 +51,7 @@ export async function sendResetPasswordEmail(to: string, url: string) {
   });
 }
 
-// Gửi kèm bên cạnh lưu DB, không thay thế, không gắn link về app vì backend-service không có sẵn URL đó.
+// Sent alongside saving to DB, not a replacement, no link back to the app since backend-service doesn't have that URL on hand.
 export async function sendWeeklyDigestEmail(
   to: string,
   weekStart: Date,

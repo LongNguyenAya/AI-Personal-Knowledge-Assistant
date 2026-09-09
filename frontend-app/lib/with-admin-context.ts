@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { dbAdmin } from "./db-admin";
 import type { Session } from "@/types/auth";
 
-// Song song với with-authed-context.ts nhưng không dùng chung, vì middleware.ts không chặn "/api/admin/*" nên phải tự check quyền.
+// Parallel to with-authed-context.ts but not shared with it, since middleware.ts doesn't block "/api/admin/*" so permission has to be checked here.
 export function withAdminContext<P = Record<string, never>>(
   handler: (req: Request, ctx: { session: Session; params: P; db: typeof dbAdmin }) => Promise<Response>
 ) {

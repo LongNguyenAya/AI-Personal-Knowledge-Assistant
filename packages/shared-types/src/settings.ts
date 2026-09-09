@@ -1,4 +1,4 @@
-// Nguồn thật cho label/mô tả/mặc định/giới hạn của mọi setting, bảng system_settings chỉ lưu giá trị override.
+// The real source for every setting's label/description/default/limits, the system_settings table only stores override values.
 export const SETTINGS_REGISTRY = {
   relatedDistanceThreshold: {
     label: "Ngưỡng tài liệu liên quan",

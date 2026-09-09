@@ -64,12 +64,12 @@ export const PATCH = withAuthedContext<{ id: string }>(async (req, { session, pa
     title.trim() !== existing.title &&
     (typeof wrongValue !== "undefined" || typeof correctedValue !== "undefined");
 
-  // Ghi ở giao dịch độc lập, không lồng vào tx sửa task, vì transaction lồng (savepoint) làm ngữ cảnh RLS sai bên trong.
+  // Written in its own transaction, not nested inside the task-update tx, since a nested transaction (savepoint) breaks the RLS context inside it.
   if (shouldRecordCorrection) {
     try {
       await withUserContext(session.user.id, async (correctionTx) => {
         const contextSignature = buildContextSignature(context ?? null);
-        // Mặc định đọc từ setting "manualCorrectionConfidence", vẫn cho phép caller tự truyền confidence riêng nếu có.
+        // Defaults to reading from the "manualCorrectionConfidence" setting, still lets the caller pass its own confidence if given.
         const defaultConfidence = await getSettingValue("manualCorrectionConfidence");
         const nextConfidence = Math.max(0, Math.min(100, Number(confidence ?? defaultConfidence) || defaultConfidence));
         const existingCorrection = await correctionTx
@@ -128,7 +128,7 @@ export const PATCH = withAuthedContext<{ id: string }>(async (req, { session, pa
   return Response.json(updated);
 });
 
-// Soft delete (set deletedAt), khác reminders (hard delete), vì cột deletedAt trên tasks vốn có sẵn cho việc này.
+// A soft delete (sets deletedAt), unlike reminders (hard delete), since the deletedAt column on tasks already exists for this.
 export const DELETE = withAuthedContext<{ id: string }>(async (req, { session, params, tx }) => {
   const { id } = params;
   const [deleted] = await tx.update(tasks).set({ deletedAt: new Date() })

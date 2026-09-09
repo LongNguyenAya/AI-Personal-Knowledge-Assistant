@@ -2,8 +2,7 @@ import { agentPrompts, users } from "@ai-assistant/db/src/schema";
 import { eq } from "drizzle-orm";
 import { dbAdmin } from "../src/db/admin-client";
 
-// Chạy 1 lần — tạo prompt đầu tiên cho agentType "image_extraction". Không theo cách deactivate-
-// cũ-rồi-insert-mới của các script update-*-prompt khác vì đây là INSERT ĐẦU TIÊN, chưa có bản active nào.
+// Chạy 1 lần, tạo prompt đầu tiên cho agentType "image_extraction", chưa có bản active nào nên không cần deactivate trước.
 
 const IMAGE_EXTRACTION_PROMPT = `Bạn đang đọc một bức ảnh (có thể là ảnh chụp trang tài liệu, ghi chú viết tay, bảng trắng, hoặc ảnh chụp màn hình). Hãy trích xuất TOÀN BỘ nội dung chữ/thông tin trong ảnh theo đúng thứ tự xuất hiện, dưới dạng văn bản thuần, theo các quy tắc sau:
 - Với chữ viết tay: cố gắng đọc và chuyển thành text chính xác nhất có thể; nếu có đoạn không đọc được rõ, ghi chú "[không đọc được: mô tả ngắn vị trí]" thay vì bỏ qua im lặng hoặc đoán bừa nội dung.

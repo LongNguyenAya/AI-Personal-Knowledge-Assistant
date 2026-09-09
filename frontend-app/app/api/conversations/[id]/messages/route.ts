@@ -2,7 +2,7 @@ import { chatHistory } from "@ai-assistant/db/src/schema";
 import { eq, asc } from "drizzle-orm";
 import { withAuthedContext } from "@/lib/with-authed-context";
 
-// Không cần tự check conversationId thuộc đúng user không, RLS trên chat_history đã tự giới hạn theo session.
+// No need to check that conversationId belongs to the right user, RLS on chat_history already scopes it by session.
 export const GET = withAuthedContext<{ id: string }>(async (req, { tx, params }) => {
   const rows = await tx
     .select({

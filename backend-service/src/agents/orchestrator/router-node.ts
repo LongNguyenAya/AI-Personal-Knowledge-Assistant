@@ -2,7 +2,7 @@ import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { buildRouterPrompt } from "../prompts";
 
-// Chỉ cần state.message, khai báo kiểu hẹp để gọi hàm này độc lập ngoài graph.
+// Only needs state.message, declared with a narrow type so this function can be called standalone outside the graph.
 export async function routerNode(state: { message: string }) {
   const prompt = await buildRouterPrompt(state.message);
 

@@ -4,7 +4,7 @@ import { google } from "@ai-sdk/google";
 import { findActiveUsers, hasDigestForWeek, gatherWeeklyStats, insertWeeklyDigest } from "../db/repositories/weekly-digests";
 import { sendWeeklyDigestEmail } from "./email";
 
-// Cắt theo ngày UTC, không theo giờ-phút, để weekStart ổn định làm khoá chống trùng (userId, weekStart).
+// Cuts by UTC date, not hour-minute, so weekStart is stable enough to be the (userId, weekStart) dedupe key.
 function computeWeekRange(now = new Date()): { weekStart: Date; weekEnd: Date } {
   const weekEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const weekStart = new Date(weekEnd);
@@ -18,7 +18,7 @@ async function generateWeeklyDigestForUser(userId: string, email: string): Promi
 
   const stats = await gatherWeeklyStats(userId, weekStart, weekEnd);
   const totalActivity = stats.documentsProcessed + stats.tasksCompleted + stats.tasksOverdue + stats.conversationsStarted;
-  // Không tạo digest cho tuần hoàn toàn không hoạt động, tránh dòng vô nghĩa lặp lại mỗi tuần.
+  // Doesn't create a digest for a week with zero activity, avoiding a meaningless row repeating every week.
   if (totalActivity === 0) return;
 
   const { text } = await generateText({
@@ -37,7 +37,7 @@ async function generateWeeklyDigestForUser(userId: string, email: string): Promi
 
   await insertWeeklyDigest({ userId, weekStart, weekEnd, summaryText: text, stats });
 
-  // Gửi mail tách riêng try/catch, lỗi gửi mail không được làm mất digest đã lưu DB.
+  // Sending the email is wrapped in its own try/catch, an email error must not lose the digest already saved to DB.
   try {
     await sendWeeklyDigestEmail(email, weekStart, weekEnd, text, stats);
   } catch (err) {
@@ -45,7 +45,7 @@ async function generateWeeklyDigestForUser(userId: string, email: string): Promi
   }
 }
 
-// Gọi mỗi khi worker nhận trigger từ SQS, lặp qua tất cả user active, lỗi 1 user không chặn user khác.
+// Called every time the worker gets a trigger from SQS, loops through all active users, 1 user's error doesn't block the others.
 export async function generateWeeklyDigests(): Promise<void> {
   const activeUsers = await findActiveUsers();
   for (const user of activeUsers) {

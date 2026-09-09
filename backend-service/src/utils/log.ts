@@ -1,4 +1,4 @@
-// Worker/scheduler chạy nền không qua request HTTP nên console.log thiếu timestamp, bọc lại thêm giờ VN.
+// Workers/schedulers run in the background outside any HTTP request, so console.log lacks a timestamp, wraps it to add local time.
 function timestamp(): string {
   return new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour12: false });
 }

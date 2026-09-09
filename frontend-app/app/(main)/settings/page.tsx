@@ -5,7 +5,7 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 
 const MAX_LENGTH = 2000;
 
-// "Hồ sơ cá nhân" là đoạn tự do do chính user viết trước, luôn được đưa vào mọi prompt của action-agent, khác Ghi chú AI.
+// "Personal profile" is free-form text the user writes themselves ahead of time, always included in every action-agent prompt, unlike AI Notes.
 export default function SettingsPage() {
   const [note, setNote] = useState("");
   const [loaded, setLoaded] = useState(false);

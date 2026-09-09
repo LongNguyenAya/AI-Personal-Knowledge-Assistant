@@ -7,16 +7,16 @@ import { actionNode } from "./action-node";
 function routeDecision(state: typeof OrchestratorState.State) {
   if (state.route === "research") return "research";
   if (state.route === "action") return "action";
-  if (state.route === "both") return "research"; // "both" -> research trước, rồi action
-  return "action"; // "unknown" -> fallback, để action tự xử lý hoặc trả lời chung chung
+  if (state.route === "both") return "research"; // "both" runs research first, then action
+  return "action"; // "unknown" falls back to action, letting it handle things or give a generic reply
 }
 
-// "both" cần chạy tiếp action sau khi research xong, các route khác kết thúc luôn.
+// "both" needs to run action right after research finishes, every other route ends immediately.
 function afterResearch(state: typeof OrchestratorState.State) {
   return state.route === "both" ? "action" : "finalize";
 }
 
-// Gộp kết quả cuối, ưu tiên actionResult vì đã bao gồm cả research nếu route both.
+// Merges the final result, prefers actionResult since it already includes research when the route is both.
 function finalizeNode(state: typeof OrchestratorState.State) {
   const finalResponse = state.actionResult || state.researchResult || "Xin lỗi, tôi chưa hiểu ý bạn.";
   return { finalResponse };

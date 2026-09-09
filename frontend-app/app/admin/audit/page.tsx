@@ -45,7 +45,7 @@ const CATEGORY_STYLE: Record<string, string> = {
   knowledge_file: "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300",
 };
 
-// action lưu dạng "category.verb" hoặc "category.verb:detail", không phải cột riêng nên phải tự tách ra đây để hiện dễ đọc.
+// action is stored as "category.verb" or "category.verb:detail", not a separate column, so it's split apart here to display readably.
 function parseAction(action: string): { category: string; verb: string; detail: string | null } {
   const [base, detail] = action.split(":");
   const [category, verb] = base.split(".");
@@ -69,7 +69,7 @@ function ActionCell({ action }: { action: string }) {
 
 const PAGE_SIZE = 30;
 
-// Trang đọc lại admin_audit_log, bảng đã được ghi từ trước ở 4 route khác, chỉ thiếu chỗ hiển thị nên trang này thuần chỉ đọc.
+// This page just reads back admin_audit_log, the table is already written to by 4 other routes, only the display was missing so this page is read-only.
 export default function AdminAuditPage() {
   const [category, setCategory] = useState<Category>("all");
 

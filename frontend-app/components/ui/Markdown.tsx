@@ -2,7 +2,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 
-// remarkBreaks coi 1 dấu xuống dòng như <br>, vì AI hay xuống dòng đơn khác markdown chuẩn cần 2 dấu.
+// remarkBreaks treats a single line break as <br>, since the AI often uses a single line break where standard markdown needs 2.
 export function Markdown({ text }: { text: string }) {
   return (
     <ReactMarkdown

@@ -22,7 +22,7 @@ const STATUS_STYLE: Record<string, string> = {
   failed: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
 };
 
-// Chỉ còn trạng thái tạm thời, sẽ tự chuyển tiếp, dùng để biết có cần tiếp tục poll hay không.
+// Just the transient states, will move on by themselves, used to know whether polling needs to continue.
 const PENDING_STATUSES = new Set(["uploaded", "processing"]);
 
 export default function DocumentsPage() {
@@ -32,7 +32,7 @@ export default function DocumentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<{ id: string; fileName: string } | null>(null);
 
-  // Tài liệu liên quan chỉ tính khi user thực sự mở ra xem, và cache lại để mở/đóng lại không gọi API lần nữa.
+  // Related documents are only computed when the user actually opens one, and cached so opening/closing again doesn't call the API twice.
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [relatedCache, setRelatedCache] = useState<Record<string, RelatedDocument[]>>({});
   const [relatedLoadingId, setRelatedLoadingId] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export default function DocumentsPage() {
     })();
   }, []);
 
-  // Worker đẩy WS ngay khi đổi trạng thái nên bình thường không cần poll, chỉ tự poll khi WS đang không kết nối.
+  // The worker pushes a WS event right when the status changes so polling isn't normally needed, only falls back to polling when WS is disconnected.
   const wsConnected = useWsConnected();
   useWsEvent((event) => {
     if (event.type === "document_status") loadDocuments();
@@ -105,7 +105,7 @@ export default function DocumentsPage() {
 
   const [retryingId, setRetryingId] = useState<string | null>(null);
 
-  // Không upload lại file, chỉ gửi lại đúng tài liệu đã có vào hàng đợi xử lý (xem route retry).
+  // Doesn't re-upload the file, just re-sends the existing document into the processing queue (see the retry route).
   async function handleRetry(id: string) {
     setRetryingId(id);
     try {

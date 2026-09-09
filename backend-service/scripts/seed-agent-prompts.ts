@@ -2,8 +2,7 @@ import { agentPrompts, users } from "@ai-assistant/db/src/schema";
 import { eq } from "drizzle-orm";
 import { dbAdmin } from "../src/db/admin-client";
 
-// Chạy 1 lần — đưa 4 prompt đang hardcode vào bảng agent_prompts, làm nguồn thật từ giờ. Thiếu
-// PDF_EXTRACTION_TEMPLATE từng khiến mọi upload PDF trên DB mới (Neon) báo "failed" ngay lập tức.
+// Chạy 1 lần, đưa 4 prompt đang hardcode vào bảng agent_prompts, thiếu PDF_EXTRACTION_TEMPLATE từng khiến upload PDF báo "failed" ngay.
 
 const RESEARCH_TEMPLATE = `Bạn là trợ lý nghiên cứu tài liệu. Chỉ trả lời dựa trên context được cung cấp dưới đây. Nếu context không đủ thông tin để trả lời, hãy nói rõ là không tìm thấy thông tin liên quan, không tự bịa.
 

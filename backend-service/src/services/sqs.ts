@@ -1,7 +1,7 @@
 import { SQSClient, SendMessageCommand, ReceiveMessageCommand, DeleteMessageCommand } from "@aws-sdk/client-sqs";
 import type { DocumentIngestionMessage } from "../types/sqs";
 
-// Không truyền credentials tường minh, SDK tự đọc từ process.env theo default credential provider chain.
+// No explicit credentials passed, the SDK reads them from process.env via the default credential provider chain.
 const sqsClient = new SQSClient({});
 
 const QUEUE_URL = process.env.SQS_QUEUE_URL;
@@ -18,7 +18,7 @@ export async function sendIngestionMessage(payload: DocumentIngestionMessage): P
   );
 }
 
-// WaitTimeSeconds: 20 là long polling, SQS giữ kết nối chờ thay vì trả rỗng ngay như short polling.
+// WaitTimeSeconds: 20 is long polling, SQS holds the connection open instead of returning empty immediately like short polling.
 export async function receiveIngestionMessages() {
   if (!QUEUE_URL) {
     throw new Error("SQS_QUEUE_URL chưa được set trong .env.");
@@ -38,7 +38,7 @@ export async function deleteIngestionMessage(receiptHandle: string): Promise<voi
   await sqsClient.send(new DeleteMessageCommand({ QueueUrl: QUEUE_URL, ReceiptHandle: receiptHandle }));
 }
 
-// Queue riêng cho digest tuần, không có hàm send vì bên gửi là AWS EventBridge Scheduler.
+// A dedicated queue for the weekly digest, no send function because the sender is AWS EventBridge Scheduler.
 const DIGEST_QUEUE_URL = process.env.WEEKLY_DIGEST_QUEUE_URL;
 
 export async function receiveDigestTriggerMessages() {

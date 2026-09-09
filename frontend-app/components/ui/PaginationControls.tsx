@@ -1,6 +1,6 @@
 "use client";
 
-// Khối "Trang X/Y, N mục" + nút Trước/Sau dùng chung ở 4 trang, tự ẩn khi total=0.
+// The "Page X/Y, N items" block plus Prev/Next buttons shared across 4 pages, hides itself when total=0.
 export function PaginationControls({
   page,
   totalPages,

@@ -1,7 +1,7 @@
 import { withAdminContext } from "@/lib/with-admin-context";
 import { getSeries, getMonthComparison, analyzeSeries } from "@/lib/admin-stats";
 
-// role="user" ở cả getSeries/getMonthComparison đếm số câu hỏi, đếm cả dòng "assistant" trả lời sẽ ra gấp đôi số lượt hỏi thật.
+// role="user" in both getSeries/getMonthComparison counts the number of questions, counting "assistant" reply rows too would double the real count.
 export const GET = withAdminContext(async (req, { db }) => {
   const view = new URL(req.url).searchParams.get("view");
 

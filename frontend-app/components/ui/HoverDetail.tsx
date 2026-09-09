@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 const GAP = 8;
 const MAX_WIDTH = 320;
 
-// Thay cho title="" thô của trình duyệt, render qua Portal để không bị card cha overflow:hidden cắt mất.
+// Replaces the browser's plain title="" tooltip, rendered through a Portal so a parent card's overflow:hidden can't clip it.
 export function HoverDetail({
   children,
   content,

@@ -21,7 +21,7 @@ type CorrectionMemory = {
   updatedAt: string;
 };
 
-// Ngưỡng màu thuần hiển thị, không liên quan ngưỡng thật dùng để xếp hạng, chỉ giúp mắt lướt nhanh ghi chú nào "chắc" hơn.
+// A purely visual color threshold, unrelated to the real threshold used for ranking, just helps the eye scan which notes are more "confident".
 function confidenceBadgeStyle(confidence: number): string {
   if (confidence >= 80) return "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300";
   if (confidence >= 50) return "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300";
@@ -55,7 +55,7 @@ const EMPTY_DESCRIPTION: Record<CorrectionStatus, string> = {
 
 const PAGE_SIZE = 20;
 
-// Trang duyệt các quan sát AI tự đề xuất, khác correction do người dùng tự sửa có hiệu lực ngay, "Hoàn tác" trả về hàng chờ duyệt.
+// A page for reviewing AI-suggested observations, unlike a user-made correction which takes effect right away, "Undo" returns it to the pending queue.
 export default function CorrectionsPage() {
   const [tab, setTab] = useState<CorrectionStatus>("inactive");
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export default function CorrectionsPage() {
     [tab]
   );
 
-  // Đổi tab phải về trang 1, nếu không có thể lỡ đứng ở trang của tab cũ mà tab mới không đủ trang đó.
+  // Switching tabs has to reset to page 1, otherwise it could be stuck on a page from the old tab that the new tab doesn't have enough items for.
   function switchTab(next: CorrectionStatus) {
     setTab(next);
     setPage(1);

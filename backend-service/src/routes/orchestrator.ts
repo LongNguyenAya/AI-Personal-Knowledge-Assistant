@@ -16,7 +16,7 @@ import {
 import { rateLimiter } from "../middleware/rate-limit";
 import type { AppEnv } from "../types";
 
-// researchNode() nhánh both không chạy trong stream, lỗi provider tạm thời thì tự dựng UI message stream.
+// researchNode()'s "both" branch doesn't run in the stream, a temporary provider error builds its own UI message stream.
 function overloadedResponse() {
   return createUIMessageStreamResponse({
     stream: createUIMessageStream({
@@ -33,11 +33,11 @@ const app = new Hono<AppEnv>();
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Dùng chung 1 cặp bucket cho cả 2 endpoint để không cho user lách giới hạn qua endpoint debug.
+// Shares 1 pair of buckets across both endpoints so users can't dodge the limit through the debug endpoint.
 const chatPerMinute = rateLimiter({ windowMs: 60 * 1000, maxSettingKey: "chatPerMinuteLimit", name: "chat-minute" });
 const chatPerDay = rateLimiter({ windowMs: 24 * 60 * 60 * 1000, maxSettingKey: "chatPerDayLimit", name: "chat-day" });
 
-// Endpoint gốc không streaming, giữ lại để test nhanh qua Postman, cố ý không có lịch sử hội thoại.
+// The original non-streaming endpoint, kept for quick testing via Postman, deliberately has no conversation history.
 app.post("/agent/orchestrate", chatPerMinute, chatPerDay, async (c) => {
   const userId = c.get("userId");
   const { message } = await c.req.json();
@@ -46,15 +46,15 @@ app.post("/agent/orchestrate", chatPerMinute, chatPerDay, async (c) => {
   return c.json({ response });
 });
 
-// Endpoint streaming dùng bởi chat UI thật, router quyết định route trước rồi mới stream câu trả lời.
+// The streaming endpoint used by the real chat UI, the router decides the route first, then streams the answer.
 app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
   const userId = c.get("userId");
   const { message, conversationId: requestedConversationId, attachedDocumentId } = await c.req.json();
 
-  // frontend-app quyết định conversation nào đang active, ở đây chỉ xác minh nó thuộc về user này.
+  // frontend-app decides which conversation is active, this just verifies it belongs to this user.
   let conversationId: string;
   if (requestedConversationId) {
-    // Validate format trước khi query, chuỗi không phải UUID sẽ khiến Postgres ném lỗi 500 thay vì 400.
+    // Validates the format before querying, a non-UUID string would make Postgres throw a 500 instead of a 400.
     if (!UUID_RE.test(requestedConversationId)) {
       return c.json({ error: "Invalid conversationId" }, 400);
     }
@@ -66,10 +66,10 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
     conversationId = latest ? latest.id : (await createConversation(userId)).id;
   }
 
-  // Lưu tin nhắn user ngay trước khi xử lý, model lỗi giữa chừng thì tin nhắn vẫn không mất.
+  // Saves the user's message right before processing, so it isn't lost even if the model errors midway.
   const priorMessages = await listMessages(userId, conversationId);
 
-  // Model không thấy lại dữ liệu thật của chart cũ, chèn thêm dữ liệu vào đúng tin nhắn chart gần nhất.
+  // The model can't see the real data of an old chart again, so the data gets injected into the most recent chart message.
   let lastChartMessageIndex = -1;
   for (let i = priorMessages.length - 1; i >= 0; i--) {
     if (priorMessages[i].toolResults?.some((tr) => tr.toolName === "createChart")) {
@@ -88,12 +88,12 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
   });
 
   await appendMessage(userId, conversationId, "user", message);
-  // Không chặn response chờ bước này, đặt tên chỉ là phụ trợ hiển thị, lỗi ở đây không đáng trì hoãn.
+  // Doesn't block the response waiting for this step, naming is just a display aid, an error here isn't worth delaying for.
   setConversationTitleIfEmpty(userId, conversationId, message).catch((err) =>
     console.error("[orchestrator] Không đặt được tên cuộc trò chuyện:", err)
   );
 
-  // Đính kèm tài liệu trong composer thì bỏ qua router, luôn coi là research trong đúng tài liệu đó.
+  // Attaching a document in the composer skips the router, always treated as research within that exact document.
   if (attachedDocumentId) {
     const stream = await streamResearchAnswer({ userId, message, history, conversationId, documentId: attachedDocumentId });
     return createUIMessageStreamResponse({ stream });
@@ -111,7 +111,7 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
     try {
       researchResult = (await researchNode({ userId, message, history })).researchResult;
     } catch (err) {
-      if (!isRetryableProviderError(err)) throw err; // lỗi khác — để rơi xuống app.onError như bình thường
+      if (!isRetryableProviderError(err)) throw err; // other error, let it fall through to app.onError as usual
       return overloadedResponse();
     }
     const result = await streamActionAnswer({
@@ -124,7 +124,7 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
     return result.toUIMessageStreamResponse({ onError: toUserFacingErrorMessage });
   }
 
-  // action hoặc unknown, action luôn là bước cuối, khớp fallback của routeDecision() ở index.ts
+  // action or unknown, action is always the last step, matches routeDecision()'s fallback in index.ts
   const result = await streamActionAnswer({ userId, message, history, conversationId });
   return result.toUIMessageStreamResponse({ onError: toUserFacingErrorMessage });
 });

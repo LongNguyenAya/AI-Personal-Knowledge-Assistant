@@ -1,9 +1,9 @@
 import AdminHeader from "./_components/admin-header";
 import AdminSidebar from "./_components/admin-sidebar";
 
-// Không re-check role ở đây vì middleware.ts đã chặn mọi request tới /admin/* nếu không phải admin trước khi render.
+// Doesn't re-check the role here since middleware.ts already blocks every request to /admin/* before rendering if not an admin.
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  // h-screen + overflow-hidden ở khung ngoài để khoá cuộn cấp trang, overflow-y-auto chỉ đặt trên <main> để nó tự cuộn riêng.
+  // h-screen + overflow-hidden on the outer frame locks page-level scrolling, overflow-y-auto is only set on <main> so it scrolls independently.
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
       <AdminHeader />

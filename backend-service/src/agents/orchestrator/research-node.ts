@@ -11,7 +11,7 @@ const FALLBACK_ANSWER = "Xin lỗi, tôi chưa thể xác nhận đủ độ tin
 
 const MAX_FALLBACK_CHUNKS = 5;
 
-// Dùng khi Gemini quá tải giữa chừng, trả thẳng đoạn thô đã truy xuất còn hơn trắng tay.
+// Used when Gemini overloads midway, returning the raw retrieved chunks is still better than nothing.
 function buildOverloadFallback(
   sources: { documentId: string; fileName: string }[],
   contentsByDocumentId: Map<string, string[]>
@@ -36,7 +36,7 @@ function buildOverloadFallback(
 export async function researchNode(state: { userId: string; message: string; history?: ModelMessage[]; documentId?: string }) {
   const { context, sources, contentsByDocumentId } = await retrieveRelevantChunks(state.message, state.userId, 15, state.documentId);
 
-  // toolChoice ép gọi submitAnswer, stopWhen dừng khi có câu trả lời hợp lệ hoặc chạm trần an toàn.
+  // toolChoice forces a call to submitAnswer, stopWhen halts once there's a valid answer or the safety cap is hit.
   const result = await generateText({
     model: google("gemini-flash-lite-latest"),
     system: await buildResearchAgentSystemPrompt(context),
@@ -51,7 +51,7 @@ export async function researchNode(state: { userId: string; message: string; his
   return { researchResult };
 }
 
-// Bản streaming của researchNode, dùng khi route là research thuần, trả lời kèm trích nguồn.
+// The streaming version of researchNode, used when the route is pure research, answers come with citations.
 export async function streamResearchAnswer(state: {
   userId: string;
   message: string;
@@ -63,7 +63,7 @@ export async function streamResearchAnswer(state: {
 
   return createUIMessageStream({
     execute: async ({ writer }) => {
-      // Nếu generateText lỗi do quá tải, chunk đã truy xuất trước đó vẫn còn để trả fallback.
+      // If generateText errors from overload, the chunks already retrieved are still there for the fallback.
       let text: string;
       let persistedToolResults: { toolName: string; input?: unknown; output: unknown }[];
       let citedIds = new Set<string>();
@@ -96,7 +96,7 @@ export async function streamResearchAnswer(state: {
         const grounded = extractGroundedAnswer(result.toolResults);
         text = grounded?.answer ?? FALLBACK_ANSWER;
 
-        // Trace "AI đã đọc gì", giữ cả lần submitAnswer bị từ chối để thấy model tự sửa khi bị bắt lỗi.
+        // The "what did the AI read" trace, keeps even rejected submitAnswer attempts to show the model correcting itself once caught.
         persistedToolResults = [
           retrievalStep,
           ...result.toolResults.filter((r) => r.type === "tool-result").map((r) => ({ toolName: r.toolName, input: r.input, output: r.output })),
@@ -105,28 +105,28 @@ export async function streamResearchAnswer(state: {
       } catch (err) {
         if (!isRetryableProviderError(err)) throw err;
         text = buildOverloadFallback(sources, contentsByDocumentId);
-        // generateText lỗi trước khi model kịp gọi submitAnswer, chỉ giữ bước truy xuất chunk cho trace.
+        // generateText errored before the model could call submitAnswer, only the chunk retrieval step is kept for the trace.
         persistedToolResults = [retrievalStep];
-        // citedIds rỗng vì chunk thô chưa qua AI xác nhận, không nên hiện "Nguồn" như đã kiểm chứng.
+        // citedIds stays empty because raw chunks haven't been confirmed by AI, shouldn't show "Source" as if verified.
       }
 
-      // Chỉ hiện "Nguồn" cho documentId thực sự được trích, ghi sau khi có kết quả chứ không ghi trước.
+      // Only shows "Source" for a documentId that was actually cited, written after the result, not before.
       for (const s of sources) {
         if (!citedIds.has(s.documentId)) continue;
         writer.write({ type: "source-document", sourceId: s.documentId, mediaType: "text/plain", title: s.fileName, filename: s.fileName });
       }
 
-      // Câu trả lời nằm trong tool call, ghi thẳng 1 khối UIMessageChunk để FE hiển thị như text bình thường.
+      // The answer lives inside the tool call, writes 1 UIMessageChunk block directly so the FE displays it like normal text.
       writer.write({ type: "text-start", id: "grounded-answer" });
       writer.write({ type: "text-delta", id: "grounded-answer", delta: text });
       writer.write({ type: "text-end", id: "grounded-answer" });
 
-      // .catch() bắt buộc, xem giải thích trong action-node.ts streamActionAnswer.
+      // .catch() is mandatory, see the explanation in action-node.ts streamActionAnswer.
       appendMessage(state.userId, state.conversationId, "assistant", text, persistedToolResults).catch((err) =>
         console.error("[research-node] Lỗi khi lưu tin nhắn assistant:", err)
       );
     },
-    // Gemini quá tải không được rơi xuống lỗi 500 chung, user cần biết đây là tạm thời nên thử lại sau.
+    // Gemini overload must not fall through as a generic 500, the user needs to know it's temporary and worth retrying.
     onError: toUserFacingErrorMessage,
   });
 }

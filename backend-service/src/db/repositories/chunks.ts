@@ -3,7 +3,7 @@ import { sql, eq, and } from "drizzle-orm";
 import { withUserContext } from "../context";
 import type { NewChunk } from "../../types/chunks";
 
-// Ghi tất cả chunk trong cùng 1 transaction, tránh dừng nửa chừng để lại chunk mồ côi.
+// Writes all chunks in the same transaction, avoiding a mid-way stop that leaves orphaned chunks.
 export async function insertChunks(userId: string, documentId: string, items: NewChunk[]) {
   return withUserContext(userId, async (tx) => {
     for (const item of items) {
@@ -12,7 +12,7 @@ export async function insertChunks(userId: string, documentId: string, items: Ne
   });
 }
 
-// Giới hạn maxPerDocument trước khi lấy top totalLimit, tránh tài liệu dài nuốt hết chỗ tài liệu ngắn.
+// Caps maxPerDocument before taking the top totalLimit, preventing a long document from crowding out shorter ones.
 export async function findRelevantChunks(
   userId: string,
   embedding: number[],
@@ -22,7 +22,7 @@ export async function findRelevantChunks(
   const embeddingLiteral = JSON.stringify(embedding);
 
   return withUserContext(userId, (tx) => {
-    // Có documentId nghĩa là user đã đính kèm rõ, ép cứng chỉ tìm trong đó, không rơi về tìm toàn bộ.
+    // Having a documentId means the user attached it explicitly, forces the search to stay within it instead of falling back to searching everything.
     const scope = documentId ? and(eq(documents.userId, userId), eq(documents.id, documentId)) : eq(documents.userId, userId);
     const ranked = tx
       .select({
@@ -48,7 +48,7 @@ export async function findRelevantChunks(
   });
 }
 
-// Lấy toàn bộ chunk theo thứ tự gốc, kèm flaggedSuspicious để extractActionItemsTool ép hạ confidence.
+// Fetches all chunks in their original order, including flaggedSuspicious so extractActionItemsTool can force confidence down.
 export async function getDocumentChunks(userId: string, documentId: string) {
   return withUserContext(userId, (tx) =>
     tx

@@ -72,7 +72,7 @@ export default function AdminUsersPage() {
             )}
             {userList?.map((u) => {
               const isDeleted = !!u.deletedAt;
-              // Backend đã chặn cứng việc admin tự khoá/xoá chính mình, ẩn nút ở đây chỉ để UX rõ ràng hơn, không phải lớp bảo vệ duy nhất.
+              // The backend already hard-blocks an admin from locking/deleting themselves, hiding the button here is just for clearer UX, not the only safeguard.
               const isSelf = u.id === session?.user.id;
               return (
                 <tr key={u.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40">

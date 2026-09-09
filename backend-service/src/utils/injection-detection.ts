@@ -1,4 +1,4 @@
-// Quét injection bằng rule-based 1 lần lúc ingest, cố tình không dùng AI để quét vì rẻ và dự đoán được.
+// Scans for injection with a rule-based pass once at ingest, deliberately not using AI since it's cheap and predictable.
 const SUSPICIOUS_PATTERNS: { pattern: RegExp; reason: string }[] = [
   { pattern: /ignore\s+(all|any|previous|the\s+above|prior)\s+(instructions?|prompts?|rules?)/i, reason: "Yêu cầu bỏ qua chỉ dẫn trước đó (tiếng Anh)" },
   { pattern: /disregard\s+(all|any|previous|the\s+above|prior)\s+(instructions?|prompts?|rules?)/i, reason: "Yêu cầu bỏ qua chỉ dẫn trước đó (tiếng Anh)" },

@@ -1,2 +1,2 @@
-// Key sessionStorage dùng chung giữa trang Chat và các trang khác muốn điều hướng sang kèm sẵn 1 câu hỏi, tách riêng để không lặp chuỗi ma thuật.
+// A sessionStorage key shared between the Chat page and other pages that navigate over with a pre-filled question, kept separate to avoid repeating a magic string.
 export const CHAT_PREFILL_STORAGE_KEY = "chat-prefill-prompt";

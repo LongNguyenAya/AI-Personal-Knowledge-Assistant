@@ -12,7 +12,7 @@ const IMAGE_MEDIA_TYPES: Record<string, string> = {
   webp: "image/webp",
 };
 
-// Ảnh nhúng .docx/.pptx luôn nằm trong 1 thư mục media, quét thẳng đó và giới hạn số ảnh mỗi tài liệu.
+// Images embedded in .docx/.pptx always live in 1 media folder, scans it directly and caps the image count per document.
 async function describeEmbeddedImages(zip: JSZip, mediaFolder: string): Promise<string[]> {
   const maxImages = Math.round(await getSettingValue("maxImagesPerDocument"));
   const imageFiles = Object.keys(zip.files)
@@ -28,7 +28,7 @@ async function describeEmbeddedImages(zip: JSZip, mediaFolder: string): Promise<
       const buffer = await zip.files[name].async("nodebuffer");
       descriptions.push(await describeImage(buffer, IMAGE_MEDIA_TYPES[ext]));
     } catch (err) {
-      // 1 ảnh lỗi không được làm hỏng toàn bộ document, bỏ qua ảnh đó và giữ lại phần đã thành công.
+      // 1 failed image must not break the whole document, skips it and keeps whatever succeeded.
       console.error(`[office-extraction] Không mô tả được ảnh ${name}:`, err);
     }
   }
@@ -58,7 +58,7 @@ function decodeXmlEntities(s: string): string {
   return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 }
 
-// .pptx là zip XML, tự giải nén và đọc bằng regex thay vì thêm thư viện parse pptx có rủi ro.
+// .pptx is a zip of XML, unzipped and read with regex by hand instead of adding a riskier pptx-parsing library.
 export async function extractPptxContent(buffer: Buffer): Promise<string> {
   const zip = await JSZip.loadAsync(buffer);
   const slideFiles = Object.keys(zip.files)

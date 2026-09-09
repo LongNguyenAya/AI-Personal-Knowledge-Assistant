@@ -5,7 +5,7 @@ import CommandPalette from "@/components/CommandPalette";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
-// subsets "vietnamese" bắt buộc vì font này được chọn riêng để hỗ trợ tốt dấu tiếng Việt, thiếu subset chữ có dấu sẽ rơi về font mặc định.
+// The "vietnamese" subset is required since this font was chosen specifically for good Vietnamese diacritic support, missing that subset falls back to a default font.
 const beVietnamPro = Be_Vietnam_Pro({
   variable: "--font-be-vietnam-pro",
   subsets: ["latin", "vietnamese"],

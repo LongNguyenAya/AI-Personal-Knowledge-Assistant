@@ -4,7 +4,7 @@ import { withAdminContext } from "@/lib/with-admin-context";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Vòng đời hợp lệ: pending -> approved|rejected; approved -> revoked, map này vừa là whitelist vừa là điều kiện WHERE.
+// The valid lifecycle: pending -> approved|rejected; approved -> revoked, this map doubles as both a whitelist and the WHERE condition.
 const REQUIRED_PRIOR_STATUS = { approved: "pending", rejected: "pending", revoked: "approved" } as const;
 
 export const POST = withAdminContext<{ id: string }>(async (req, { db, session, params }) => {
@@ -15,7 +15,7 @@ export const POST = withAdminContext<{ id: string }>(async (req, { db, session, 
 
   const requiredPriorStatus = REQUIRED_PRIOR_STATUS[decision as keyof typeof REQUIRED_PRIOR_STATUS];
 
-  // UPDATE ... WHERE status=<trạng thái trước hợp lệ>, không có row trả về nghĩa là admin khác đã xử lý trước, tránh race.
+  // UPDATE ... WHERE status=<the valid prior state>, no row returned means another admin already handled it first, avoiding a race.
   const notFoundOrConflict = await db.transaction(async (tx) => {
     const updated = await tx
       .update(knowledgeFiles)

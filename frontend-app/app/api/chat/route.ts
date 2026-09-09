@@ -24,13 +24,13 @@ export async function POST(req: Request) {
     body: JSON.stringify({ message: question, conversationId, attachedDocumentId }),
   });
 
-  // Forward thẳng response khi backend lỗi sẽ khiến client nhận stream sai định dạng, phải check response.ok trước.
+  // Forwarding the response straight through on a backend error would make the client receive a malformed stream, response.ok has to be checked first.
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     return new Response(text || "Backend service lỗi", { status: response.status });
   }
 
-  // Forward nguyên response, giữ đúng header content-type mà toUIMessageStreamResponse() đã set
+  // Forwards the response as-is, keeping the exact content-type header that toUIMessageStreamResponse() already set
   return new Response(response.body, {
     headers: response.headers,
   });

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { recordCorrectionMemory } from "../../db/repositories/correction-memories";
 import { getSettingValue } from "../../db/repositories/settings";
 
-// Khác correction do người sửa (có hiệu lực ngay), ở đây AI tự đề xuất nên luôn lưu status inactive.
+// Unlike a correction made by the user (takes effect right away), this is an AI suggestion so it's always saved as inactive.
 export function noteObservationTool(userId: string) {
   return tool({
     description:
@@ -18,7 +18,7 @@ export function noteObservationTool(userId: string) {
       observation: z.string().describe("Mô tả ngắn gọn quan sát/bài học — điều gì mơ hồ, bạn đã xử lý (hoặc nên xử lý) thế nào"),
     }),
     execute: async ({ sourceType, fieldName, observation }) => {
-      // Admin tự chỉnh qua /admin/settings, mặc định thấp hơn correction do user sửa vì chưa ai xác nhận.
+      // Admin adjusts this via /admin/settings, defaults lower than a user-made correction since nobody has confirmed it yet.
       const confidence = Math.round(await getSettingValue("aiNoteConfidence"));
       await recordCorrectionMemory({
         userId,

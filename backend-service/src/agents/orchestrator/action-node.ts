@@ -30,7 +30,7 @@ function buildActionTools(userId: string) {
   };
 }
 
-// Bản không streaming, dùng cho route both (research trước, action sau).
+// The non-streaming version, used for the "both" route (research first, action after).
 export async function actionNode(state: typeof OrchestratorState.State) {
   const contextHint = state.researchResult
     ? `\n\nThông tin đã tra cứu được trước đó: ${state.researchResult}`
@@ -48,7 +48,7 @@ export async function actionNode(state: typeof OrchestratorState.State) {
   return { actionResult: text };
 }
 
-// Bản streaming của actionNode, dùng làm bước trả lời cuối, lấy researchResult làm ngữ cảnh nếu có.
+// The streaming version of actionNode, used as the final answering step, uses researchResult as context if present.
 export async function streamActionAnswer(state: {
   userId: string;
   message: string;
@@ -68,12 +68,12 @@ export async function streamActionAnswer(state: {
     stopWhen: stepCountIs(5),
     telemetry: { functionId: "action-node-stream" },
     onFinish: ({ text, toolResults }) => {
-      // Lưu kèm input/output tool call để phục dựng UI part và hiện trace khi tải lại lịch sử.
+      // Stored alongside the tool call's input/output to rebuild UI parts and show the trace when reloading history.
       const persistedToolResults = toolResults
         .filter((r) => r.type === "tool-result")
         .map((r) => ({ toolName: r.toolName, input: r.input, output: r.output }));
 
-      // .catch() bắt buộc, xem giải thích trong research-node.ts streamResearchAnswer.
+      // .catch() is mandatory, see the explanation in research-node.ts streamResearchAnswer.
       appendMessage(state.userId, state.conversationId, "assistant", text, persistedToolResults).catch((err) =>
         console.error("[action-node] Lỗi khi lưu tin nhắn assistant:", err)
       );

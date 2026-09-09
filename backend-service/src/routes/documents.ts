@@ -9,10 +9,10 @@ import type { AppEnv } from "../types";
 
 const app = new Hono<AppEnv>();
 
-// Upload PDF cũng tốn 1 lệnh Gemini, giới hạn nhẹ hơn route chat vì tần suất upload đã thấp hơn.
+// Uploading a PDF also costs 1 Gemini call, the limit here is looser than the chat route because upload frequency is already lower.
 const uploadPerHour = rateLimiter({ windowMs: 60 * 60 * 1000, maxSettingKey: "uploadPerHourLimit", name: "upload-hour" });
 
-// Chặn sớm trước khi decode base64 vào RAM, dùng trần kỹ thuật cố định làm lưới an toàn ngoài cùng.
+// Blocks early before decoding base64 into RAM, uses a fixed technical cap as the outermost safety net.
 const uploadBodyLimit = bodyLimit({ maxSize: Math.ceil(SETTINGS_REGISTRY.maxUploadMb.max * 1024 * 1024 * 1.37) });
 
 app.post("/documents/upload", uploadPerHour, uploadBodyLimit, async (c) => {
@@ -25,7 +25,7 @@ app.post("/documents/upload", uploadPerHour, uploadBodyLimit, async (c) => {
   }
   const buffer = Buffer.from(base64, "base64");
 
-  // Chỉ lưu file và đẩy SQS ở đây, worker nền tự nhận message rồi xử lý phần nặng.
+  // Only saves the file and pushes to SQS here, the background worker picks up the message and handles the heavy lifting.
   try {
     await enqueueDocumentIngestion(userId, documentId, key, fileName, buffer);
     return c.json({ success: true });
@@ -34,7 +34,7 @@ app.post("/documents/upload", uploadPerHour, uploadBodyLimit, async (c) => {
   }
 });
 
-// Thử lại tài liệu failed không cần gửi lại file, chỉ gửi lại message SQS để worker xử lý từ đầu.
+// Retrying a failed document doesn't need to resend the file, just pushes the SQS message again for the worker to process from scratch.
 app.post("/documents/retry", async (c) => {
   const userId = c.get("userId");
   const { documentId, key, fileName } = await c.req.json();
@@ -51,7 +51,7 @@ app.post("/documents/retry", async (c) => {
   }
 });
 
-// Xoá file vật lý, frontend đã xoá xong dòng document trước khi gọi endpoint này.
+// Deletes the physical file, the frontend has already removed the document row before calling this endpoint.
 app.delete("/documents/file", async (c) => {
   const userId = c.get("userId");
   const { key } = await c.req.json();

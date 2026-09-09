@@ -2,7 +2,7 @@ import { weeklyDigests, users, documents, tasks, conversations, reminders } from
 import { and, eq, gte, lt, isNull, sql } from "drizzle-orm";
 import { dbAdmin } from "../admin-client";
 
-// digest-worker.ts chạy cho mọi user nên cần dbAdmin, bỏ qua user đã khoá/đã xoá.
+// digest-worker.ts runs for every user so it needs dbAdmin, skips locked/deleted users.
 export async function findActiveUsers() {
   return dbAdmin
     .select({ id: users.id, email: users.email })
@@ -10,7 +10,7 @@ export async function findActiveUsers() {
     .where(and(eq(users.isActive, true), isNull(users.deletedAt)));
 }
 
-// Chặn tạo trùng digest cùng tuần, cần thiết vì message trigger có thể dồn lại trong SQS.
+// Prevents creating a duplicate digest for the same week, necessary because trigger messages can pile up in SQS.
 export async function hasDigestForWeek(userId: string, weekStart: Date): Promise<boolean> {
   const [row] = await dbAdmin
     .select({ id: weeklyDigests.id })
@@ -29,7 +29,7 @@ export async function insertWeeklyDigest(data: {
   await dbAdmin.insert(weeklyDigests).values(data);
 }
 
-// Số liệu thô dùng để quyết định có đáng tạo digest và làm dữ liệu thật cho Gemini viết văn xuôi.
+// Raw numbers used to decide whether a digest is worth creating and as the real data for Gemini to write prose from.
 export async function gatherWeeklyStats(userId: string, weekStart: Date, weekEnd: Date) {
   const [documentsProcessed] = await dbAdmin
     .select({ count: sql<number>`count(*)::int` })
@@ -41,7 +41,7 @@ export async function gatherWeeklyStats(userId: string, weekStart: Date, weekEnd
     .from(tasks)
     .where(and(eq(tasks.userId, userId), eq(tasks.isDone, true), isNull(tasks.deletedAt), gte(tasks.updatedAt, weekStart), lt(tasks.updatedAt, weekEnd)));
 
-  // Quá hạn tính tại thời điểm chốt tuần (weekEnd), không phải lúc chạy job, để job trễ không đổi số liệu.
+  // Overdue is computed as of the week's close (weekEnd), not when the job runs, so a delayed job doesn't change the numbers.
   const [tasksOverdue] = await dbAdmin
     .select({ count: sql<number>`count(*)::int` })
     .from(tasks)

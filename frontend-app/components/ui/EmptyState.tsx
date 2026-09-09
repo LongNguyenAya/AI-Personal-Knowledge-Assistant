@@ -1,4 +1,4 @@
-// Dùng chung cho mọi danh sách rỗng, viền đứt nét mượn ngôn ngữ hình ảnh đã có ở UploadDropzone.
+// Shared by every empty list, the dashed border borrows the visual language already used in UploadDropzone.
 export function EmptyState({ title, description }: { title: string; description?: string }) {
   return (
     <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-900">

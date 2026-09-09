@@ -3,7 +3,7 @@ import { findRelevantChunks } from "../db/repositories/chunks";
 
 const MAX_CHUNKS_PER_DOCUMENT = 3;
 
-// documentId đính kèm thì ép cứng chỉ tìm trong đó, không cần giới hạn maxPerDocument nữa.
+// With a documentId attached, the search is forced to stay within it, no need for the maxPerDocument cap anymore.
 export async function retrieveRelevantChunks(question: string, userId: string, totalLimit = 15, documentId?: string) {
   const embedding = await embedText(question);
   const relevantChunks = await findRelevantChunks(userId, embedding, {
@@ -12,11 +12,11 @@ export async function retrieveRelevantChunks(question: string, userId: string, t
     documentId,
   });
 
-  // Gắn nhãn documentId cho từng đoạn để model biết ID nào ứng với đoạn nào khi báo cáo citedDocumentIds.
+  // Tags each chunk with its documentId so the model knows which ID matches which chunk when reporting citedDocumentIds.
   const context = relevantChunks.map((c) => `[documentId: ${c.documentId}]\n${c.content}`).join("\n\n---\n\n");
   const sources = [...new Map(relevantChunks.map((c) => [c.documentId, c])).values()];
 
-  // Gom nội dung theo documentId để submitAnswerTool so khớp câu trả lời với đúng nguồn đã trích.
+  // Groups content by documentId so submitAnswerTool can match the answer against the exact source it cited.
   const contentsByDocumentId = new Map<string, string[]>();
   for (const c of relevantChunks) {
     const list = contentsByDocumentId.get(c.documentId) ?? [];

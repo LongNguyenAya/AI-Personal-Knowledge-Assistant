@@ -19,7 +19,7 @@ export async function buildActionAgentSystemPrompt(currentDateUtc: string, userM
     timeStyle: "medium",
   });
 
-  // 1 lệnh embedding mỗi tin nhắn, rẻ hơn tool-calling, kết quả đưa thẳng vào prompt.
+  // 1 embedding call per message, cheaper than tool-calling, the result goes straight into the prompt.
   const queryEmbedding = await embedText(userMessage);
   const relevantNotes = await findRelevantApprovedNotes(queryEmbedding);
   const knowledgeContext =
@@ -27,14 +27,14 @@ export async function buildActionAgentSystemPrompt(currentDateUtc: string, userM
       ? "(chưa có ghi chú kiến thức nào liên quan)"
       : relevantNotes.map((n) => `### [${n.path}] ${n.title}\n${n.content}`).join("\n\n");
 
-  // Đưa thẳng fileName+id vào prompt để model tự đối chiếu, rẻ hơn 1 lệnh embedding riêng.
+  // Puts fileName+id directly into the prompt for the model to match itself, cheaper than a separate embedding call.
   const docs = await listDocuments(userId);
   const documentList =
     docs.length === 0
       ? "(user chưa có tài liệu nào)"
       : docs.map((d) => `- id: ${d.id} | tên file: ${d.fileName}`).join("\n");
 
-  // Admin tự chỉnh qua /admin/settings, cao hơn thì AI nhớ nhiều hơn nhưng tốn thêm token.
+  // Admin adjusts this via /admin/settings, higher means the AI remembers more but costs more tokens.
   const correctionHintLimit = Math.round(await getSettingValue("correctionHintLimit"));
   const correctionHints = await findActiveCorrectionHintsForUser(userId, correctionHintLimit);
   const correctionContext = buildCorrectionHintPrompt(
@@ -45,7 +45,7 @@ export async function buildActionAgentSystemPrompt(currentDateUtc: string, userM
     }))
   );
 
-  // User tự viết 1 lần ở /settings, luôn đưa vào, khác correctionContext (chỉ ghi khi có sự kiện).
+  // The user writes this once at /settings, always included, unlike correctionContext (only written on an event).
   const personalNote = await getPersonalNote(userId);
   const personalNoteContext = personalNote?.trim() ? personalNote.trim() : "(user chưa cung cấp thông tin cá nhân nào)";
 

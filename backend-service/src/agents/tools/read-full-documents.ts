@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { getDocumentChunks } from "../../db/repositories/chunks";
 
-// Không gọi AI bên trong, chỉ trả nội dung thô để agent đang chạy tự tóm tắt/so sánh.
+// Doesn't call AI internally, just returns the raw content for the running agent to summarize/compare itself.
 export function readFullDocumentsTool(userId: string) {
   return tool({
     description:
@@ -34,7 +34,7 @@ export function readFullDocumentsTool(userId: string) {
         };
       }
 
-      // Bọc <document_content>, action prompt đã dặn coi đây là dữ liệu chứ không phải lệnh.
+      // Wrapped in <document_content>, the action prompt already instructs treating this as data, not a command.
       const documentsOut = results.map((r) => ({
         documentId: r.documentId,
         content: `<document_content>\n${r.rawContent}\n</document_content>`,

@@ -6,7 +6,7 @@ import { useSession, signOut } from "@/lib/auth-client";
 import { Bot, MessageSquare, FileText, CheckSquare, Bell, Sparkles, NotebookPen, UserRound, ShieldCheck, Menu, X, LogOut } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 
-// Logo dạng ô vuông gradient thay icon Bot trơn trước đây, dùng chung cho cả top-bar mobile lẫn header sidebar desktop.
+// Gradient square logo replacing the plain Bot icon, shared by the mobile top bar and desktop sidebar header.
 function Logo() {
   return (
     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-indigo-600 to-amber-500">
@@ -17,19 +17,19 @@ function Logo() {
 
 const LINKS = [
   { href: "/chat", label: "Chat", icon: MessageSquare },
-  { href: "/documents", label: "Tài liệu", icon: FileText },
+  { href: "/documents", label: "Documents", icon: FileText },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/reminders", label: "Reminders", icon: Bell },
-  { href: "/digest", label: "Tóm tắt tuần", icon: Sparkles },
-  { href: "/corrections", label: "Ghi chú AI", icon: NotebookPen },
-  { href: "/settings", label: "Hồ sơ cá nhân", icon: UserRound },
+  { href: "/digest", label: "Weekly Digest", icon: Sparkles },
+  { href: "/corrections", label: "AI Notes", icon: NotebookPen },
+  { href: "/settings", label: "Profile", icon: UserRound },
 ];
 
 export default function MainNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
-  // Sidebar cố định chỉ hợp lý ở màn hình đủ rộng (md+), mặc định ẩn trên mobile và hiện dạng overlay khi bấm "Menu".
+  // A fixed sidebar only makes sense on wide screens (md+), hidden by default on mobile as an overlay via "Menu".
   const [open, setOpen] = useState(false);
 
   async function handleSignOut() {
@@ -114,7 +114,7 @@ export default function MainNav() {
             <p className="truncate px-3 pb-2 text-xs text-gray-500 dark:text-gray-400">{session.user.email}</p>
           )}
           <div className="mb-1 flex items-center justify-between rounded-lg px-3 py-2">
-            <span className="text-[13px] text-gray-500 dark:text-gray-400">Giao diện</span>
+            <span className="text-[13px] text-gray-500 dark:text-gray-400">Theme</span>
             <ThemeToggle variant="inline" />
           </div>
           <button
@@ -122,7 +122,7 @@ export default function MainNav() {
             className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            Đăng xuất
+            Log out
           </button>
         </div>
       </aside>

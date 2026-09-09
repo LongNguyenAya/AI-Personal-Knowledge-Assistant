@@ -13,7 +13,7 @@ import { getSettingValue } from "../db/repositories/settings";
 import { sendToUser } from "../ws/registry";
 import type { DocumentStatus } from "@ai-assistant/db/src/schema";
 
-// Vừa ghi DB vừa đẩy WS ở đúng 1 chỗ, lỗi WS không được làm hỏng pipeline chính nên bọc try/catch riêng.
+// Writes to DB and pushes over WS in the same spot, a WS error must not break the main pipeline so it's wrapped in its own try/catch.
 async function updateStatusAndNotify(userId: string, documentId: string, status: Exclude<DocumentStatus, "uploaded">) {
   await updateStatus(userId, documentId, status);
   try {
@@ -23,10 +23,10 @@ async function updateStatusAndNotify(userId: string, documentId: string, status:
   }
 }
 
-// Chỉ định dạng qua Gemini mới đáng kiểm tra tỷ lệ trích xuất, .txt/.md đọc thẳng buffer nên không cần.
+// Only formats going through Gemini are worth checking extraction ratio for, .txt/.md read the buffer directly so it's unnecessary.
 const RATIO_CHECKED_EXTENSIONS = new Set(["pdf", "docx", "pptx", "png", "jpg", "jpeg", "webp"]);
 
-// Định dạng lạ phải từ chối rõ ràng, không thì sẽ âm thầm đọc buffer nhị phân như text, tạo chunk rác.
+// Unknown formats must be rejected explicitly, otherwise it would silently read binary buffers as text, creating garbage chunks.
 async function extractText(fileName: string, buffer: Buffer): Promise<string> {
   const ext = fileName.toLowerCase().split(".").pop() ?? "";
   switch (ext) {
@@ -49,7 +49,7 @@ async function extractText(fileName: string, buffer: Buffer): Promise<string> {
   }
 }
 
-// Giai đoạn 1 chạy trong request HTTP phải nhanh, chỉ lưu file rồi đẩy message SQS mang mỗi key.
+// Stage 1 runs inside the HTTP request and must be fast, just saves the file then pushes an SQS message carrying only the key.
 export async function enqueueDocumentIngestion(
   userId: string,
   documentId: string,
@@ -57,7 +57,7 @@ export async function enqueueDocumentIngestion(
   fileName: string,
   buffer: Buffer
 ): Promise<void> {
-  // Admin tự chỉnh qua /admin/settings, backend tự kiểm tra lại vì ai có JWT hợp lệ vẫn gọi thẳng được.
+  // Admin adjusts this via /admin/settings, the backend re-checks it because anyone with a valid JWT can still call directly.
   const maxUploadBytes = (await getSettingValue("maxUploadMb")) * 1024 * 1024;
   if (buffer.length > maxUploadBytes) {
     throw new Error(`File quá lớn (${buffer.length} bytes) — vượt giới hạn ${maxUploadBytes} bytes.`);
@@ -66,7 +66,7 @@ export async function enqueueDocumentIngestion(
   await sendIngestionMessage({ userId, documentId, key, fileName });
 }
 
-// Giai đoạn 2 (worker nền): chunk, embed, ghi DB, cập nhật status, lỗi bất kỳ bước nào đều thành failed.
+// Stage 2 (background worker): chunk, embed, write to DB, update status, an error at any step becomes failed.
 export async function processDocumentIngestion(
   userId: string,
   documentId: string,
@@ -80,7 +80,7 @@ export async function processDocumentIngestion(
     const text = await extractText(fileName, buffer);
     const ext = fileName.toLowerCase().split(".").pop() ?? "";
 
-    // Gộp 2 lý do khả dĩ vào đúng 1 lần gọi flagSuspicious, gọi riêng 2 lần sẽ ghi đè mất lý do trước.
+    // Merges the 2 possible reasons into exactly 1 call to flagSuspicious, calling it twice separately would overwrite the earlier reason.
     let flagReason: string | null = null;
     try {
       const { flagged, reason } = detectPromptInjection(text);
@@ -89,14 +89,14 @@ export async function processDocumentIngestion(
       log.error(`[document-ingestion] Lỗi khi quét injection cho document ${documentId} (bỏ qua, không chặn ingest):`, err);
     }
 
-    // Cảnh báo "có thể trích thiếu" chỉ để tự kiểm tra, ngưỡng đọc từ system_settings.
+    // The "possibly under-extracted" warning is just a self-check, the threshold is read from system_settings.
     const minCharsPerKb = await getSettingValue("minCharsPerKb");
     if (RATIO_CHECKED_EXTENSIONS.has(ext) && text.length < (buffer.length / 1024) * minCharsPerKb) {
       const shortReason = `Trích xuất được ít nội dung (${text.length} ký tự) so với kích thước file (${Math.round(buffer.length / 1024)}KB) — có thể còn thiếu, bạn nên tự kiểm tra lại.`;
       flagReason = flagReason ? `${flagReason} ${shortReason}` : shortReason;
     }
 
-    // Quét và đánh dấu ngay sau khi có nội dung thô, chỉ cảnh báo chứ không chặn xử lý.
+    // Scans and flags right after the raw content is available, only warns, never blocks processing.
     if (flagReason) {
       try {
         await flagSuspicious(userId, documentId, flagReason);
@@ -117,7 +117,7 @@ export async function processDocumentIngestion(
     await updateStatusAndNotify(userId, documentId, "processed");
     return { success: true as const, chunksCreated: textChunks.length };
   } catch (err) {
-    // updateStatus cũng có thể lỗi, không bọc riêng thì document kẹt vĩnh viễn ở processing.
+    // updateStatus can also fail, without its own wrapper the document would get stuck in processing forever.
     try {
       await updateStatusAndNotify(userId, documentId, "failed");
     } catch (statusErr) {

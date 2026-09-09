@@ -14,7 +14,7 @@ export type RecordCorrectionMemoryInput = {
   correctedValue?: string | null;
   context?: CorrectionMemoryContext;
   confidence?: number;
-  // active là correction người dùng tự sửa (có hiệu lực ngay), inactive là AI tự đề xuất (chờ duyệt).
+  // active is a correction the user edited directly (takes effect right away), inactive is an AI suggestion (pending approval).
   status?: "active" | "inactive" | "dismissed" | "expired";
 };
 
@@ -42,7 +42,7 @@ export async function recordCorrectionMemory(input: RecordCorrectionMemoryInput)
   const confidenceBoost = Math.max(0, Math.min(100, input.confidence ?? 80));
 
   return withUserContext(input.userId, async (tx) => {
-    // Chỉ tìm bản ghi active để gộp confidence, quan sát AI (inactive) luôn tạo dòng mới không gộp.
+    // Only looks up active records to merge confidence, an AI observation (inactive) always creates a new row instead of merging.
     const existing = await tx
       .select()
       .from(userCorrectionMemories)

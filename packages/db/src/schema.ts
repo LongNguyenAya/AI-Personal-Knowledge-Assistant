@@ -1,7 +1,7 @@
 import { pgTable, uuid, text, timestamp, vector, boolean, pgEnum, index, integer, uniqueIndex, pgPolicy, pgRole, jsonb } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
-// Provisioned by docker/initdb/01-roles.sql, .existing() tránh Drizzle tự CREATE/DROP role này.
+// Provisioned by docker/initdb/01-roles.sql, .existing() stops Drizzle from trying to CREATE/DROP this role.
 export const appUserRole = pgRole("app_user").existing();
 
 export const roleEnum = pgEnum("role", ["user", "admin"]);
@@ -13,7 +13,7 @@ export const agentTypeEnum = pgEnum("agent_type", ["research", "action", "orches
 export const knowledgeStatusEnum = pgEnum("knowledge_status", ["pending", "approved", "rejected", "revoked"]);
 export const correctionStatusEnum = pgEnum("correction_status", ["active", "inactive", "dismissed", "expired"]);
 
-// Type suy ra từ enum, khai báo 1 lần để cả 2 app cùng import.
+// Type inferred from the enum, declared once so both apps can import it.
 export type DocumentStatus = (typeof documentStatusEnum.enumValues)[number];
 export type ReminderSource = (typeof reminderSourceEnum.enumValues)[number];
 export type AgentType = (typeof agentTypeEnum.enumValues)[number];
@@ -30,13 +30,13 @@ export const users = pgTable(
     role: roleEnum("role").notNull().default("user"),
     image: text("image"),
     isActive: boolean("is_active").default(true).notNull(),
-    // User tự viết 1 lần, luôn đưa vào mọi prompt action-agent, chỉnh ở /settings.
+    // User writes this once, always injected into every action-agent prompt, edited at /settings.
     personalNote: text("personal_note"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  // Cho phân trang users ở admin, thiếu index này Postgres phải quét/sort cả bảng mỗi lần.
+  // For paginating users in admin, without this index Postgres has to scan/sort the whole table every time.
   (table) => [index("users_created_at_idx").on(table.createdAt)],
 );
 
@@ -107,12 +107,12 @@ export const documents = pgTable("documents", {
   fileName: text("file_name").notNull(),
   status: documentStatusEnum("status").notNull().default("uploaded"),
   s3Key: text("s3_key").notNull(),
-  // Quét 1 lần lúc ingest, không chặn xử lý, chỉ đánh dấu cảnh báo và ép hạ confidence.
+  // Scanned once at ingest time, doesn't block processing, just flags a warning and forces confidence down.
   flaggedSuspicious: boolean("flagged_suspicious").notNull().default(false),
   flagReason: text("flag_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  // Không có deletedAt, xoá tài liệu là hard delete, chunks tự xoá theo qua cascade FK.
+  // No deletedAt, deleting a document is a hard delete, chunks are removed via cascading FK.
 }, (table) => ({
   userIdIdx: index("documents_user_id_idx").on(table.userId),
   userIsolationPolicy: pgPolicy("documents_user_isolation", {
@@ -132,7 +132,7 @@ export const chunks = pgTable("chunks", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   documentIdIdx: index("chunks_document_id_idx").on(table.documentId),
-  // Index HNSW phải tạo tay bằng raw SQL, Drizzle chưa hỗ trợ. Policy RLS phải join qua documents.
+  // The HNSW index has to be created by hand with raw SQL, Drizzle doesn't support it yet. The RLS policy has to join through documents.
   userIsolationPolicy: pgPolicy("chunks_user_isolation", {
     for: "all",
     to: appUserRole,
@@ -146,19 +146,19 @@ export const tasks = pgTable("tasks", {
   userId: uuid("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   isDone: boolean("is_done").default(false).notNull(),
-  // 1 reminder gắn nhiều task, reminderId khớp userId chỉ được RLS đảm bảo, dbAdmin phải tự kiểm tra.
+  // 1 reminder can attach to many tasks, reminderId matching userId is only guaranteed by RLS, dbAdmin has to check it manually.
   reminderId: uuid("reminder_id").references(() => reminders.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  // .$onUpdate() bắt buộc, analytics.ts dùng cột này làm mốc "tuần hoàn thành", task không có completedAt riêng.
+  // .$onUpdate() is required, analytics.ts uses this column as the "week completed" marker, tasks have no separate completedAt.
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull()
     .$onUpdate(() => /* @__PURE__ */ new Date()),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 }, (table) => ({
-  // Không cần index riêng cho userId, composite (userId, createdAt) đã bao nhờ tiền tố trái.
+  // No separate index needed for userId, the composite (userId, createdAt) already covers it via the left prefix.
   userIdCreatedAtIdx: index("tasks_user_id_created_at_idx").on(table.userId, table.createdAt),
-  // Scheduler quét theo reminderId mỗi phút, index này cũng giúp tìm nhanh task khi xoá reminder.
+  // The scheduler scans by reminderId every minute, this index also speeds up finding tasks when a reminder is deleted.
   reminderIdIdx: index("tasks_reminder_id_idx").on(table.reminderId),
   userIsolationPolicy: pgPolicy("tasks_user_isolation", {
     for: "all",
@@ -195,11 +195,11 @@ export const reminders = pgTable("reminders", {
   emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-  // Không có deletedAt, xoá reminder là hard delete, khác users/tasks (soft-delete).
+  // No deletedAt, deleting a reminder is a hard delete, unlike users/tasks (soft-delete).
 }, (table) => ({
-  // Không cần index riêng cho userId, đã nằm trong composite bên dưới.
+  // No separate index needed for userId, it's already covered by the composite below.
   dueAtStatusIdx: index("reminders_due_at_status_idx").on(table.dueAt, table.status),
-  // Cùng lý do với tasks_user_id_created_at_idx, trang /reminders lọc userId rồi sort createdAt.
+  // Same reason as tasks_user_id_created_at_idx, the /reminders page filters by userId then sorts by createdAt.
   userIdCreatedAtIdx: index("reminders_user_id_created_at_idx").on(table.userId, table.createdAt),
   userIsolationPolicy: pgPolicy("reminders_user_isolation", {
     for: "all",
@@ -215,7 +215,7 @@ export const chatHistory = pgTable("chat_history", {
   userId: uuid("user_id").notNull().references(() => users.id),
   role: chatRoleEnum("role").notNull(),
   content: text("content").notNull(),
-  // Lưu kèm tool call để phục dựng UI part (chart...) và hiện trace khi tải lại lịch sử.
+  // Stored alongside the tool call to rebuild UI parts (chart...) and show the trace when reloading history.
   toolResults: jsonb("tool_results").$type<{ toolName: string; input?: unknown; output: unknown }[]>(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -253,13 +253,13 @@ export const agentPrompts = pgTable("agent_prompts", {
     .where(sql`${table.isActive} = true`),
 }));
 
-// Bộ nhớ dài hạn của agent, global không RLS, chỉ có hiệu lực sau khi admin duyệt ở /admin/knowledge.
+// The agent's long-term memory, global with no RLS, only takes effect after an admin approves it at /admin/knowledge.
 export const knowledgeFiles = pgTable("knowledge_files", {
   id: uuid("id").defaultRandom().primaryKey(),
   path: text("path").notNull(), // nhãn phân loại tự do kiểu đường dẫn, không unique, nhiều note có thể cùng path
   title: text("title").notNull(),
   content: text("content").notNull(),
-  // Vector riêng của bảng này, không so sánh chéo với chunks.embedding (tài liệu user upload).
+  // This table's own vector, never compared cross-table with chunks.embedding (user-uploaded documents).
   embedding: vector("embedding", { dimensions: 768 }),
   status: knowledgeStatusEnum("status").notNull().default("pending"),
   proposedBy: uuid("proposed_by").references(() => users.id), // chỉ để admin có ngữ cảnh khi duyệt, không dùng lọc quyền
@@ -271,7 +271,7 @@ export const knowledgeFiles = pgTable("knowledge_files", {
     .notNull()
     .$onUpdate(() => /* @__PURE__ */ new Date()),
 }, (table) => ({
-  // Lọc status='approved' ở mọi request action agent, thiếu index sẽ full-scan bảng này.
+  // Filtered by status='approved' on every action-agent request, without this index it's a full scan of this table.
   statusIdx: index("knowledge_files_status_idx").on(table.status),
 }));
 
@@ -287,7 +287,7 @@ export const userCorrectionMemories = pgTable("user_correction_memories", {
   wrongValue: text("wrong_value"),
   correctedValue: text("corrected_value"),
 
-  // Mã hoá ngữ cảnh thành 1 signature ổn định để query nhanh và gán đúng "cùng loại lỗi".
+  // Encodes the context into 1 stable signature for fast queries and correctly matching "same kind of mistake".
   contextSignature: text("context_signature").notNull(),
   contextJson: jsonb("context_json"),
   confidence: integer("confidence").notNull().default(0),
@@ -316,7 +316,7 @@ export const userCorrectionMemories = pgTable("user_correction_memories", {
 export const adminMetricEnum = pgEnum("admin_metric", ["signups", "ai_queries"]);
 export const adminViewEnum = pgEnum("admin_view", ["week", "month", "year"]);
 
-// Kết quả phân tích AI cho dashboard admin, luôn INSERT dòng mới để giữ lịch sử, không upsert.
+// AI analysis results for the admin dashboard, always INSERT a new row to keep history, never upsert.
 export const adminChartAnalyses = pgTable("admin_chart_analyses", {
   id: uuid("id").defaultRandom().primaryKey(),
   metric: adminMetricEnum("metric").notNull(),
@@ -325,18 +325,18 @@ export const adminChartAnalyses = pgTable("admin_chart_analyses", {
   generatedBy: uuid("generated_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
-  // Truy vấn luôn lọc metric+view rồi lấy mới nhất, index đúng thứ tự cột lọc trước sắp sau.
+  // Queries always filter by metric+view then take the latest, index matches the column order: filter first, sort after.
   metricViewCreatedIdx: index("admin_chart_analyses_metric_view_created_idx").on(table.metric, table.view, table.createdAt),
 }));
 
-// Mỗi user tối đa 1 dòng/tuần, unique (userId, weekStart) dùng để check đã tạo tuần này chưa.
+// Each user has at most 1 row per week, unique (userId, weekStart) is used to check if this week's already been created.
 export const weeklyDigests = pgTable("weekly_digests", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().references(() => users.id),
   weekStart: timestamp("week_start", { withTimezone: true }).notNull(),
   weekEnd: timestamp("week_end", { withTimezone: true }).notNull(),
   summaryText: text("summary_text").notNull(),
-  // Số liệu thô AI dùng để viết summaryText, lưu lại để sau này hiện thêm dạng số/biểu đồ.
+  // Raw numbers the AI used to write summaryText, kept so numeric/chart displays can be added later.
   stats: jsonb("stats").$type<{
     documentsProcessed: number;
     tasksCompleted: number;
@@ -354,7 +354,7 @@ export const weeklyDigests = pgTable("weekly_digests", {
   }),
 })).enableRLS();
 
-// Ngưỡng admin tự chỉnh qua /admin/settings, key/value phẳng, label/mặc định nằm ở SETTINGS_REGISTRY.
+// Thresholds admins adjust via /admin/settings, flat key/value, label/defaults live in SETTINGS_REGISTRY.
 export const systemSettings = pgTable("system_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),

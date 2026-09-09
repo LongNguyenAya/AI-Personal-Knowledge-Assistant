@@ -14,7 +14,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 const DEFAULT_STATUS_STYLE = "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300";
 
-// source phân biệt reminder user tự gõ vs AI tự trích từ tài liệu, trước đây hiện text thô "manual"/"ai_created" khó hiểu.
+// source distinguishes a reminder the user typed themselves from one the AI extracted from a document, it used to show the raw "manual"/"ai_created" text which was confusing.
 const SOURCE_LABEL: Record<string, string> = { manual: "Tạo thủ công", ai_created: "AI tạo từ tài liệu" };
 const SOURCE_STYLE: Record<string, string> = {
   manual: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
@@ -38,7 +38,7 @@ export default function RemindersPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    // input[type=datetime-local] trả chuỗi không có timezone, gắn cứng +07:00 trước khi đổi sang UTC.
+    // input[type=datetime-local] returns a string with no timezone, +07:00 is hardcoded onto it before converting to UTC.
     const dueAtUtc = new Date(`${dueAt}:00+07:00`).toISOString();
     setCreating(true);
     try {
@@ -49,7 +49,7 @@ export default function RemindersPage() {
       });
       setTitle("");
       setDueAt("");
-      // Reminder mới tạo luôn nằm đầu (sắp xếp mới nhất trước) -> về trang 1 để thấy ngay.
+      // A newly created reminder always lands at the top (sorted newest first), so it jumps back to page 1 to show it right away.
       if (page === 1) await reload();
       else setPage(1);
     } catch (err) {

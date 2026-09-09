@@ -14,7 +14,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    // Cố tình không hiện khác biệt giữa "email tồn tại" và "không tồn tại", better-auth cũng trả cùng 1 thông báo để tránh lộ email.
+    // Deliberately doesn't distinguish "email exists" from "doesn't exist", better-auth also returns the same message to avoid leaking which emails are registered.
     const { error } = await authClient.requestPasswordReset({ email, redirectTo: "/reset-password" });
     setLoading(false);
     if (error) {

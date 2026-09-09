@@ -2,7 +2,7 @@ import type { WSContext } from "hono/ws";
 import type { WebSocketLike } from "@hono/node-server";
 import type { WsEvent } from "../types/ws-events";
 
-// 1 user có thể mở nhiều tab, mỗi userId map tới 1 tập hợp socket, Map in-memory đủ cho 1 process.
+// 1 user can open multiple tabs, each userId maps to a set of sockets, an in-memory Map is enough for 1 process.
 const connectionsByUser = new Map<string, Set<WSContext<WebSocketLike>>>();
 
 export function addConnection(userId: string, ws: WSContext<WebSocketLike>) {
@@ -21,7 +21,7 @@ export function removeConnection(userId: string, ws: WSContext<WebSocketLike>) {
   if (sockets.size === 0) connectionsByUser.delete(userId);
 }
 
-// Gọi bởi scheduler/reminder-scheduler.ts để đẩy event tới tất cả socket đang mở của 1 user.
+// Called by scheduler/reminder-scheduler.ts to push an event to every open socket of 1 user.
 export function sendToUser(userId: string, event: WsEvent) {
   const sockets = connectionsByUser.get(userId);
   if (!sockets) return;
@@ -29,7 +29,7 @@ export function sendToUser(userId: string, event: WsEvent) {
   const payload = JSON.stringify(event);
   for (const ws of sockets) {
     if (ws.readyState !== 1 /* OPEN */) {
-      sockets.delete(ws); // dọn socket đã chết nhưng lỡ chưa qua onClose
+      sockets.delete(ws); // clean up a dead socket that hasn't gone through onClose yet
       continue;
     }
     ws.send(payload);

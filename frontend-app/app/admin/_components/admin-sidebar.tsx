@@ -4,7 +4,7 @@ import { Bot, Menu, X } from "lucide-react";
 import AdminNav from "./admin-nav";
 import ThemeToggle from "@/components/ThemeToggle";
 
-// Cùng pattern responsive với MainNav, sidebar cố định chỉ hợp lý ở md+, dưới đó ẩn mặc định và hiện dạng overlay.
+// Same responsive pattern as MainNav, a fixed sidebar only makes sense at md+, hidden as an overlay below that.
 export default function AdminSidebar() {
   const [open, setOpen] = useState(false);
 
@@ -46,7 +46,7 @@ export default function AdminSidebar() {
           <AdminNav />
         </div>
         <div className="mt-auto flex items-center justify-between border-t border-gray-100 px-3 pt-4 dark:border-gray-800">
-          <span className="text-[13px] text-gray-500 dark:text-gray-400">Giao diện</span>
+          <span className="text-[13px] text-gray-500 dark:text-gray-400">Theme</span>
           <ThemeToggle variant="inline" />
         </div>
       </aside>

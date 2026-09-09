@@ -2,7 +2,7 @@ import MainNav from "./_components/main-nav";
 import { WsProvider } from "@/components/WsProvider";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  // flex-col trên mobile để MainNav xếp chồng lên <main>, h-screen chốt cứng 100vh, WsProvider đặt ở đây vì WS chỉ cần cho khu vực đã đăng nhập.
+  // flex-col on mobile so MainNav stacks above <main>, h-screen pins it at 100vh, WsProvider sits here since WS is only needed inside the logged-in area.
   return (
     <WsProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-gray-50 md:flex-row dark:bg-gray-950">

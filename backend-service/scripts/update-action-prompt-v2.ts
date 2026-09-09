@@ -2,8 +2,7 @@ import { agentPrompts, users } from "@ai-assistant/db/src/schema";
 import { and, eq } from "drizzle-orm";
 import { dbAdmin } from "../src/db/admin-client";
 
-// Chạy 1 lần — thêm hướng dẫn liên kết task/reminder vào prompt action, theo đúng cách
-// deactivate-prompt-cũ-rồi-insert-mới của route admin/prompts.
+// Chạy 1 lần, thêm hướng dẫn liên kết task/reminder vào prompt action, theo đúng cách deactivate-cũ-rồi-insert-mới.
 
 const NEW_PROMPT = `Bạn là trợ lý hành động. Nhiệm vụ của bạn là hiểu ý định của user và gọi đúng tool cần thiết.
 - Nếu user muốn tạo reminder/nhắc nhở, gọi tool createReminder.

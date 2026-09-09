@@ -20,7 +20,7 @@ export const PATCH = withAdminContext<{ key: string }>(async (req, { db, session
     return new Response(`value phải trong khoảng ${meta.min} - ${meta.max}`, { status: 400 });
   }
 
-  // Upsert, vì chưa ai chỉnh setting này bao giờ thì chưa có dòng nào, lần đầu chỉnh mới tạo dòng.
+  // An upsert, since if nobody has ever changed this setting there's no row yet, the first edit is what creates it.
   await db.transaction(async (tx) => {
     await tx
       .insert(systemSettings)

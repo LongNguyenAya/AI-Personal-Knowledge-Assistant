@@ -2,7 +2,7 @@ import { documents, chunks } from "@ai-assistant/db/src/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { withAuthedContext } from "@/lib/with-authed-context";
 
-// Ghép toàn bộ chunk theo đúng thứ tự gốc thành 1 khối văn bản, nặng hơn GET /api/documents/[id] nên chỉ gọi 1 lần lúc mở trang.
+// Joins every chunk back in its original order into 1 block of text, heavier than GET /api/documents/[id] so it's only called once when the page opens.
 export const GET = withAuthedContext<{ id: string }>(async (_req, { session, params, tx }) => {
   const [doc] = await tx
     .select({

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-// mermaid.initialize() chỉ nên chạy 1 lần cho cả app, cache lại promise import để dùng chung 1 instance.
+// mermaid.initialize() should only run once for the whole app, the import promise is cached so it's shared as 1 instance.
 let mermaidPromise: Promise<typeof import("mermaid")> | null = null;
 function loadMermaid() {
   if (!mermaidPromise) {
@@ -15,7 +15,7 @@ function loadMermaid() {
 
 let diagramSeq = 0;
 
-// Mỗi instance cần 1 id DOM duy nhất vì mermaid.render() yêu cầu, không dùng lại id giữa các lần render.
+// Each instance needs a unique DOM id since mermaid.render() requires one, ids aren't reused across renders.
 export function DiagramBlock({ title, mermaidCode }: { title: string; mermaidCode: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export function DiagramBlock({ title, mermaidCode }: { title: string; mermaidCod
         const { svg } = await mermaid.render(idRef.current, mermaidCode);
         if (!cancelled && containerRef.current) containerRef.current.innerHTML = svg;
       } catch (err) {
-        // Mã Mermaid do AI tự viết có thể sai cú pháp, không phải lỗi hệ thống, hiện lỗi gọn thay vì crash cả trang.
+        // Mermaid code written by the AI can have syntax errors, not a system bug, shows a compact error instead of crashing the whole page.
         if (!cancelled) setError(err instanceof Error ? err.message : "Không vẽ được sơ đồ này.");
       }
     })();

@@ -1,8 +1,8 @@
 export type DiffSegment = { type: "same" | "removed" | "added"; value: string };
 
-// So khớp theo từng từ bằng LCS, cùng thuật toán "git diff" dùng ở cấp dòng, chỉ hợp chuỗi ngắn vì DP ở đây là O(m*n).
+// Matches word by word using LCS, the same algorithm "git diff" uses at the line level, only suited to short strings since the DP here is O(m*n).
 export function wordDiff(oldText: string, newText: string): DiffSegment[] {
-  // Giữ lại khoảng trắng làm phần tử riêng để nối lại đúng chỗ cách như văn bản gốc.
+  // Keeps whitespace as its own element so it can be rejoined with the original spacing intact.
   const oldWords = oldText.split(/(\s+)/).filter(Boolean);
   const newWords = newText.split(/(\s+)/).filter(Boolean);
   const m = oldWords.length;
@@ -34,7 +34,7 @@ export function wordDiff(oldText: string, newText: string): DiffSegment[] {
   while (i < m) raw.push({ type: "removed", value: oldWords[i++] });
   while (j < n) raw.push({ type: "added", value: newWords[j++] });
 
-  // Gộp các đoạn liền kề cùng loại cho gọn, đỡ tạo quá nhiều <span>.
+  // Merges adjacent segments of the same type to keep it compact, avoiding creating too many <span>s.
   const merged: DiffSegment[] = [];
   for (const seg of raw) {
     const last = merged[merged.length - 1];
