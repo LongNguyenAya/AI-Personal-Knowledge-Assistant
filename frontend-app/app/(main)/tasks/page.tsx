@@ -35,7 +35,7 @@ export default function TasksPage() {
         body: JSON.stringify({ title }),
       });
       setTitle("");
-      // Task mới tạo luôn nằm đầu (sắp xếp mới nhất trước) -> về trang 1 để thấy ngay.
+      // A newly created task always lands at the top (sorted newest first), so it jumps back to page 1 to show it right away.
       if (page === 1) await reload();
       else setPage(1);
     } catch (err) {
@@ -96,7 +96,7 @@ export default function TasksPage() {
           wrongValue: currentTitle,
           correctedValue: nextTitle,
           context: { page: "tasks", mode: "manual-edit" },
-          // confidence không tự gửi nữa, server tự quyết theo setting "manualCorrectionConfidence" do admin chỉnh.
+          // confidence is no longer sent from here, the server decides it based on the "manualCorrectionConfidence" setting the admin controls.
         }),
       });
       setEditingId(null);

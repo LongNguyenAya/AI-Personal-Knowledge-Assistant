@@ -17,7 +17,7 @@ export function linearRegression(points: { x: number; y: number }[]): Regression
 
   const denominator = n * sumX2 - sumX * sumX;
   if (denominator === 0) {
-    // Không nên xảy ra (x luôn là 0,1,2...) nhưng vẫn tự bảo vệ để không âm thầm trả NaN.
+    // Shouldn't happen (x is always 0,1,2...) but guards anyway to avoid silently returning NaN.
     throw new Error("linearRegression: mọi điểm có cùng x, không thể tính hồi quy.");
   }
   const slope = (n * sumXY - sumX * sumY) / denominator;
@@ -32,7 +32,7 @@ export function linearRegression(points: { x: number; y: number }[]): Regression
   return { slope, intercept, r2, predict };
 }
 
-// Cook's Distance đo mức 1 điểm kéo lệch cả mô hình, kèm điều kiện phần dư để tránh báo nhầm ở n nhỏ.
+// Cook's Distance measures how much 1 point pulls the whole model off, plus a residual condition to avoid false positives at small n.
 export function findOutliers(points: { x: number; y: number }[], reg: RegressionResult): number[] {
   const n = points.length;
   const p = 2; // số tham số của mô hình: slope + intercept
@@ -56,21 +56,21 @@ export function findOutliers(points: { x: number; y: number }[], reg: Regression
   return [worst.i];
 }
 
-// Kiểm định t cho hệ số góc, thay ngưỡng R² cố định. Bảng t tới hạn 2 phía, α=0.05, df=n-2.
+// T-test for the slope coefficient, replaces a fixed R² threshold. Two-tailed critical t table, alpha=0.05, df=n-2.
 const T_CRITICAL_95: Record<number, number> = {
   1: 12.71, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306,
   9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179, 13: 2.16, 14: 2.145, 15: 2.131,
   20: 2.086, 25: 2.06, 30: 2.042,
 };
 
-// df không có trong bảng thì lấy mốc gần nhất nhỏ hơn, bảo thủ và an toàn hơn.
+// If df isn't in the table, use the nearest smaller value, more conservative and safer.
 export function tCritical(df: number): number {
   const keys = Object.keys(T_CRITICAL_95).map(Number).sort((a, b) => a - b);
   const nearest = keys.filter((k) => k <= df).pop() ?? keys[0];
   return T_CRITICAL_95[nearest];
 }
 
-// Dùng khi OLS chưa đủ ý nghĩa thống kê, trung bình trượt cho thấy xu hướng gần đây thay vì im lặng.
+// Used when OLS hasn't reached statistical significance, a moving average shows the recent trend instead of staying silent.
 export function movingAverage(points: { x: number; y: number }[], windowSize = 3): number[] {
   return points.map((_, i) => {
     const window = points.slice(Math.max(0, i - windowSize + 1), i + 1);
@@ -78,7 +78,7 @@ export function movingAverage(points: { x: number; y: number }[], windowSize = 3
   });
 }
 
-// San bằng hàm mũ 2 lớp (mức và xu hướng), alpha>beta vì mức cần nhạy hơn xu hướng.
+// Two-layer exponential smoothing (level and trend), alpha>beta because the level needs to react faster than the trend.
 export function holtLinear(
   points: { x: number; y: number }[],
   alpha = 0.4,
@@ -101,7 +101,7 @@ export function holtLinear(
   return { level, trend, forecast: (stepsAhead: number) => level + stepsAhead * trend };
 }
 
-// Prediction interval cho 1 điểm mới, rộng hơn confidence interval vì cộng thêm nhiễu tự nhiên.
+// Prediction interval for a new point, wider than a confidence interval because it adds natural noise.
 export function predictionMargin(reg: RegressionResult, points: { x: number; y: number }[], x0: number): number {
   const n = points.length;
   const df = n - 2;
@@ -123,7 +123,7 @@ export function isSlopeSignificant(reg: RegressionResult, points: { x: number; y
   const ssX = points.reduce((s, p) => s + (p.x - meanX) ** 2, 0);
   const ssRes = points.reduce((s, p) => s + (p.y - reg.predict(p.x)) ** 2, 0);
   const se = Math.sqrt(ssRes / df / ssX);
-  // Khớp hoàn hảo (se=0) là bằng chứng mạnh nhất, chỉ coi "không có xu hướng" nếu slope cũng = 0.
+  // A perfect fit (se=0) is the strongest evidence, only treat it as "no trend" if slope is also 0.
   if (se === 0) return reg.slope !== 0;
   const t = Math.abs(reg.slope / se);
   return t > tCritical(df);

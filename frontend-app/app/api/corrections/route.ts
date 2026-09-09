@@ -54,7 +54,7 @@ export const POST = withAuthedContext(async (req, { session, tx }) => {
   }
 
   const contextSignature = buildContextSignature(context ?? null);
-  // Mặc định đọc từ setting "manualCorrectionConfidence" (admin tự chỉnh), giống tasks/[id]/route.ts.
+  // Defaults to reading from the "manualCorrectionConfidence" setting (admin-configurable), same as tasks/[id]/route.ts.
   const defaultConfidence = await getSettingValue("manualCorrectionConfidence");
   const nextConfidence = Math.max(0, Math.min(100, Number(confidence ?? defaultConfidence) || defaultConfidence));
 
@@ -120,14 +120,14 @@ const VALID_STATUSES = ["active", "inactive", "dismissed", "expired"] as const;
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
-// Phân trang thật (page/pageSize + total), route này chỉ phục vụ trang /corrections, AI tự query hint qua đường khác.
+// Real pagination (page/pageSize + total), this route only serves the /corrections page, the AI queries hints through a different path.
 export const GET = withAuthedContext(async (req, { session, tx }) => {
   const url = new URL(req.url);
   const sourceType = url.searchParams.get("sourceType");
   const fieldName = url.searchParams.get("fieldName");
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
   const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(url.searchParams.get("pageSize")) || DEFAULT_PAGE_SIZE));
-  // Mặc định "active" giữ hành vi cũ cho chỗ gọi không truyền status, "inactive" dùng cho trang duyệt ghi chú AI tự đề xuất.
+  // Defaulting to "active" preserves the old behavior for callers that don't pass a status, "inactive" is used for the page that reviews AI-suggested notes.
   const statusParam = url.searchParams.get("status");
   const status = (VALID_STATUSES as readonly string[]).includes(statusParam ?? "") ? (statusParam as (typeof VALID_STATUSES)[number]) : "active";
 

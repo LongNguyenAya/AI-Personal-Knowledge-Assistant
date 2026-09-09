@@ -9,7 +9,7 @@ import type { AdminStats } from "@/types/admin";
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Nâng state view lên đây thay vì để mỗi AdminMetricChart tự giữ, để AdminAnalysisPanel phân tích luôn khớp biểu đồ hiện tại.
+  // Lifts the view state up here instead of letting each AdminMetricChart hold its own, so AdminAnalysisPanel's analysis always matches the current chart.
   const [signupsView, setSignupsView] = useState<View>("week");
   const [aiQueriesView, setAiQueriesView] = useState<View>("week");
 

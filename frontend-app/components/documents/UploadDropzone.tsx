@@ -18,7 +18,7 @@ export function UploadDropzone({ onUploaded }: { onUploaded?: () => void }) {
     setUploading(false);
     e.target.value = "";
 
-    // Upload thật xử lý bất đồng bộ qua SQS, POST chỉ trả về khi đã enqueue xong, poll tới khi xử lý xong do trang cha tự làm.
+    // The actual upload is processed asynchronously via SQS, the POST only returns once enqueued, the parent page handles polling until processing finishes.
     setMessage(
       res.ok ? { text: "Upload thành công, đã xử lý xong.", ok: true } : { text: "Upload thất bại", ok: false }
     );

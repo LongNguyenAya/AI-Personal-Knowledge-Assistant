@@ -1,8 +1,4 @@
-// Đo ĐỘ CHÍNH XÁC THẬT của AI (khác unit test) — tự tạo câu hỏi từ dữ liệu thật đang có (không cố
-// định), chạy qua routerNode/retrieveRelevantChunks thật, so kết quả với đáp án tự suy ra. Không
-// chạy trong CI/npm test (tốn lệnh gọi Gemini thật) — tự chạy tay sau khi đổi prompt/model lớn.
-//
-// Chạy: npm run eval:router  (hoặc thêm --user=someone@example.com)
+// Đo độ chính xác thật của AI qua routerNode, tốn Gemini thật nên chỉ chạy tay bằng npm run eval:router.
 
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
@@ -18,15 +14,13 @@ type Route = "research" | "action" | "both" | "unknown";
 type Fixture = {
   question: string;
   expectedRoute: Route;
-  // Chỉ áp dụng khi expectedRoute là "research"/"both" — tên file PHẢI xuất hiện trong danh sách
-  // sources mà retrieveRelevantChunks tìm được (không nhất thiết #1, chỉ cần lọt vào top kết quả).
+  // Chỉ áp dụng khi expectedRoute là "research"/"both", tên file phải lọt vào top sources mà retrieveRelevantChunks tìm được.
   expectedFileName?: string;
 };
 
 const MAX_DOCUMENT_FIXTURES = 5; // giới hạn số lệnh gọi Gemini để sinh câu hỏi, tránh chạy quá lâu/tốn
 
-// Tham số hoá ngẫu nhiên mỗi lần chạy — không lặp lại y hệt giữa các lần, vẫn đủ để kiểm tra
-// router có nhận đúng đây là "action" hay không, không cần dữ liệu tài liệu nào.
+// Tham số hoá ngẫu nhiên mỗi lần chạy, đủ để kiểm tra router có nhận đúng đây là "action" hay không.
 const RANDOM_HOURS = ["9h sáng", "14h chiều", "18h tối", "20h tối"];
 const RANDOM_TASKS = ["dọn bàn làm việc", "gửi báo cáo tuần", "gọi điện cho khách hàng", "kiểm tra lại hợp đồng"];
 function pickRandom<T>(arr: T[]): T {
@@ -41,8 +35,7 @@ async function resolveUser(): Promise<{ id: string; email: string }> {
     return user;
   }
 
-  // Không chỉ định --user — tự lấy user active bất kỳ ĐANG CÓ ít nhất 1 tài liệu processed, để
-  // luôn sinh được ít nhất vài fixture research thay vì chọn nhầm user rỗng dữ liệu.
+  // Không chỉ định --user thì tự lấy user active bất kỳ đang có ít nhất 1 tài liệu processed.
   const candidates = await dbAdmin
     .selectDistinct({ id: users.id, email: users.email })
     .from(users)
@@ -130,11 +123,11 @@ async function main() {
       const { sources } = await retrieveRelevantChunks(fixture.question, user.id, 15);
       const found = sources.some((s) => s.fileName === fixture.expectedFileName);
       if (found) citationCorrect++;
-      citationLine = ` | trích đúng tài liệu: ${found ? "✓" : "✗ (mong đợi " + fixture.expectedFileName + ")"}`;
+      citationLine = ` | trích đúng tài liệu: ${found ? "OK" : "SAI (mong đợi " + fixture.expectedFileName + ")"}`;
     }
 
     console.log(
-      `[${routeOk ? "✓" : "✗"}] "${fixture.question}"\n` +
+      `[${routeOk ? "PASS" : "FAIL"}] "${fixture.question}"\n` +
         `    route: ${route} (mong đợi ${fixture.expectedRoute})${citationLine}`
     );
   }

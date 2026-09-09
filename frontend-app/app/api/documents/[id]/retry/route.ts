@@ -4,7 +4,7 @@ import { withAuthedContext } from "@/lib/with-authed-context";
 import { mintBackendToken } from "@/lib/backend-token";
 import { BACKEND_URL } from "@/lib/config";
 
-// Thử lại tài liệu "failed" không upload lại file, chỉ gửi lại vào hàng đợi, vì lỗi luôn xảy ra trước insertChunks.
+// Retrying a "failed" document doesn't re-upload the file, just re-sends it to the queue, since the failure always happens before insertChunks.
 export const POST = withAuthedContext<{ id: string }>(async (_req, { session, params, tx }) => {
   const [doc] = await tx
     .select({ id: documents.id, s3Key: documents.s3Key, fileName: documents.fileName, status: documents.status })
@@ -27,7 +27,7 @@ export const POST = withAuthedContext<{ id: string }>(async (_req, { session, pa
     });
     if (!res.ok) throw new Error(`backend-service trả về status ${res.status}`);
   } catch (err) {
-    // Cùng lý do với route upload chính, fetch có thể ném lỗi chứ không chỉ !res.ok, không bắt thì document kẹt ở "uploaded" mãi.
+    // Same reason as the main upload route, fetch can throw an error, not just return !res.ok, without a catch the document would get stuck at "uploaded" forever.
     console.error("[documents/retry] Gửi lại vào hàng đợi thất bại:", err);
     await tx.update(documents).set({ status: "failed" }).where(eq(documents.id, doc.id));
     return new Response("Gửi lại vào hàng đợi xử lý thất bại", { status: 500 });

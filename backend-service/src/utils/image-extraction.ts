@@ -10,7 +10,7 @@ const MIME_BY_EXT: Record<string, string> = {
   webp: "image/webp",
 };
 
-// Ngưỡng rất thấp có chủ đích, chỉ để bắt ca gần như rỗng, không phải ngưỡng đủ chi tiết.
+// A deliberately very low threshold, only meant to catch near-empty results, not a threshold for full detail.
 const MIN_MEANINGFUL_LENGTH = 20;
 
 async function callGemini(buffer: Buffer, mediaType: string, systemPrompt: string): Promise<string> {
@@ -31,7 +31,7 @@ async function callGemini(buffer: Buffer, mediaType: string, systemPrompt: strin
 }
 
 export async function extractImageContent(buffer: Buffer, ext: string): Promise<string> {
-  // Admin tự chỉnh qua /admin/settings, vẫn chặn ở đây để nhất quán dù ảnh thường nhỏ hơn PDF.
+  // Admin adjusts this via /admin/settings, still enforced here for consistency even though images are usually smaller than PDFs.
   const maxImageBytes = (await getSettingValue("maxUploadMb")) * 1024 * 1024;
   if (buffer.length > maxImageBytes) {
     throw new Error(`File ảnh quá lớn (${buffer.length} bytes) — vượt giới hạn ${maxImageBytes} bytes.`);
@@ -42,7 +42,7 @@ export async function extractImageContent(buffer: Buffer, ext: string): Promise<
   const { systemPrompt } = await getActivePrompt("image_extraction");
 
   let text = await callGemini(buffer, mediaType, systemPrompt);
-  // Kết quả gần như rỗng có thể chỉ là 1 lần chạy hụt, tự thử lại đúng 1 lần trước khi chấp nhận.
+  // A near-empty result could just be 1 flaky run, retries exactly once before accepting it.
   if (text.trim().length < MIN_MEANINGFUL_LENGTH) {
     text = await callGemini(buffer, mediaType, systemPrompt);
   }

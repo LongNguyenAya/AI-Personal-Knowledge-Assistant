@@ -17,7 +17,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
 
-    // 8 = minPasswordLength mặc định của better-auth, validate luôn phía client cho phản hồi ngay thay vì đợi API.
+    // 8 = better-auth's default minPasswordLength, validated client-side too for instant feedback instead of waiting on the API.
     if (password.length < 8) {
       setError("Mật khẩu phải có ít nhất 8 ký tự");
       return;
@@ -35,7 +35,7 @@ export default function RegisterPage() {
       return;
     }
 
-    // requireEmailVerification=true nên signUp không tạo session ngay, phải xác nhận qua email trước mới đăng nhập được.
+    // requireEmailVerification=true so signUp doesn't create a session right away, the email has to be verified first before logging in.
     setRegistered(true);
   }
 

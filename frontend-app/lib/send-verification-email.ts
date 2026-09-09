@@ -1,7 +1,7 @@
 import { mintBackendToken } from "@/lib/backend-token";
 import { BACKEND_URL } from "@/lib/config";
 
-// Render chặn kết nối SMTP ra ngoài để chống spam, nên nhờ backend-service (EC2, không bị chặn) gửi email hộ qua HTTP.
+// Render blocks outbound SMTP connections to fight spam, so backend-service (on EC2, not blocked) sends the email instead, over HTTP.
 export async function sendVerificationEmail(userId: string, to: string, url: string): Promise<void> {
   const token = await mintBackendToken(userId);
   const res = await fetch(`${BACKEND_URL}/auth/send-verification-email`, {

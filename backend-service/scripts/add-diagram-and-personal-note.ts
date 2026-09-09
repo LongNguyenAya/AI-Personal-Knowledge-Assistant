@@ -2,8 +2,7 @@ import { agentPrompts, users } from "@ai-assistant/db/src/schema";
 import { and, eq } from "drizzle-orm";
 import { dbAdmin } from "../src/db/admin-client";
 
-// Chạy 1 lần — thêm hướng dẫn createDiagram + placeholder {{personalNote}} vào action prompt đang
-// active, chèn vào 2 điểm neo cố định thay vì viết lại toàn bộ (tránh mất chỉnh sửa khác đã áp dụng).
+// Chạy 1 lần, chèn hướng dẫn createDiagram + placeholder {{personalNote}} vào 2 điểm neo cố định thay vì viết lại toàn bộ.
 
 const DIAGRAM_GUIDANCE = `Vẽ sơ đồ minh hoạ quy trình/luồng:
 - Nếu user muốn MINH HOẠ 1 quy trình có nhiều bước hoặc nhiều nhánh rẽ liên kết nhau bằng HÌNH (vd

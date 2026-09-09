@@ -13,7 +13,7 @@ export const POST = withAdminContext<{ agentType: string }>(async (req, { db, se
     return new Response("Bad Request", { status: 400 });
   }
 
-  // Phải deactivate bản active cũ trước khi insert bản mới, vì unique index chỉ cho 1 bản isActive=true mỗi agentType.
+  // Must deactivate the old active version before inserting the new one, since the unique index only allows 1 isActive=true row per agentType.
   await db.transaction(async (tx) => {
     const [current] = await tx
       .select({ version: agentPrompts.version })

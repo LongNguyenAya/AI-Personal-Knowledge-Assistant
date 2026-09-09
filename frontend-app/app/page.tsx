@@ -6,49 +6,49 @@ import { redirect } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Reveal } from "@/components/Reveal";
 
-// 6 tính năng thật đã có trong app, mỗi mô tả ứng đúng 1 phần code đã tồn tại, không phải marketing copy tưởng tượng.
+// 6 real features already in the app, each description maps to existing code, not imagined marketing copy.
 const FEATURES = [
   {
     icon: MessageSquare,
     tile: "indigo" as const,
-    title: "Chat có trích dẫn nguồn",
+    title: "Chat with source citations",
     description:
-      "Câu trả lời luôn kèm nguồn thật từ tài liệu, qua 2 lớp kiểm tra trước khi hiển thị — hỏi ngoài phạm vi tài liệu thì AI từ chối thay vì bịa.",
+      "Answers always cite real sources from your documents, checked in 2 steps before showing. Ask something outside your documents and the AI declines instead of making things up.",
   },
   {
     icon: CheckSquare,
     tile: "amber" as const,
-    title: "Task & Reminder tự động",
+    title: "Automatic tasks & reminders",
     description:
-      "AI đọc tài liệu, tự tìm việc cần làm và deadline, đề xuất tạo nhắc nhở — luôn cần bạn xác nhận trước khi tạo.",
+      "AI reads your documents, finds action items and deadlines, and suggests reminders. Always waits for your confirmation before creating anything.",
   },
   {
     icon: FileText,
     tile: "indigo" as const,
-    title: "Tóm tắt & so sánh tài liệu",
+    title: "Summarize & compare documents",
     description:
-      "Khi cần đọc toàn văn thay vì chỉ 1 đoạn liên quan, AI chuyển sang đọc nguyên tài liệu để tóm tắt hoặc so sánh chính xác hơn.",
+      "When a question needs the full text instead of just one relevant excerpt, the AI reads the entire document for a more accurate summary or comparison.",
   },
   {
     icon: TrendingUp,
     tile: "amber" as const,
-    title: "Phân tích xu hướng thống kê",
+    title: "Statistical trend analysis",
     description:
-      "Hồi quy tuyến tính, kiểm định ý nghĩa thống kê — chỉ khẳng định có xu hướng khi đủ bằng chứng, không đoán mò.",
+      "Linear regression with statistical significance testing. Only claims a trend when there's enough evidence, never a guess.",
   },
   {
     icon: ShieldCheck,
     tile: "indigo" as const,
-    title: "Bảo mật tài khoản",
+    title: "Account security",
     description:
-      "Bắt buộc xác nhận email, tự đặt lại mật khẩu qua link hết hạn sau 1 tiếng, huỷ mọi phiên cũ sau khi đổi mật khẩu.",
+      "Mandatory email verification, password reset links that expire in 1 hour, and every old session revoked after a password change.",
   },
   {
     icon: LayoutDashboard,
     tile: "amber" as const,
-    title: "Quản trị hệ thống",
+    title: "System administration",
     description:
-      "Dashboard theo dõi số liệu thật, biểu đồ theo thời gian và phân tích AI theo yêu cầu chủ động của admin.",
+      "A dashboard tracking real metrics, trend charts over time, and AI analysis the admin can request on demand.",
   },
 ];
 
@@ -57,29 +57,29 @@ const STEPS = [
     number: "01",
     icon: Upload,
     tile: "indigo" as const,
-    title: "Tải tài liệu lên",
-    description: "Upload tài liệu — hệ thống tự tách đoạn, tạo embedding và lập chỉ mục ở worker nền, không chặn bạn dùng app trong lúc chờ.",
+    title: "Upload a document",
+    description: "Upload a document and a background worker splits it into chunks, creates embeddings, and indexes it, so you're never blocked while it processes.",
   },
   {
     number: "02",
     icon: MessageSquare,
     tile: "amber" as const,
-    title: "Hỏi hoặc yêu cầu",
-    description: "Đặt câu hỏi tự nhiên, hoặc nhờ AI đọc 1 tài liệu để tìm việc cần làm — AI tự chọn đúng công cụ cho từng loại yêu cầu.",
+    title: "Ask or request",
+    description: "Ask a question naturally, or have the AI scan a document for action items. It picks the right tool for each kind of request.",
   },
   {
     number: "03",
     icon: CheckSquare,
     tile: "indigo" as const,
-    title: "Nhận kết quả kèm nguồn",
-    description: "Câu trả lời có trích dẫn, hoặc đề xuất task/reminder chờ bạn xác nhận — không có gì được tạo ra âm thầm.",
+    title: "Get results with sources",
+    description: "Answers come with citations, or a task/reminder proposal waiting for your approval. Nothing gets created silently.",
   },
 ];
 
 const EXAMPLES = [
-  { icon: MessageSquare, tile: "indigo" as const, text: `"Tài liệu Kế hoạch triển khai Sprint 3 có những đầu việc nào chưa xử lý?"` },
-  { icon: CheckSquare, tile: "amber" as const, text: `"Xem tài liệu này và tạo nhắc nhở nếu có deadline nào sắp tới."` },
-  { icon: TrendingUp, tile: "indigo" as const, text: `"Vẽ biểu đồ số task hoàn thành theo tuần gần đây."` },
+  { icon: MessageSquare, tile: "indigo" as const, text: `"What open action items are in the Sprint 3 rollout plan document?"` },
+  { icon: CheckSquare, tile: "amber" as const, text: `"Check this document and create a reminder if there's an upcoming deadline."` },
+  { icon: TrendingUp, tile: "indigo" as const, text: `"Chart the number of tasks completed per week recently."` },
 ];
 
 const TILE_STYLE = {
@@ -87,7 +87,7 @@ const TILE_STYLE = {
   amber: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400",
 };
 
-// Domain gốc redirect theo session, better-auth cũng đưa user về đây kèm ?error=... khi verify lỗi nên chuyển tiếp sang /login.
+// Root domain redirects based on session, better-auth also sends users here with ?error=... on verify failure so it forwards to /login.
 export default async function Home({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   const session = await auth.api.getSession({ headers: await headers() });
@@ -107,13 +107,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
         </span>
         <nav className="hidden items-center gap-7 text-[13px] text-gray-600 md:flex dark:text-gray-400">
           <a href="#features" className="hover:text-gray-900 dark:hover:text-white">
-            Tính năng
+            Features
           </a>
           <a href="#how-it-works" className="hover:text-gray-900 dark:hover:text-white">
-            Cách hoạt động
+            How it works
           </a>
           <a href="#try-it" className="hover:text-gray-900 dark:hover:text-white">
-            Dùng thử
+            Try it
           </a>
         </nav>
         <div className="flex items-center gap-2">
@@ -122,13 +122,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
             href="/login"
             className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
           >
-            Đăng nhập
+            Log in
           </Link>
           <Link
             href="/register"
             className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700"
           >
-            Đăng ký
+            Sign up
           </Link>
         </div>
       </header>
@@ -143,18 +143,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
           <Reveal>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
               <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-              Trợ lý tri thức cá nhân
+              Personal knowledge assistant
             </span>
           </Reveal>
           <Reveal delay={1}>
             <h1 className="headline-grad mt-6 text-4xl font-extrabold tracking-tight sm:text-5xl">
-              Quản lý tri thức và công việc, chính xác hơn
+              Manage knowledge and work, more accurately
             </h1>
           </Reveal>
           <Reveal delay={2}>
             <p className="mx-auto mt-5 max-w-xl text-base text-gray-600 dark:text-gray-400">
-              AI Knowledge Assistant tổ chức tài liệu, task, reminder của bạn — trả lời có trích dẫn
-              nguồn, tự đề xuất việc cần làm từ tài liệu, và phân tích xu hướng có kiểm định thống kê.
+              AI Knowledge Assistant organizes your documents, tasks, and reminders. It answers with
+              cited sources, suggests action items from your documents, and analyzes trends with statistical testing.
             </p>
           </Reveal>
           <Reveal delay={3}>
@@ -165,14 +165,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
                   href="/register"
                   className="relative block rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
                 >
-                  Bắt đầu miễn phí
+                  Start for free
                 </Link>
               </div>
               <Link
                 href="/login"
                 className="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
               >
-                Đăng nhập
+                Log in
               </Link>
             </div>
           </Reveal>
@@ -183,10 +183,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
         <div className="mx-auto max-w-5xl">
           <Reveal>
             <div className="mx-auto max-w-xl text-center">
-              <p className="text-xs font-bold tracking-[0.16em] text-indigo-600 uppercase dark:text-indigo-400">Tính năng</p>
-              <h2 className="mt-2 text-[28px] font-extrabold tracking-tight text-gray-900 dark:text-white">Được xây dựng để đáng tin cậy</h2>
+              <p className="text-xs font-bold tracking-[0.16em] text-indigo-600 uppercase dark:text-indigo-400">Features</p>
+              <h2 className="mt-2 text-[28px] font-extrabold tracking-tight text-gray-900 dark:text-white">Built to be trustworthy</h2>
               <p className="mt-2.5 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-                Mỗi tính năng đều có nguồn dữ liệu thật đứng sau — không có con số hay câu trả lời nào bị bịa ra.
+                Every feature is backed by real data. No number or answer here is made up.
               </p>
             </div>
           </Reveal>
@@ -211,10 +211,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
         <div className="mx-auto max-w-5xl">
           <Reveal>
             <div className="mx-auto max-w-xl text-center">
-              <p className="text-xs font-bold tracking-[0.16em] text-indigo-600 uppercase dark:text-indigo-400">Cách hoạt động</p>
-              <h2 className="mt-2 text-[28px] font-extrabold tracking-tight text-gray-900 dark:text-white">Ba bước, không hộp đen</h2>
+              <p className="text-xs font-bold tracking-[0.16em] text-indigo-600 uppercase dark:text-indigo-400">How it works</p>
+              <h2 className="mt-2 text-[28px] font-extrabold tracking-tight text-gray-900 dark:text-white">Three steps, no black box</h2>
               <p className="mt-2.5 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-                Mỗi câu trả lời đều có thể truy ngược lại đúng nguồn — bạn luôn biết AI lấy thông tin từ đâu.
+                Every answer can be traced back to its source. You always know where the AI got its information.
               </p>
             </div>
           </Reveal>
@@ -240,8 +240,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
         <div className="mx-auto max-w-3xl">
           <Reveal>
             <div className="mx-auto max-w-xl text-center">
-              <p className="text-xs font-bold tracking-[0.16em] text-indigo-600 uppercase dark:text-indigo-400">Dùng thử</p>
-              <h2 className="mt-2 text-[28px] font-extrabold tracking-tight text-gray-900 dark:text-white">Vài câu hỏi bạn có thể thử ngay</h2>
+              <p className="text-xs font-bold tracking-[0.16em] text-indigo-600 uppercase dark:text-indigo-400">Try it</p>
+              <h2 className="mt-2 text-[28px] font-extrabold tracking-tight text-gray-900 dark:text-white">A few questions you can try right now</h2>
             </div>
           </Reveal>
 
@@ -262,15 +262,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
 
       <section className="px-6 py-20 text-center">
         <Reveal className="mx-auto max-w-lg">
-          <h2 className="text-[28px] font-extrabold tracking-tight text-gray-900 dark:text-white">Bắt đầu quản lý tri thức của bạn</h2>
-          <p className="mt-2.5 text-sm text-gray-500 dark:text-gray-400">Tạo tài khoản miễn phí, upload tài liệu đầu tiên và thử hỏi ngay.</p>
+          <h2 className="text-[28px] font-extrabold tracking-tight text-gray-900 dark:text-white">Start managing your knowledge</h2>
+          <p className="mt-2.5 text-sm text-gray-500 dark:text-gray-400">Create a free account, upload your first document, and start asking right away.</p>
           <div className="relative mt-6 inline-block">
             <div className="absolute -inset-1.5 rounded-xl bg-gradient-to-br from-indigo-600 to-amber-500 opacity-35 blur-lg" />
             <Link
               href="/register"
               className="relative block rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
             >
-              Bắt đầu miễn phí
+              Start for free
             </Link>
           </div>
         </Reveal>

@@ -15,7 +15,7 @@ export async function listTasks(userId: string, options: ListTasksOptions = {}) 
   const conditions = [eq(tasks.userId, userId), isNull(tasks.deletedAt)];
   if (onlyDone !== undefined) conditions.push(eq(tasks.isDone, onlyDone));
 
-  // Lọc theo updatedAt khi hỏi task đã hoàn thành, còn lại lọc theo createdAt.
+  // Filters by updatedAt when asking about completed tasks, otherwise filters by createdAt.
   const dateColumn = onlyDone === true ? tasks.updatedAt : tasks.createdAt;
   if (from) conditions.push(gte(dateColumn, from));
   if (to) conditions.push(lte(dateColumn, to));
@@ -29,12 +29,12 @@ export async function listTasks(userId: string, options: ListTasksOptions = {}) 
   );
 }
 
-// ilike coi % và _ là ký tự đại diện, không escape thì tên task chứa sẵn ký tự đó sẽ khớp nhầm.
+// ilike treats % and _ as wildcards, without escaping a task name that already contains one would match incorrectly.
 function escapeLikePattern(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
-// ilike khớp chính xác toàn chuỗi, trùng tên lấy bản mới nhất, phải lọc isNull(deletedAt).
+// ilike matches the exact full string, a name collision takes the most recent one, must filter isNull(deletedAt).
 export async function findTaskByTitle(userId: string, title: string) {
   const [found] = await withUserContext(userId, (tx) =>
     tx

@@ -26,7 +26,7 @@ const STATUS_STYLE: Record<string, string> = {
   failed: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
 };
 
-// Xem lại toàn bộ nội dung đã trích xuất ngay trong app, thay vì phải hỏi qua Chat để AI trả về 1 đoạn liên quan.
+// Lets you review the full extracted content right in the app, instead of asking Chat for the AI to return just a relevant excerpt.
 export default function DocumentDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();

@@ -8,7 +8,7 @@ function requireBucket(): string {
   return BUCKET;
 }
 
-// S3 key chỉ là 1 chuỗi phẳng, check đúng tiền tố là đủ, không dính lỗ hổng traversal như trước.
+// An S3 key is just a flat string, checking the right prefix is enough, no traversal vulnerability like path-based storage.
 export function assertOwnedKey(userId: string, key: string): void {
   if (!key.startsWith(`uploads/${userId}/`)) {
     throw new Error(`Key không hợp lệ hoặc không thuộc về user hiện tại: ${key}`);
@@ -22,11 +22,11 @@ export async function saveFile(userId: string, key: string, buffer: Buffer): Pro
 
 export async function deleteFile(userId: string, key: string): Promise<void> {
   assertOwnedKey(userId, key);
-  // DeleteObject vốn idempotent, key không tồn tại vẫn trả về thành công.
+  // DeleteObject is inherently idempotent, a nonexistent key still returns success.
   await s3.send(new DeleteObjectCommand({ Bucket: requireBucket(), Key: key }));
 }
 
-// Worker đọc lại file ở đây, message SQS chỉ mang key vì giới hạn 256KB không đủ chứa bytes file.
+// The worker reads the file back here, the SQS message only carries the key because the 256KB limit can't hold the file bytes.
 export async function readFile(userId: string, key: string): Promise<Buffer> {
   assertOwnedKey(userId, key);
   const { Body } = await s3.send(new GetObjectCommand({ Bucket: requireBucket(), Key: key }));

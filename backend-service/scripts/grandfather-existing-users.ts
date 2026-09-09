@@ -1,7 +1,6 @@
 import postgres from "postgres";
 
-// Chạy 1 lần khi bật requireEmailVerification — tài khoản tạo trước mốc này chưa qua bước xác
-// nhận (tính năng chưa có lúc đó), ân xá thay vì khoá ngược. Cần CUTOFF, không thì chạy nhầm lần 2 sẽ ân xá luôn user mới thật sự chưa xác nhận.
+// Chạy 1 lần khi bật requireEmailVerification, ân xá tài khoản tạo trước mốc này, cần CUTOFF để tránh chạy nhầm ân xá cả user mới.
 const CUTOFF = new Date("2026-08-11T00:00:00Z"); // ngày requireEmailVerification được bật
 
 const sql = postgres(process.env.DATABASE_ADMIN_URL!);

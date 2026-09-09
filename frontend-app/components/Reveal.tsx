@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-// IntersectionObserver kích hoạt đúng 1 lần rồi tự ngắt, animation thật nằm ở CSS, component chỉ lo gắn/gỡ class.
+// IntersectionObserver fires exactly once then disconnects itself, the real animation lives in CSS, this component just adds/removes the class.
 export function Reveal({
   children,
   delay,

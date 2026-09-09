@@ -2,7 +2,7 @@ import { weeklyDigests } from "@ai-assistant/db/src/schema";
 import { desc, eq } from "drizzle-orm";
 import { withAuthedContext } from "@/lib/with-authed-context";
 
-// Chỉ đọc, digest được tạo bởi digest-worker.ts, không có POST/DELETE ở đây.
+// Read-only, digests are created by digest-worker.ts, no POST/DELETE here.
 export const GET = withAuthedContext(async (_req, { session, tx }) => {
   const list = await tx
     .select({

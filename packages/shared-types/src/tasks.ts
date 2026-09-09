@@ -6,5 +6,5 @@ export interface TaskListItem {
   updatedAt: string;
 }
 
-// Output thật của tool listTasks, thành công trả tasks/count, from/to sai định dạng trả error.
+// Real output of the listTasks tool, success returns tasks/count, malformed from/to returns an error.
 export type ListTasksOutput = { error: string } | { tasks: TaskListItem[]; count: number };

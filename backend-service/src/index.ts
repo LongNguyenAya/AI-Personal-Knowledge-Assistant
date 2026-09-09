@@ -3,7 +3,7 @@ import { LangfuseSpanProcessor } from "@langfuse/otel";
 import { LangfuseVercelAiSdkIntegration } from "@langfuse/vercel-ai-sdk";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 
-// Khởi tạo trước mọi thứ khác, sau registerTelemetry() mọi lệnh gọi AI SDK tự động gửi trace lên Langfuse.
+// Initialized before everything else, after registerTelemetry() every AI SDK call automatically sends a trace to Langfuse.
 const sdk = new NodeSDK({
   spanProcessors: [new LangfuseSpanProcessor()],
 });
@@ -38,7 +38,7 @@ if (!process.env.S3_BUCKET_NAME) {
 
 const app = new Hono<AppEnv>();
 
-// /ws xác thực riêng qua query string, chỉ path này bỏ qua jwtAuthMiddleware.
+// /ws authenticates separately via query string, this is the only path that skips jwtAuthMiddleware.
 app.use("*", async (c, next) => {
   if (c.req.path === "/ws") return next();
   return jwtAuthMiddleware(c, next);
@@ -49,7 +49,7 @@ app.route("/", orchestratorRoute);
 app.route("/", wsRoute);
 app.route("/", emailRoute);
 
-// Bắt lỗi throw từ bất kỳ route nào, log đầy đủ nhưng chỉ trả 500 chung, không lộ chi tiết cho client.
+// Catches an error thrown from any route, logs it in full but only returns a generic 500, no details leaked to the client.
 app.onError((err, c) => {
   console.error(`[error] ${c.req.method} ${c.req.path}:`, err);
   return c.json({ error: "Internal Server Error" }, 500);
@@ -58,14 +58,14 @@ app.onError((err, c) => {
 const port = 4000;
 console.log(`Backend service đang chạy ở port ${port}`);
 
-// noServer: true bắt buộc, @hono/node-server tự wire event upgrade vào wss, wss không tự listen().
+// noServer: true is required, @hono/node-server wires the upgrade event into wss itself, wss doesn't call listen() on its own.
 const wss = new WebSocketServer({ noServer: true });
 serve({ fetch: app.fetch, port, websocket: { server: wss } });
 
 startReminderScheduler();
 startDocumentIngestionWorker();
 
-// Không throw cứng như 2 biến kia vì queue này cần tạo thủ công trên AWS Console, chưa có cũng không chặn khởi động.
+// Doesn't hard-throw like the other 2 env vars since this queue has to be created manually on the AWS Console, missing it doesn't block startup.
 if (process.env.WEEKLY_DIGEST_QUEUE_URL) {
   startDigestWorker();
 } else {

@@ -3,13 +3,13 @@ import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { getDocumentChunks } from "../../db/repositories/chunks";
 
-// So khớp thuần code, chuẩn hoá khoảng trắng trước khi so vì model hay chèn/bỏ khoảng trắng thừa.
+// Pure code matching, normalizes whitespace before comparing since the model often adds/drops extra spaces.
 function isQuoteVerified(quote: string, fullText: string): boolean {
   const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
   return normalize(fullText).includes(normalize(quote));
 }
 
-// Model tự đề xuất confidence, code chỉ được hạ xuống needs_review, kể cả khi tài liệu bị nghi injection.
+// The model proposes its own confidence, the code can only lower it to needs_review, including when the document is flagged for suspected injection.
 function clampConfidence(
   modelConfidence: "confident" | "needs_review",
   verified: boolean,
@@ -23,7 +23,7 @@ function clampConfidence(
   return "confident";
 }
 
-// Chỉ trả về đề xuất, không tự ghi reminder, action agent phải chờ user xác nhận trước.
+// Only returns a suggestion, never writes a reminder itself, the action agent has to wait for the user's confirmation first.
 export function extractActionItemsTool(userId: string) {
   return tool({
     description:
@@ -52,14 +52,14 @@ export function extractActionItemsTool(userId: string) {
           items: z.array(
             z.object({
               title: z.string().describe("Tên việc cần làm, ngắn gọn"),
-              // Không hậu tố Z, đây là giờ Việt Nam đọc thẳng từ tài liệu, để action agent tự quy đổi UTC.
+              // No Z suffix, this is Vietnam time read directly from the document, left for the action agent to convert to UTC itself.
               dueAt: z
                 .string()
                 .nullable()
                 .describe(
                   "Hạn chót — CHỈ điền khi tài liệu nói RÕ ngày cụ thể. Định dạng 'YYYY-MM-DD' nếu tài " +
                     "liệu chỉ nêu ngày (không nói giờ); định dạng 'YYYY-MM-DDTHH:mm' (giờ Việt Nam, KHÔNG " +
-                    "thêm hậu tố Z) nếu tài liệu CÓ nêu rõ giờ cụ thể (vd 'họp lúc 14h ngày 25/08/2026' → " +
+                    "thêm hậu tố Z) nếu tài liệu CÓ nêu rõ giờ cụ thể (vd 'họp lúc 14h ngày 25/08/2026' thì ghi " +
                     "'2026-08-25T14:00'). null nếu tài liệu chỉ nói mơ hồ (vd 'sớm', 'trong tuần này'), " +
                     "không tự suy đoán ngày hay giờ."
                 ),

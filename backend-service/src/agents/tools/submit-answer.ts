@@ -2,10 +2,10 @@ import { tool, generateObject } from "ai";
 import { groq } from "@ai-sdk/groq";
 import { z } from "zod";
 
-// Model riêng (Groq), rẻ và nhanh, openai/gpt-oss-20b là 1 trong 2 model Groq hỗ trợ json_schema.
+// A separate model (Groq), cheap and fast, openai/gpt-oss-20b is 1 of the 2 Groq models that support json_schema.
 const VERIFICATION_MODEL = "openai/gpt-oss-20b";
 
-// Lớp kiểm tra thứ 2, xem nội dung có suy ra đúng từ nguồn không, fail gracefully nếu Groq lỗi.
+// The 2nd check layer, verifies the content is actually grounded in the source, fails gracefully if Groq errors.
 async function verifyContentMatch(answer: string, sourceContents: string[]): Promise<{ supported: boolean; reason: string | null }> {
   if (sourceContents.length === 0) return { supported: true, reason: null };
 
@@ -29,7 +29,7 @@ async function verifyContentMatch(answer: string, sourceContents: string[]): Pro
   }
 }
 
-// Ép trả lời qua tool này để code kiểm tra citedDocumentIds thật, ID lạ thì trả lỗi cho model viết lại.
+// Forces the answer through this tool so the code can verify citedDocumentIds for real, an unknown ID returns an error for the model to rewrite.
 export function submitAnswerTool(contentsByDocumentId: Map<string, string[]>) {
   const retrievedDocumentIds = new Set(contentsByDocumentId.keys());
 
@@ -67,7 +67,7 @@ export function submitAnswerTool(contentsByDocumentId: Map<string, string[]>) {
   });
 }
 
-// Thiếu điều kiện dừng sớm này, model bị buộc gọi đủ 3 lần dù đã accepted từ lần đầu.
+// Without this early-stop condition, the model would be forced to call it a full 3 times even after being accepted on the first try.
 export function stopWhenAnswerAccepted({ steps }: { steps: { toolResults: { toolName: string; output: unknown }[] }[] }): boolean {
   const lastStep = steps[steps.length - 1];
   return lastStep?.toolResults.some(
@@ -75,7 +75,7 @@ export function stopWhenAnswerAccepted({ steps }: { steps: { toolResults: { tool
   ) ?? false;
 }
 
-// Trả kèm citedDocumentIds để hiện đúng "Nguồn", tránh nhầm với tập "đã truy xuất" từng hiện sai.
+// Returns citedDocumentIds alongside so "Source" displays correctly, avoiding confusion with the "retrieved" set that used to show incorrectly.
 export function extractGroundedAnswer(
   toolResults: { toolName: string; input: unknown; output: unknown }[]
 ): { answer: string; citedDocumentIds: string[] } | null {

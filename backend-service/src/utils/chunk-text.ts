@@ -5,7 +5,7 @@ export function chunkText(text: string, chunkSize = 1000, overlap = 100): string
   while (start < text.length) {
     const end = Math.min(start + chunkSize, text.length);
     chunks.push(text.slice(start, end));
-    start += chunkSize - overlap; // lùi lại 1 đoạn để chunk sau "chồng" lên chunk trước
+    start += chunkSize - overlap; // steps back a bit so the next chunk "overlaps" the previous one
   }
 
   return chunks;

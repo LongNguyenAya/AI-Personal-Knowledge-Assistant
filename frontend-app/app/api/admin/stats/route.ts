@@ -2,14 +2,14 @@ import { documents, chatHistory, users } from "@ai-assistant/db/src/schema";
 import { and, count, eq, gte } from "drizzle-orm";
 import { withAdminContext } from "@/lib/with-admin-context";
 
-// Query trên toàn bộ hệ thống dùng dbAdmin, totalUsers ở đây để trang Dashboard không cần gọi /api/admin/users nữa.
+// A system-wide query using dbAdmin, totalUsers is included here so the Dashboard page doesn't need to also call /api/admin/users.
 export const GET = withAdminContext(async (_req, { db }) => {
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const [[totalUsersRow], [indexedDocsRow], [aiQueries24hRow]] = await Promise.all([
     db.select({ n: count() }).from(users),
     db.select({ n: count() }).from(documents).where(eq(documents.status, "processed")),
-    // role="user" đếm số câu hỏi chứ không phải tổng dòng chat_history, đếm cả assistant sẽ ra số gấp đôi.
+    // role="user" counts the number of questions, not the total chat_history rows, counting assistant rows too would double the count.
     db
       .select({ n: count() })
       .from(chatHistory)

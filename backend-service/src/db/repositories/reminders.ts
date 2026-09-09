@@ -12,7 +12,7 @@ export async function createReminder(
     const [created] = await tx.insert(reminders).values({ userId, ...reminderData }).returning();
     let relinkedFrom: string[] = [];
     if (taskIds && taskIds.length > 0) {
-      // 1 task chỉ thuộc 1 reminder, đọc trước reminderId cũ để báo caller task nào vừa bị đổi.
+      // 1 task belongs to only 1 reminder, reads the old reminderId first to tell the caller which task just changed.
       const previouslyLinked = await tx
         .select({ id: tasks.id })
         .from(tasks)
@@ -25,10 +25,10 @@ export async function createReminder(
   });
 }
 
-// Không JOIN trực tiếp sang tasks (nhân dòng), lấy tên task qua query riêng rồi merge bằng Map.
+// Doesn't JOIN directly to tasks (would multiply rows), fetches task names via a separate query then merges with a Map.
 async function attachTaskTitles<T extends { id: string }>(rows: T[]): Promise<(T & { taskTitles: string[] })[]> {
   if (rows.length === 0) return [];
-  // Phải lọc isNull(deletedAt), không thì push WebSocket/email vẫn nhắc tên task user đã xoá.
+  // Must filter isNull(deletedAt), otherwise the WebSocket/email push would still mention a task the user already deleted.
   const linkedTasks = await dbAdmin
     .select({ reminderId: tasks.reminderId, title: tasks.title })
     .from(tasks)
@@ -42,7 +42,7 @@ async function attachTaskTitles<T extends { id: string }>(rows: T[]): Promise<(T
   return rows.map((r) => ({ ...r, taskTitles: map.get(r.id) ?? [] }));
 }
 
-// Scheduler quét tất cả user cùng lúc, withUserContext chỉ thấy 1 user nên phải dùng dbAdmin.
+// The scheduler scans all users at once, withUserContext only sees 1 user so dbAdmin has to be used.
 export async function findDueReminders() {
   const due = await dbAdmin
     .select()
@@ -51,12 +51,12 @@ export async function findDueReminders() {
   return attachTaskTitles(due);
 }
 
-// Đánh dấu ngay sau khi tìm thấy để scheduler không quét trúng lần nữa, emailSentAt là cột riêng.
+// Marked right after being found so the scheduler doesn't pick it up again, emailSentAt is a dedicated column.
 export async function markReminderSent(reminderId: string) {
   return dbAdmin.update(reminders).set({ status: "sent" }).where(eq(reminders.id, reminderId));
 }
 
-// Quét độc lập với status vì email vẫn cần gửi dù không ai mở app, join users để lấy email.
+// Scanned independently of status because the email still needs to send even if no one opens the app, joins users to get the email.
 export async function findRemindersNeedingEmail() {
   const due = await dbAdmin
     .select({

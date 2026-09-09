@@ -1,7 +1,7 @@
 "use client";
 import { AlertTriangle } from "lucide-react";
 
-// Thay cho confirm() mặc định của trình duyệt, trước đây các nút xoá hoàn toàn không có bước xác nhận nào.
+// Replaces the browser's default confirm(), delete buttons previously had no confirmation step at all.
 export function ConfirmModal({
   open,
   title,

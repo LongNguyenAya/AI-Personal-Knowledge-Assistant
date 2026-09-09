@@ -15,7 +15,7 @@ const TOOL_LABELS: Record<string, string> = {
   proposeKnowledgeNote: "Đề xuất ghi chú kiến thức",
 };
 
-// Ngưỡng thu gọn áp cho từng chuỗi text riêng lẻ, vì 1 tool có thể trả nhiều đoạn dài cần nút thu gọn riêng.
+// The collapse threshold applies per individual text string, since 1 tool can return multiple long segments each needing their own collapse button.
 const COLLAPSE_THRESHOLD = 180;
 
 function ExpandableText({ text }: { text: string }) {
@@ -74,12 +74,12 @@ function isEmptyInput(input: unknown): boolean {
   return input === undefined || (typeof input === "object" && input !== null && Object.keys(input).length === 0);
 }
 
-// createChart/listTasks đã có khối UI riêng đẹp hơn, dump lại object kỹ thuật ở đây chỉ gây rối, vẫn hiện Đầu vào bình thường.
+// createChart/listTasks already have their own nicer UI block, dumping the raw technical object here would just be noise, "Input" is still shown normally.
 const SUMMARIZED_OUTPUT_TOOLS = new Set(["createChart", "listTasks", "createDiagram"]);
 
 export type TraceStep = { toolName: string; input?: unknown; output: unknown };
 
-// Trace "AI đã làm gì" thu gọn mặc định, tin nhắn cũ trước khi có field `input` vẫn hiện được, chỉ thiếu "Đầu vào".
+// The "What the AI did" trace is collapsed by default, older messages predating the `input` field still render, just missing "Input".
 export function TraceBlock({ steps }: { steps: TraceStep[] }) {
   const [open, setOpen] = useState(false);
   if (steps.length === 0) return null;

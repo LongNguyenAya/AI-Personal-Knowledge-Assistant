@@ -6,7 +6,7 @@ const PROMPT =
   "thông tin thực sự có trong ảnh (số liệu, biểu đồ, sơ đồ, ảnh chụp...), không suy đoán thêm " +
   "ngoài những gì nhìn thấy được.";
 
-// Tách riêng khỏi extractPdfContent vì .docx/.pptx đọc cục bộ nên ảnh nhúng phải tách ra mô tả riêng.
+// Kept separate from extractPdfContent because .docx/.pptx are read locally, so embedded images need their own description step.
 export async function describeImage(buffer: Buffer, mediaType: string): Promise<string> {
   const { text } = await generateText({
     model: google("gemini-flash-lite-latest"),

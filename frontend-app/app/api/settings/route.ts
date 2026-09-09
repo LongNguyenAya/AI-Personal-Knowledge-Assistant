@@ -2,7 +2,7 @@ import { users } from "@ai-assistant/db/src/schema";
 import { eq } from "drizzle-orm";
 import { withAuthedContext } from "@/lib/with-authed-context";
 
-// users không bật RLS nên phải tự lọc where(eq(users.id, session.user.id)) tường minh, nếu không có thể đọc/sửa personalNote của user khác.
+// users doesn't have RLS enabled so it must filter where(eq(users.id, session.user.id)) explicitly, otherwise another user's personalNote could be read/edited.
 export const GET = withAuthedContext(async (_req, { session, tx }) => {
   const [row] = await tx.select({ personalNote: users.personalNote }).from(users).where(eq(users.id, session.user.id));
   return Response.json({ personalNote: row?.personalNote ?? "" });

@@ -9,7 +9,7 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-// Không dựa vào AI tự liệt kê tên task ra lời vì dễ tóm tắt thiếu/sai, hiện thẳng dữ liệu thật từ tool giống ChartBlock.
+// Doesn't rely on the AI listing task names in words since it's prone to summarizing incompletely/incorrectly, shows the real tool data directly like ChartBlock.
 export function TaskListBlock({ tasks, count }: TaskListBlockProps) {
   if (!tasks || tasks.length === 0) {
     return <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Không tìm thấy task nào khớp yêu cầu.</p>;

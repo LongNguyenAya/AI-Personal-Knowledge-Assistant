@@ -6,7 +6,7 @@ import type { InsertPendingNoteInput, RelevantKnowledgeNote } from "../../types/
 
 const KNOWLEDGE_TOP_K = 8;
 
-// Bảng dùng chung không RLS, không lọc ngưỡng khoảng cách cứng để action agent tự đánh giá.
+// A shared table with no RLS, no hardcoded distance threshold filter so the action agent judges relevance itself.
 export async function findRelevantApprovedNotes(queryEmbedding: number[]): Promise<RelevantKnowledgeNote[]> {
   const embeddingLiteral = JSON.stringify(queryEmbedding);
   return dbAdmin
@@ -17,7 +17,7 @@ export async function findRelevantApprovedNotes(queryEmbedding: number[]): Promi
     .limit(KNOWLEDGE_TOP_K);
 }
 
-// Tính embedding ngay lúc tạo, không đợi duyệt, vì nội dung không đổi giữa 2 mốc đó.
+// Computes the embedding right at creation instead of waiting for approval, since the content doesn't change between those 2 points.
 export async function insertPendingNote(data: InsertPendingNoteInput) {
   const embedding = await embedText(`${data.title}\n${data.content}`);
   const [created] = await dbAdmin

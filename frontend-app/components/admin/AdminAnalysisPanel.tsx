@@ -13,7 +13,7 @@ const METRICS: { value: Metric; label: string }[] = [
   { value: "ai-queries", label: "Lượt hỏi" },
 ];
 
-// Panel dùng chung cho cả 2 khối, chọn metric bằng nút lọc thay vì lặp nút "Phân tích" riêng, `view` nhận từ component cha.
+// A panel shared by both blocks, the metric is picked via a filter button instead of duplicating a separate "Analyze" button, `view` comes from the parent component.
 export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView: View; aiQueriesView: View }) {
   const [metric, setMetric] = useState<Metric>("signups");
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -28,7 +28,7 @@ export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView
     setError(null);
     (async () => {
       try {
-        // Chỉ đọc kết quả đã lưu từ lần bấm gần nhất, không tự chạy AI mới khi đổi metric/view.
+        // Only reads back the result saved from the last click, doesn't run a new AI analysis when metric/view changes.
         setAnalysis(await fetchJson<Analysis | null>(`${endpoint}?view=${view}`));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Không tải được kết quả phân tích");

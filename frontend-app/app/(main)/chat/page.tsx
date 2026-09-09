@@ -14,7 +14,7 @@ import type { ChartToolOutput, ListTasksOutput, SearchDocumentsOutput, DiagramTo
 import type { Conversation, StoredMessage } from "@/types/chat";
 import { CHAT_PREFILL_STORAGE_KEY } from "@/lib/chat-prefill";
 
-// Dựng lại tool part (vd chart) từ toolResults đã lưu, thiếu bước này chart sẽ biến mất khi tải lại trang.
+// Rebuilds a tool part (e.g. a chart) from saved toolResults, without this step a chart would vanish on page reload.
 function toUIMessages(rows: StoredMessage[]): UIMessage[] {
   return rows.map((r, i) => ({
     id: `history-${i}`,
@@ -32,7 +32,7 @@ function toUIMessages(rows: StoredMessage[]): UIMessage[] {
   }));
 }
 
-// Hướng B: đính kèm tài liệu MỚI ngay trong composer, phải upload và chờ xử lý xong mới gửi câu hỏi thật.
+// Path B: attach a NEW document right in the composer, it has to be uploaded and finish processing before the real question is sent.
 type PendingTurn = {
   questionText: string;
   fileName: string;
@@ -40,11 +40,11 @@ type PendingTurn = {
   documentId?: string;
   elapsedSeconds: number;
   error?: string;
-  // "timeout" chỉ là client hết kiên nhẫn chờ nên không gọi /retry, "failed" mới là lỗi thật đã xác nhận.
+  // "timeout" just means the client gave up waiting so it doesn't call /retry, "failed" is a confirmed real error.
   failReason?: "failed" | "timeout";
 };
 
-// Lặp lại logic deriveTitle của backend có chủ đích, đây chỉ là tên hiển thị tạm, giá trị thật do backend quyết định.
+// Deliberately repeats the backend's deriveTitle logic, this is only a temporary display name, the real value is decided by the backend.
 const TITLE_MAX_WORDS = 6;
 function deriveTitle(rawMessage: string): string {
   const words = rawMessage.trim().split(/\s+/);
@@ -53,7 +53,7 @@ function deriveTitle(rawMessage: string): string {
 }
 
 const POLL_INTERVAL_MS = 3000;
-// 90s vì Gemini và embedding chạy tuần tự từng đoạn có thể lâu, tránh báo lỗi oan lúc sắp xong.
+// 90s since Gemini and embedding run sequentially chunk by chunk which can take a while, avoiding a false error right before it finishes.
 const PROCESSING_TIMEOUT_MS = 90_000;
 
 async function pollDocumentStatus(
@@ -69,7 +69,7 @@ async function pollDocumentStatus(
       if (doc.status === "processed") return "processed";
       if (doc.status === "failed") return "failed";
     } catch {
-      // Lỗi mạng tạm thời, bỏ qua và thử lại ở vòng lặp sau thay vì coi là thất bại ngay.
+      // A transient network error, ignored and retried on the next loop iteration instead of treating it as an immediate failure.
     }
   }
   return "timeout";
@@ -78,7 +78,7 @@ async function pollDocumentStatus(
 export default function ChatPage() {
   const [input, setInput] = useState("");
 
-  // Trang khác điền sẵn câu hỏi qua sessionStorage (đọc 1 lần rồi xoá) rồi điều hướng sang, không tự gửi luôn.
+  // Other pages pre-fill a question via sessionStorage (read once then cleared) before navigating here, it isn't sent automatically.
   useEffect(() => {
     const prefill = sessionStorage.getItem(CHAT_PREFILL_STORAGE_KEY);
     if (prefill) {
@@ -86,7 +86,7 @@ export default function ChatPage() {
       sessionStorage.removeItem(CHAT_PREFILL_STORAGE_KEY);
     }
   }, []);
-  // Dùng ref thay vì state vì chỉ cần transport đọc giá trị mới nhất lúc gửi, không cần re-render khi đổi.
+  // Uses a ref instead of state since the transport only needs to read the latest value when sending, no re-render is needed when it changes.
   const conversationIdRef = useRef<string | null>(null);
 
   const [conversationList, setConversationList] = useState<Conversation[]>([]);
@@ -94,14 +94,14 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [convOpen, setConvOpen] = useState(false);
 
-  // Hướng A: chỉ chọn tài liệu đã "processed", giữ nguyên qua nhiều lượt hỏi, user tự bấm "x" để bỏ.
+  // Path A: only picks a document already "processed", stays attached across multiple questions, the user clicks "x" to remove it.
   const [attachedDocument, setAttachedDocument] = useState<{ id: string; fileName: string } | null>(null);
   const attachedDocumentIdRef = useRef<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickableDocuments, setPickableDocuments] = useState<{ id: string; fileName: string }[] | null>(null);
 
   function attachDocument(doc: { id: string; fileName: string }) {
-    setStagedNewFile(null); // loại trừ lẫn nhau với tài liệu mới đang chờ upload
+    setStagedNewFile(null); // mutually exclusive with a new document staged for upload
     attachedDocumentIdRef.current = doc.id;
     setAttachedDocument(doc);
     setPickerOpen(false);
@@ -114,7 +114,7 @@ export default function ChatPage() {
 
   async function openPicker() {
     setPickerOpen((open) => !open);
-    if (pickableDocuments) return; // đã tải rồi, không gọi lại API mỗi lần mở
+    if (pickableDocuments) return; // already loaded, doesn't call the API again every time it opens
     try {
       const docs = await fetchJson<{ id: string; fileName: string; status: string }[]>("/api/documents");
       setPickableDocuments(docs.filter((d) => d.status === "processed"));
@@ -123,7 +123,7 @@ export default function ChatPage() {
     }
   }
 
-  // Hướng B: chỉ chọn file ở đây, upload và chờ xử lý chỉ bắt đầu lúc bấm Gửi (uploadThenAsk).
+  // Path B: only picks the file here, upload and processing only start once Send is clicked (uploadThenAsk).
   const [stagedNewFile, setStagedNewFile] = useState<File | null>(null);
   const [pendingTurn, setPendingTurn] = useState<PendingTurn | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,13 +135,13 @@ export default function ChatPage() {
 
   function handleNewFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    e.target.value = ""; // cho phép chọn lại đúng file này lần nữa nếu cần
+    e.target.value = ""; // allows picking this exact same file again later if needed
     if (!file) return;
-    detachDocument(); // loại trừ lẫn nhau với tài liệu có sẵn
+    detachDocument(); // mutually exclusive with an already-existing document
     setStagedNewFile(file);
   }
 
-  // Tách hàm này để dùng lại được cho cả lần thử đầu và lần "Thử lại", pollDocumentStatus tự quản lý mốc thời gian riêng.
+  // Split into its own function so it's reusable for both the first attempt and "Retry", pollDocumentStatus manages its own timing.
   async function runProcessingWait(documentId: string, fileName: string, questionText: string, startConversationId: string | null) {
     setPendingTurn((p) => (p ? { ...p, phase: "processing", documentId, elapsedSeconds: 0, error: undefined } : p));
 
@@ -163,7 +163,7 @@ export default function ChatPage() {
       return;
     }
 
-    // User đã chuyển sang cuộc trò chuyện khác trong lúc chờ nên huỷ âm thầm, tránh gửi nhầm câu hỏi.
+    // The user already switched to a different conversation while waiting so this is silently canceled, avoiding sending the question to the wrong place.
     if (conversationIdRef.current !== startConversationId) {
       setPendingTurn(null);
       return;
@@ -200,7 +200,7 @@ export default function ChatPage() {
     const { documentId, fileName, questionText, failReason } = pendingTurn;
     const startConversationId = conversationIdRef.current;
 
-    // Timeout ở client không có nghĩa server đã dừng, chỉ chờ tiếp và không gọi /retry để tránh trùng SQS.
+    // A client-side timeout doesn't mean the server has stopped, it just keeps waiting and doesn't call /retry to avoid duplicating the SQS message.
     if (failReason === "timeout") {
       runProcessingWait(documentId, fileName, questionText, startConversationId);
       return;
@@ -211,7 +211,7 @@ export default function ChatPage() {
       .catch(() => setPendingTurn((p) => (p ? { ...p, phase: "failed", failReason: "failed", error: "Thử lại thất bại." } : p)));
   }
 
-  // body là callback chỉ chạy lúc gửi request thật, giữ transport không bị tạo lại mỗi lần conversationId đổi.
+  // body is a callback that only runs when the real request is sent, keeping the transport from being recreated every time conversationId changes.
   /* eslint-disable react-hooks/refs, react-hooks/preserve-manual-memoization */
   const transport = useMemo(
     () =>
@@ -223,17 +223,17 @@ export default function ChatPage() {
   );
   /* eslint-enable react-hooks/refs, react-hooks/preserve-manual-memoization */
 
-  // error đổi tên thành chatError để tránh trùng state, useChat tự set khi stream lỗi, không qua message.parts.
+  // error is renamed to chatError to avoid a state name collision, useChat sets it itself when the stream errors, not through message.parts.
   const { messages, sendMessage, status, setMessages, error: chatError } = useChat({ transport });
 
-  // requestSeq chặn race condition khi đổi conversation nhanh, chỉ áp dụng response nếu vẫn là request mới nhất.
+  // requestSeq blocks a race condition when switching conversations quickly, the response is only applied if it's still the latest request.
   const requestSeqRef = useRef(0);
   const loadMessagesFor = useCallback(
     async (conversationId: string) => {
       const seq = ++requestSeqRef.current;
       try {
         const rows = await fetchJson<StoredMessage[]>(`/api/conversations/${conversationId}/messages`);
-        if (requestSeqRef.current !== seq) return; // đã có request mới hơn, bỏ kết quả cũ này
+        if (requestSeqRef.current !== seq) return; // a newer request already exists, discards this stale result
         setMessages(toUIMessages(rows));
         setError(null);
       } catch (err) {
@@ -244,7 +244,7 @@ export default function ChatPage() {
     [setMessages, setError]
   );
 
-  // Lúc mount: lấy danh sách conversation, chọn cái mới nhất làm active, rồi nạp lịch sử tin nhắn lên UI.
+  // On mount: fetches the conversation list, picks the newest one as active, then loads the message history into the UI.
   useEffect(() => {
     (async () => {
       try {
@@ -266,7 +266,7 @@ export default function ChatPage() {
   }, []);
 
   async function handleNewConversation() {
-    // Bỏ dở lượt đang chờ, tài liệu vẫn tiếp tục xử lý ở backend, chỉ không còn gắn với lượt hỏi nào nữa.
+    // Abandons the pending turn, the document keeps processing on the backend, it's just no longer tied to any question.
     setPendingTurn(null);
     try {
       const created = await fetchJson<Conversation>("/api/conversations", { method: "POST" });
@@ -282,13 +282,13 @@ export default function ChatPage() {
 
   async function handleSelectConversation(id: string) {
     if (id === activeId) return;
-    setPendingTurn(null); // cùng lý do ở handleNewConversation
+    setPendingTurn(null); // same reason as in handleNewConversation
     conversationIdRef.current = id;
     setActiveId(id);
     await loadMessagesFor(id);
   }
 
-  // Đặt tên hiển thị ngay khi gửi câu hỏi đầu tiên, chỉ đổi khi title đang null để tránh ghi đè tên cũ.
+  // Sets the display name right when the first question is sent, only changes it while title is still null to avoid overwriting an existing name.
   function applyOptimisticTitle(text: string) {
     const currentId = conversationIdRef.current;
     setConversationList((prev) =>
@@ -310,7 +310,7 @@ export default function ChatPage() {
 
   const activeConversation = conversationList.find((c) => c.id === activeId) ?? null;
 
-  // 4rem = py-8 của <main> ở md+, dưới md phải trừ thêm topbar MainNav (~3rem) để khung chat không tràn viewport.
+  // 4rem = <main>'s py-8 at md+, below md the MainNav topbar (~3rem) also has to be subtracted so the chat frame doesn't overflow the viewport.
   return (
     <div className="flex h-[calc(100vh-7rem)] gap-4 md:h-[calc(100vh-4rem)]">
       {/* Danh sách cuộc trò chuyện chiếm quá nhiều chỗ trên màn hình hẹp — ẩn mặc định dưới md,
@@ -369,17 +369,17 @@ export default function ChatPage() {
             <p className="text-sm text-gray-400 dark:text-gray-500">Hỏi gì đó về tài liệu của bạn để bắt đầu.</p>
           )}
           {messages.map((m) => {
-            // Ẩn lỗi tool tạm thời nếu cùng tool đã có kết quả thành công khác trong cùng tin nhắn.
+            // Hides a transient tool error if that same tool already has another successful result in the same message.
             const succeededTools = new Set(
               m.parts.filter((p) => isToolUIPart(p) && p.state === "output-available").map((p) => getToolName(p))
             );
 
-            // Trace "AI đã làm gì" gom tất cả tool call đã xong thành 1 khối xem chi tiết, tách biệt hiển thị chính.
+            // The "What the AI did" trace groups every finished tool call into 1 detail block, kept separate from the main display.
             const traceSteps = m.parts
               .filter((p) => isToolUIPart(p) && p.state === "output-available")
               .map((p) => ({ toolName: getToolName(p), input: (p as { input?: unknown }).input, output: (p as { output?: unknown }).output }));
 
-            // Con trỏ nhấp nháy chỉ hiện ở đúng tin nhắn assistant cuối cùng lúc status còn "streaming".
+            // The blinking cursor only shows on the exact last assistant message while status is still "streaming".
             const isStreamingThisMessage = status === "streaming" && m.role === "assistant" && messages[messages.length - 1]?.id === m.id;
 
             return (
@@ -435,7 +435,7 @@ export default function ChatPage() {
                         return <DiagramBlock key={i} title={output.title} mermaidCode={output.mermaidCode} />;
                       }
                       if (name === "searchDocuments") {
-                        // fileName lấy từ kết quả tool trả về, không dựa lời model tự kể vì có thể bịa tên.
+                        // fileName comes from the tool's returned result, not the model's own claim since it could make up a name.
                         const output = part.output as SearchDocumentsOutput;
                         const fileNames = [...new Set(output.results.map((r) => r.fileName))];
                         if (fileNames.length === 0)

@@ -6,7 +6,7 @@ import type { SettingKey } from "@ai-assistant/shared-types";
 
 const buckets = new Map<string, Bucket>();
 
-// Dọn định kỳ để Map không phình vô hạn, chỉ chạy 1 process nên không cần Redis/DB.
+// Cleaned up periodically so the Map doesn't grow unbounded, only runs in 1 process so Redis/DB isn't needed.
 setInterval(
   () => {
     const now = Date.now();
@@ -17,7 +17,7 @@ setInterval(
   10 * 60 * 1000
 );
 
-// Key theo userId chứ không phải IP, request luôn đi qua frontend-app nên IP luôn là của server đó.
+// Keyed by userId, not IP, since requests always go through frontend-app the IP would always be that server's.
 export function rateLimiter({
   windowMs,
   maxSettingKey,
@@ -38,7 +38,7 @@ export function rateLimiter({
       return next();
     }
 
-    // Đọc live mỗi request, không cache, admin tự chỉnh qua /admin/settings.
+    // Read live on every request, no caching, admin adjusts it via /admin/settings.
     const max = Math.round(await getSettingValue(maxSettingKey));
     if (bucket.count >= max) {
       return c.json({ error: "Bạn đang gửi quá nhanh, vui lòng thử lại sau." }, 429);

@@ -1,4 +1,4 @@
-// Helper chung cho mọi trang client, gọi res.json() trực tiếp mà không check res.ok sẽ ném SyntaxError khiến trang treo mãi.
+// A shared helper for every client page, calling res.json() directly without checking res.ok would throw a SyntaxError and hang the page forever.
 export async function fetchJson<T = unknown>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const res = await fetch(input, init);
   if (!res.ok) {

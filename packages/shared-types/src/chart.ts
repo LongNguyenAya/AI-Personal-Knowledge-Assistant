@@ -7,26 +7,26 @@ export interface ChartTrend {
   slope: number;
   futurePoints: number[];
   futureLabels: string[];
-  // Prediction interval song song 1-1 với futurePoints, không phải confidence interval của đường hồi quy.
+  // Prediction interval maps 1-1 with futurePoints, not the regression line's confidence interval.
   futureLower: number[];
   futureUpper: number[];
 }
 
-// Output thật của tool createChart, frontend-app render trực tiếp không tự khai lại field nào.
+// Real output of the createChart tool, frontend-app renders it directly without redeclaring any field.
 export interface ChartToolOutput {
   success: true;
   chartType: "bar" | "line" | "pie";
-  // "time" dàn đều sát 2 mép, "category" (breakdown) thì không, để tránh khoảng trống khi ít nhóm.
+  // "time" spreads flush to both edges, "category" (breakdown) doesn't, to avoid gaps when there are few groups.
   xAxisType: "time" | "category";
   data: ChartDatum[];
   empty: boolean;
   emptyReason: "no_data_ever" | "no_recent_activity" | null;
   trend: ChartTrend | null;
   trendMessage: string | null;
-  // Đã resolve sẵn label/value, không trả index thô để tránh model tính sai vị trí trong mảng.
+  // label/value already resolved, no raw index returned to avoid the model miscalculating array position.
   outliers: ChartDatum[];
-  // Song song 1-1 với `data`, chỉ có giá trị khi OLS chưa đạt ý nghĩa thống kê (trend=null).
+  // Maps 1-1 with `data`, only has a value when OLS hasn't reached statistical significance (trend=null).
   movingAverage: number[] | null;
-  // Dự đoán "mềm" bằng Holt-linear, chỉ có khi trend=null, không kiểm định thống kê như trend.
+  // "Soft" forecast via Holt-linear, only present when trend=null, not statistically tested like trend.
   softForecast: { points: number[]; labels: string[] } | null;
 }

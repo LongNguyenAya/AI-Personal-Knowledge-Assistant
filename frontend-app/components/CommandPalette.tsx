@@ -35,7 +35,7 @@ const ADMIN_LINKS = [
   { href: "/admin/settings", label: "Admin — Settings", icon: SlidersHorizontal },
 ];
 
-// Cmd/Ctrl+K gộp trang chính và trang admin thành 1 bảng gõ-để-lọc, chỉ điều hướng, chưa làm hành động nhanh.
+// Cmd/Ctrl+K merges the main and admin pages into 1 type-to-filter panel, navigation only, no quick actions yet.
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const router = useRouter();

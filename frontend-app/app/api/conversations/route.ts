@@ -2,7 +2,7 @@ import { conversations } from "@ai-assistant/db/src/schema";
 import { eq, desc } from "drizzle-orm";
 import { withAuthedContext } from "@/lib/with-authed-context";
 
-// Trả về toàn bộ conversation của user, mới nhất trước, trang /chat tự chọn phần tử đầu tiên làm active.
+// Returns all of the user's conversations, newest first, the /chat page picks the first item as active itself.
 export const GET = withAuthedContext(async (req, { session, tx }) => {
   const list = await tx
     .select()
@@ -13,7 +13,7 @@ export const GET = withAuthedContext(async (req, { session, tx }) => {
   return Response.json(list);
 });
 
-// Luôn tạo 1 conversation mới, dùng bởi nút "Cuộc trò chuyện mới".
+// Always creates 1 new conversation, used by the "New conversation" button.
 export const POST = withAuthedContext(async (req, { session, tx }) => {
   const [created] = await tx.insert(conversations).values({ userId: session.user.id }).returning();
   return Response.json(created);

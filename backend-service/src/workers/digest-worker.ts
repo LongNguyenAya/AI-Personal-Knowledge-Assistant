@@ -2,7 +2,7 @@ import { log } from "../utils/log";
 import { receiveDigestTriggerMessages, deleteDigestTriggerMessage } from "../services/sqs";
 import { generateWeeklyDigests } from "../services/weekly-digest";
 
-// Nội dung message không quan trọng, nhận được là chạy generateWeeklyDigests() cho toàn bộ user.
+// The message content doesn't matter, receiving one just runs generateWeeklyDigests() for every user.
 async function pollOnce(): Promise<void> {
   const messages = await receiveDigestTriggerMessages();
 
@@ -21,7 +21,7 @@ async function pollOnce(): Promise<void> {
   }
 }
 
-// Cùng khuôn mẫu document-ingestion-worker.ts, vòng lặp tự lên lịch lại nhờ long polling.
+// Same pattern as document-ingestion-worker.ts, the loop reschedules itself via long polling.
 export function startDigestWorker(): void {
   let running = true;
 

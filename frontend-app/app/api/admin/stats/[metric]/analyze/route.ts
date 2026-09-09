@@ -23,7 +23,7 @@ function isValidView(v: unknown): v is "week" | "month" | "year" {
   return v === "week" || v === "month" || v === "year";
 }
 
-// Lấy dòng phân tích mới nhất đã lưu, gọi lúc mount/đổi view để không mất kết quả cũ khi rời trang quay lại.
+// Fetches the latest saved analysis row, called on mount/view change so the old result isn't lost when leaving and returning to the page.
 export const GET = withAdminContext<{ metric: string }>(async (req, { db, params }) => {
   const config = METRIC_CONFIG[params.metric];
   if (!config) return new Response("Metric không hợp lệ", { status: 400 });
@@ -40,7 +40,7 @@ export const GET = withAdminContext<{ metric: string }>(async (req, { db, params
   return Response.json(row ?? null);
 });
 
-// Chỉ chạy khi admin chủ động bấm nút, đây là bước duy nhất gọi AI tốn token thật, luôn INSERT mới để giữ lịch sử.
+// Only runs when the admin actively clicks the button, this is the one step that calls AI and spends real tokens, always INSERTs a new row to keep history.
 export const POST = withAdminContext<{ metric: string }>(async (req, { db, session, params }) => {
   const config = METRIC_CONFIG[params.metric];
   if (!config) return new Response("Metric không hợp lệ", { status: 400 });
@@ -67,7 +67,7 @@ export const POST = withAdminContext<{ metric: string }>(async (req, { db, sessi
       (analysis.outliers.length > 0 ? ` Có điểm bất thường (ngoại lai): ${JSON.stringify(analysis.outliers)}.` : "");
   }
 
-  // Trước đây không bọc try/catch nên lỗi Gemini văng thẳng thành 500 trống trơn, giờ bắt lỗi để log chi tiết và trả thông báo dễ hiểu.
+  // Previously had no try/catch so a Gemini error surfaced as a bare 500, now the error is caught to log details and return a readable message.
   let text: string;
   try {
     const result = await generateText({

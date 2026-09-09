@@ -1,16 +1,16 @@
 import { jwtVerify, importJWK } from "jose";
 
-// Chỉ giữ public key ở đây, không tự ký được token giả.
+// Only holds the public key here, can't forge tokens itself.
 const publicKeyPromise = importJWK(JSON.parse(process.env.JWT_PUBLIC_KEY!), "EdDSA");
 
-// Dùng chung cho HTTP (token từ header) và WebSocket (token từ query string), chỉ khác chỗ lấy.
+// Shared by both HTTP (token from header) and WebSocket (token from query string), only the source differs.
 export async function verifyBackendToken(token: string): Promise<string | null> {
   try {
     const publicKey = await publicKeyPromise;
     const { payload } = await jwtVerify(token, publicKey);
     return typeof payload.sub === "string" ? payload.sub : null;
   } catch {
-    // Chữ ký sai, token hết hạn, hoặc format không hợp lệ đều coi là chưa xác thực.
+    // A bad signature, expired token, or invalid format are all treated as unauthenticated.
     return null;
   }
 }

@@ -13,7 +13,7 @@ import type { ChartDatum, ChartTrend } from "@ai-assistant/shared-types";
 type Db = typeof dbAdmin;
 type Granularity = "day" | "month";
 
-// Cùng kỹ thuật zero-fill với backend-service/db/repositories/analytics.ts, viết lại riêng vì không import được, và không loại trừ kỳ hiện tại.
+// Same zero-fill technique as backend-service/db/repositories/analytics.ts, rewritten separately since it can't be imported, and doesn't exclude the current period.
 export async function getSeries(
   db: Db,
   table: "users" | "chat_history",
@@ -59,7 +59,7 @@ export async function getMonthComparison(
   return { current: current.n, previous: previous.n, changePercent };
 }
 
-// Bản rút gọn của buildFutureLabels bên create-chart.ts, chỉ cần 2 granularity (day/month) khớp 2 view có chart.
+// A trimmed-down version of buildFutureLabels from create-chart.ts, only needs 2 granularities (day/month) matching the 2 views with charts.
 function addPeriod(label: string, granularity: Granularity, count: number): string {
   if (granularity === "day") {
     const d = new Date(`${label}T00:00:00Z`);
@@ -71,7 +71,7 @@ function addPeriod(label: string, granularity: Granularity, count: number): stri
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-// Wiring y hệt nhánh isTimeSeries trong create-chart.ts, trùng lặp có chủ đích, phần toán đã dùng chung qua shared-types.
+// Wired identically to the isTimeSeries branch in create-chart.ts, the duplication is deliberate, the math itself is already shared via shared-types.
 export function analyzeSeries(
   data: ChartDatum[],
   granularity: Granularity

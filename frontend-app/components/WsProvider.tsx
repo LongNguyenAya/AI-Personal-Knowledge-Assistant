@@ -10,7 +10,7 @@ const WsContext = createContext<WsContextValue | null>(null);
 const MIN_RECONNECT_DELAY_MS = 2000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 
-// 1 kết nối WS duy nhất cho cả app, tự thử kết nối lại khi đứt và lùi dần thời gian chờ để không spam server.
+// A single WS connection shared by the whole app, reconnects automatically when it drops with a growing backoff to avoid spamming the server.
 export function WsProvider({ children }: { children: ReactNode }) {
   const [connected, setConnected] = useState(false);
   const listenersRef = useRef(new Set<Listener>());
@@ -76,7 +76,7 @@ export function WsProvider({ children }: { children: ReactNode }) {
   return <WsContext.Provider value={{ connected, subscribe }}>{children}</WsContext.Provider>;
 }
 
-// Luôn gọi handler mới nhất qua ref, tránh bắt component gọi phải tự bọc useCallback để không đăng ký lại mỗi lần render.
+// Always calls the latest handler via a ref, so callers don't have to wrap it in useCallback just to avoid re-registering on every render.
 export function useWsEvent(handler: Listener) {
   const ctx = useContext(WsContext);
   const handlerRef = useRef(handler);

@@ -13,13 +13,13 @@ export function searchDocumentsTool(userId: string) {
     inputSchema: z.object({
       query: z.string().describe("Câu hỏi hoặc từ khóa cần tìm trong tài liệu"),
     }),
-    // Kèm documentId/fileName để hiện "Nguồn" đúng sự thật, không dựa lời model tự kể (dễ bịa tên).
+    // Includes documentId/fileName so "Source" reflects the truth, instead of relying on the model's own claim (prone to making up a name).
     execute: async ({ query }): Promise<SearchDocumentsOutput> => {
       const embedding = await embedText(query);
-      // top-3 chung là đủ, tra 1 sự kiện cụ thể không cần đa dạng theo tài liệu như retrieval.ts.
+      // A shared top-3 is enough, looking up 1 specific fact doesn't need per-document diversity like retrieval.ts.
       const results = await findRelevantChunks(userId, embedding, { maxPerDocument: 3, totalLimit: 3 });
 
-      // Bọc <document_content>, cùng lý do read-full-documents.ts.
+      // Wrapped in <document_content>, same reason as read-full-documents.ts.
       return {
         results: results.map((r) => ({
           content: `<document_content>\n${r.content}\n</document_content>`,

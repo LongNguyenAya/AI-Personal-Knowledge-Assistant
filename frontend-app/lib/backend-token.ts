@@ -1,9 +1,9 @@
 import { SignJWT, importJWK } from "jose";
 
-// Private key chỉ tồn tại ở frontend-app, backend-service chỉ có public key nên chỉ nơi này ký được token hợp lệ.
+// The private key only exists in frontend-app, backend-service only has the public key so this is the only place that can sign a valid token.
 const privateKeyPromise = importJWK(JSON.parse(process.env.JWT_PRIVATE_KEY!), "EdDSA");
 
-// Token ngắn hạn (60s), chỉ cần sống đủ lâu để backend-service xử lý xong 1 request, không phải session token dài hạn.
+// A short-lived token (60s), only needs to live long enough for backend-service to finish processing 1 request, not a long-lived session token.
 export async function mintBackendToken(userId: string): Promise<string> {
   const privateKey = await privateKeyPromise;
   return new SignJWT({})

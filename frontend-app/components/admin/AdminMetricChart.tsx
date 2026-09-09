@@ -23,7 +23,7 @@ const VIEWS: { value: View; label: string }[] = [
   { value: "year", label: "1 năm" },
 ];
 
-// Chỉ còn phần biểu đồ/so sánh, phần phân tích AI đã tách sang AdminAnalysisPanel.tsx, `view`/`onViewChange` do component cha quản lý.
+// Just the chart/comparison part now, the AI analysis was split out into AdminAnalysisPanel.tsx, `view`/`onViewChange` are managed by the parent component.
 export function AdminMetricChart({
   title,
   endpoint,

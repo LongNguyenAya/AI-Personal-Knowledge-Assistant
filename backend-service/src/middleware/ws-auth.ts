@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono";
 import { verifyBackendToken } from "../utils/backend-token";
 import type { AppEnv } from "../types";
 
-// Trình duyệt không set được header lúc nâng cấp WebSocket, nên token truyền qua query string.
+// The browser can't set a header during the WebSocket upgrade, so the token is passed via query string instead.
 export const wsAuthMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
   const token = c.req.query("token");
   const userId = token ? await verifyBackendToken(token) : null;

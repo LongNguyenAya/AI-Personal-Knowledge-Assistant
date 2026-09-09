@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export type PagedData<T> = { items: T[]; total: number; page: number; pageSize: number };
 
-// Gộp logic lặp lại ở tasks/reminders/admin-users/corrections, tự lùi về trang trước khi trang hiện tại rỗng, `deps` cho fetcher đóng gói thêm state.
+// Consolidates the logic repeated across tasks/reminders/admin-users/corrections, steps back a page automatically when the current page is empty, `deps` lets the fetcher close over extra state.
 export function usePagedFetch<T>(fetcher: (page: number) => Promise<PagedData<T>>, deps: unknown[] = []) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<PagedData<T> | null>(null);

@@ -4,7 +4,7 @@ import { withAuthedContext } from "@/lib/with-authed-context";
 
 const ALLOWED_TARGET_STATUSES = ["active", "dismissed", "inactive"] as const;
 
-// Duyệt ("active") hoặc bỏ qua ("dismissed") 1 ghi chú AI tự đề xuất, hoặc đặt lại "inactive" để hoàn tác, không cho "expired" qua route này.
+// Approves ("active") or dismisses ("dismissed") an AI-suggested note, or resets it to "inactive" to undo, "expired" isn't allowed through this route.
 export const PATCH = withAuthedContext<{ id: string }>(async (req, { session, params, tx }) => {
   const body = await req.json().catch(() => null);
   const status = body?.status;

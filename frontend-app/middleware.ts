@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 
-// Trước đây chỉ /admin/* được chặn, các trang khác chỉ có API tự chặn nên user chưa đăng nhập vẫn thấy UI trước khi lỗi tải dữ liệu.
+// Previously only /admin/* was blocked here, other pages relied solely on their API blocking requests, so a logged-out user still saw the UI before data-loading failed.
 export async function middleware(req: NextRequest) {
   const isAdminPath = req.nextUrl.pathname.startsWith("/admin");
   const isMainPath = ["/chat", "/documents", "/tasks", "/reminders"].some((p) => req.nextUrl.pathname.startsWith(p));

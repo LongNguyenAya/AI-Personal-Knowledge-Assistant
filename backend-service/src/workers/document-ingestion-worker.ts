@@ -3,7 +3,7 @@ import { receiveIngestionMessages, deleteIngestionMessage } from "../services/sq
 import { processDocumentIngestion } from "../services/document-ingestion";
 import type { DocumentIngestionMessage } from "../types/sqs";
 
-// 1 vòng chờ tối đa 20s để nhận message, luôn xoá khỏi queue dù thành công hay thất bại.
+// 1 loop waits up to 20s to receive a message, always removed from the queue whether it succeeds or fails.
 async function pollOnce(): Promise<void> {
   const messages = await receiveIngestionMessages();
 
@@ -23,7 +23,7 @@ async function pollOnce(): Promise<void> {
   }
 }
 
-// Vòng lặp tự lên lịch lại chính nó, long polling đã tự chờ nên không cần hẹn giờ riêng.
+// The loop reschedules itself, long polling already waits on its own so no separate timer is needed.
 export function startDocumentIngestionWorker(): void {
   let running = true;
 

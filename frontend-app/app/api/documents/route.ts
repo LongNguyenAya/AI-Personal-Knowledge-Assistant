@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     return new Response("Thiếu file hoặc file rỗng", { status: 400 });
   }
 
-  // Admin tự chỉnh qua /admin/settings, khớp "maxUploadMb" phía backend-service.
+  // Admin adjusts this via /admin/settings, matching "maxUploadMb" on the backend-service side.
   const maxUploadMb = await getSettingValue("maxUploadMb");
   if (file.size > maxUploadMb * 1024 * 1024) {
     return new Response(`File quá lớn — tối đa ${maxUploadMb}MB`, { status: 400 });
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   const buffer = Buffer.from(await file.arrayBuffer());
   const key = `uploads/${session.user.id}/documents/${Date.now()}-${file.name}`;
 
-  // Insert trong 1 transaction ngắn, không dùng withAuthedContext vì nó sẽ giữ transaction mở suốt cuộc gọi fetch embedding.
+  // Inserted in 1 short transaction, doesn't use withAuthedContext since that would keep the transaction open through the whole embedding fetch call.
   const [doc] = await withUserContext(session.user.id, (tx) =>
     tx.insert(documents).values({
       userId: session.user.id,
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     }).returning()
   );
 
-  // Forward file thật + trigger xử lý sang backend-service
+  // Forwards the actual file plus triggers processing over to backend-service
   const token = await mintBackendToken(session.user.id);
   try {
     const response = await fetch(`${BACKEND_URL}/documents/upload`, {
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
         "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify({
-        documentId: doc.id, // gửi kèm ID để backend-service biết update đúng dòng nào
+        documentId: doc.id, // included so backend-service knows exactly which row to update
         key,
         fileName: file.name,
         base64: buffer.toString("base64"),
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     });
     if (!response.ok) throw new Error(`backend-service trả về status ${response.status}`);
   } catch (err) {
-    // fetch() có thể ném lỗi (mất kết nối/timeout) chứ không chỉ trả !response.ok, không bắt thì document kẹt vĩnh viễn ở "uploaded".
+    // fetch() can throw an error (lost connection/timeout), not just return !response.ok, without a catch the document would get stuck at "uploaded" forever.
     console.error("[documents/upload] Forward sang backend-service thất bại:", err);
     await withUserContext(session.user.id, (tx) =>
       tx.update(documents).set({ status: "failed" }).where(eq(documents.id, doc.id))

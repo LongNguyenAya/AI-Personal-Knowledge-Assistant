@@ -4,7 +4,7 @@ import { withAuthedContext } from "@/lib/with-authed-context";
 import { mintBackendToken } from "@/lib/backend-token";
 import { BACKEND_URL } from "@/lib/config";
 
-// Chỉ trả field cần cho việc poll trạng thái 1 tài liệu, không cần tải cả danh sách như GET /api/documents.
+// Only returns the fields needed to poll 1 document's status, no need to fetch the whole list like GET /api/documents.
 export const GET = withAuthedContext<{ id: string }>(async (_req, { session, params, tx }) => {
   const [doc] = await tx
     .select({ id: documents.id, fileName: documents.fileName, status: documents.status })
@@ -15,7 +15,7 @@ export const GET = withAuthedContext<{ id: string }>(async (_req, { session, par
   return Response.json(doc);
 });
 
-// Hard delete giống reminders/[id]/route.ts, chunks liên quan tự xoá theo nhờ FK cascade.
+// A hard delete like reminders/[id]/route.ts, related chunks get removed automatically via FK cascade.
 export const DELETE = withAuthedContext<{ id: string }>(async (req, { session, params, tx }) => {
   const [deleted] = await tx
     .delete(documents)
@@ -24,7 +24,7 @@ export const DELETE = withAuthedContext<{ id: string }>(async (req, { session, p
 
   if (!deleted) return new Response("Not Found", { status: 404 });
 
-  // Dọn file vật lý trên backend-service là best-effort, không chặn response nếu lỗi vì DB đã xoá xong phần ảnh hưởng user.
+  // Cleaning up the physical file on backend-service is best-effort, doesn't block the response on failure since the DB has already cleared the user-facing part.
   const token = await mintBackendToken(session.user.id);
   await fetch(`${BACKEND_URL}/documents/file`, {
     method: "DELETE",

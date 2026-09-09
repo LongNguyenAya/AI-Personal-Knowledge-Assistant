@@ -4,5 +4,5 @@ export interface DocumentSearchResult {
   fileName: string;
 }
 
-// Output tool searchDocuments, kèm documentId/fileName để FE hiện được nguồn thật, không chỉ content trơn.
+// Output of the searchDocuments tool, includes documentId/fileName so the FE can show the real source, not just plain content.
 export type SearchDocumentsOutput = { results: DocumentSearchResult[] };
