@@ -19,7 +19,7 @@ export function PaginationControls({
   return (
     <div className="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
       <span>
-        Trang {page}/{totalPages}
+        Page {page}/{totalPages}
         {itemLabel ? ` — ${total} ${itemLabel}` : ""}
       </span>
       <div className="flex gap-2">
@@ -28,14 +28,14 @@ export function PaginationControls({
           disabled={page <= 1}
           className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/40"
         >
-          Trước
+          Prev
         </button>
         <button
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page >= totalPages}
           className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/40"
         >
-          Sau
+          Next
         </button>
       </div>
     </div>

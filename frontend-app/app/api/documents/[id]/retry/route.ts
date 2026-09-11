@@ -13,7 +13,7 @@ export const POST = withAuthedContext<{ id: string }>(async (_req, { session, pa
 
   if (!doc) return new Response("Not Found", { status: 404 });
   if (doc.status !== "failed") {
-    return new Response("Chỉ thử lại được tài liệu đang ở trạng thái lỗi", { status: 400 });
+    return new Response("Can only retry a document that's in a failed state", { status: 400 });
   }
 
   await tx.update(documents).set({ status: "uploaded" }).where(eq(documents.id, doc.id));
@@ -25,12 +25,12 @@ export const POST = withAuthedContext<{ id: string }>(async (_req, { session, pa
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ documentId: doc.id, key: doc.s3Key, fileName: doc.fileName }),
     });
-    if (!res.ok) throw new Error(`backend-service trả về status ${res.status}`);
+    if (!res.ok) throw new Error(`backend-service returned status ${res.status}`);
   } catch (err) {
     // Same reason as the main upload route, fetch can throw an error, not just return !res.ok, without a catch the document would get stuck at "uploaded" forever.
-    console.error("[documents/retry] Gửi lại vào hàng đợi thất bại:", err);
+    console.error("[documents/retry] Failed to re-send to the queue:", err);
     await tx.update(documents).set({ status: "failed" }).where(eq(documents.id, doc.id));
-    return new Response("Gửi lại vào hàng đợi xử lý thất bại", { status: 500 });
+    return new Response("Failed to re-send to the processing queue", { status: 500 });
   }
 
   return Response.json({ success: true });

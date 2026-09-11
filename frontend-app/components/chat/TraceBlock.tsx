@@ -2,17 +2,17 @@
 import { useState } from "react";
 
 const TOOL_LABELS: Record<string, string> = {
-  retrieveRelevantChunks: "Tìm kiếm trong tài liệu",
-  submitAnswer: "Gửi câu trả lời",
-  searchDocuments: "Tìm kiếm trong tài liệu",
-  readFullDocuments: "Đọc toàn bộ tài liệu",
-  extractActionItems: "Trích xuất việc cần làm",
-  createTask: "Tạo task",
-  createReminder: "Tạo reminder",
-  createChart: "Vẽ biểu đồ",
-  createDiagram: "Vẽ sơ đồ",
-  listTasks: "Liệt kê task",
-  proposeKnowledgeNote: "Đề xuất ghi chú kiến thức",
+  retrieveRelevantChunks: "Search documents",
+  submitAnswer: "Submit answer",
+  searchDocuments: "Search documents",
+  readFullDocuments: "Read full documents",
+  extractActionItems: "Extract action items",
+  createTask: "Create task",
+  createReminder: "Create reminder",
+  createChart: "Create chart",
+  createDiagram: "Create diagram",
+  listTasks: "List tasks",
+  proposeKnowledgeNote: "Propose knowledge note",
 };
 
 // The collapse threshold applies per individual text string, since 1 tool can return multiple long segments each needing their own collapse button.
@@ -28,7 +28,7 @@ function ExpandableText({ text }: { text: string }) {
         onClick={() => setOpen((o) => !o)}
         className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
       >
-        {open ? "Thu gọn" : "Xem thêm"}
+        {open ? "Collapse" : "Show more"}
       </button>
     </span>
   );
@@ -36,11 +36,11 @@ function ExpandableText({ text }: { text: string }) {
 
 function JsonValue({ value }: { value: unknown }) {
   if (value === null || value === undefined) return <span className="text-gray-400 dark:text-gray-600">—</span>;
-  if (typeof value === "string") return value === "" ? <span className="text-gray-400 dark:text-gray-600">(rỗng)</span> : <ExpandableText text={value} />;
+  if (typeof value === "string") return value === "" ? <span className="text-gray-400 dark:text-gray-600">(empty)</span> : <ExpandableText text={value} />;
   if (typeof value === "number" || typeof value === "boolean") return <span>{String(value)}</span>;
 
   if (Array.isArray(value)) {
-    if (value.length === 0) return <span className="text-gray-400 dark:text-gray-600">(rỗng)</span>;
+    if (value.length === 0) return <span className="text-gray-400 dark:text-gray-600">(empty)</span>;
     return (
       <div className="flex flex-col gap-1.5">
         {value.map((v, i) => (
@@ -54,7 +54,7 @@ function JsonValue({ value }: { value: unknown }) {
 
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 0) return <span className="text-gray-400 dark:text-gray-600">(rỗng)</span>;
+    if (entries.length === 0) return <span className="text-gray-400 dark:text-gray-600">(empty)</span>;
     return (
       <div className="flex flex-col gap-1">
         {entries.map(([k, v]) => (
@@ -90,7 +90,7 @@ export function TraceBlock({ steps }: { steps: TraceStep[] }) {
         onClick={() => setOpen((o) => !o)}
         className="text-[11px] font-medium text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400"
       >
-        {open ? "Thu gọn quá trình AI" : `Xem quá trình AI (${steps.length} bước)`}
+        {open ? "Collapse AI trace" : `View AI trace (${steps.length} steps)`}
       </button>
 
       {open && (
@@ -102,14 +102,14 @@ export function TraceBlock({ steps }: { steps: TraceStep[] }) {
               </div>
               {!isEmptyInput(step.input) && (
                 <div className="mb-1.5">
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-600">Đầu vào</div>
+                  <div className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-600">Input</div>
                   <JsonValue value={step.input} />
                 </div>
               )}
               <div>
-                <div className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-600">Kết quả</div>
+                <div className="text-[10px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-600">Output</div>
                 {SUMMARIZED_OUTPUT_TOOLS.has(step.toolName) ? (
-                  <span className="text-gray-500 dark:text-gray-400">Đã hiển thị ở trên.</span>
+                  <span className="text-gray-500 dark:text-gray-400">Already shown above.</span>
                 ) : (
                   <JsonValue value={step.output} />
                 )}

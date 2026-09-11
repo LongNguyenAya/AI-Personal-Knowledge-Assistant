@@ -29,7 +29,7 @@ export default function DigestPage() {
         const list = await fetchJson<WeeklyDigest[]>("/api/digests");
         setDigests(list);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Không tải được danh sách tóm tắt");
+        setError(err instanceof Error ? err.message : "Couldn't load the digest list");
       }
     })();
   }, []);
@@ -37,19 +37,19 @@ export default function DigestPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tóm tắt tuần</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Weekly digest</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          AI tự động tổng hợp hoạt động của bạn mỗi tuần — tài liệu, task, cuộc trò chuyện.
+          The AI automatically summarizes your activity every week — documents, tasks, conversations.
         </p>
       </div>
 
       {error && <ErrorBanner message={error} />}
 
-      {digests === null && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {digests === null && <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>}
       {digests !== null && digests.length === 0 && (
         <EmptyState
-          title="Chưa có bản tóm tắt nào"
-          description="Bản tóm tắt đầu tiên sẽ xuất hiện sau khi bạn có hoạt động trong 1 tuần trọn vẹn."
+          title="No digests yet"
+          description="Your first digest will appear after a full week of activity."
         />
       )}
 
@@ -62,29 +62,29 @@ export default function DigestPage() {
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">AI Knowledge Assistant</p>
               <span className="text-xs text-gray-400 dark:text-gray-500">
-                {new Date(d.weekStart).toLocaleDateString("vi-VN")} – {new Date(d.weekEnd).toLocaleDateString("vi-VN")}
+                {new Date(d.weekStart).toLocaleDateString("en-US")} – {new Date(d.weekEnd).toLocaleDateString("en-US")}
               </span>
             </div>
             <p className="text-sm text-gray-800 dark:text-gray-100">{d.summaryText}</p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               {d.stats.documentsProcessed > 0 && (
                 <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                  {d.stats.documentsProcessed} tài liệu
+                  {d.stats.documentsProcessed} documents
                 </span>
               )}
               {d.stats.tasksCompleted > 0 && (
                 <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                  {d.stats.tasksCompleted} task hoàn thành
+                  {d.stats.tasksCompleted} tasks completed
                 </span>
               )}
               {d.stats.tasksOverdue > 0 && (
                 <span className="rounded-full bg-red-50 px-2 py-0.5 text-red-600 dark:bg-red-500/10 dark:text-red-300">
-                  {d.stats.tasksOverdue} task quá hạn
+                  {d.stats.tasksOverdue} tasks overdue
                 </span>
               )}
               {d.stats.conversationsStarted > 0 && (
                 <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                  {d.stats.conversationsStarted} cuộc trò chuyện mới
+                  {d.stats.conversationsStarted} new conversations
                 </span>
               )}
             </div>

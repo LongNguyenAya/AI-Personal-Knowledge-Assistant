@@ -116,7 +116,7 @@ export function analyzeSeries(
   const softForecastLabels = [1, 2].map((k) => addPeriod(lastLabel, granularity, k));
   return {
     trend: null,
-    trendMessage: "Xu hướng chưa rõ ràng",
+    trendMessage: "Trend not yet clear",
     outliers,
     movingAverage: movingAverage(points),
     softForecast: { points: softForecastPoints, labels: softForecastLabels },

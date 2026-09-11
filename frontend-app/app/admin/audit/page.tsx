@@ -21,21 +21,21 @@ type AuditResponse = { logs: AuditLog[]; total: number; page: number; pageSize: 
 type Category = "all" | "user" | "agent_prompt" | "system_setting" | "knowledge_file";
 
 const TABS: { value: Category; label: string }[] = [
-  { value: "all", label: "Tất cả" },
-  { value: "user", label: "Người dùng" },
+  { value: "all", label: "All" },
+  { value: "user", label: "Users" },
   { value: "agent_prompt", label: "Prompt" },
   { value: "system_setting", label: "Setting" },
-  { value: "knowledge_file", label: "Kiến thức" },
+  { value: "knowledge_file", label: "Knowledge" },
 ];
 
 const VERB_LABEL: Record<string, string> = {
-  lock: "Khoá tài khoản",
-  unlock: "Mở khoá tài khoản",
-  soft_delete: "Xoá mềm tài khoản",
-  restore: "Khôi phục tài khoản",
-  approved: "Duyệt ghi chú",
-  rejected: "Từ chối ghi chú",
-  revoked: "Thu hồi ghi chú",
+  lock: "Locked account",
+  unlock: "Unlocked account",
+  soft_delete: "Soft-deleted account",
+  restore: "Restored account",
+  approved: "Approved note",
+  rejected: "Rejected note",
+  revoked: "Revoked note",
 };
 
 const CATEGORY_STYLE: Record<string, string> = {
@@ -94,7 +94,7 @@ export default function AdminAuditPage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Audit Log</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Lịch sử mọi thao tác đổi trạng thái do admin thực hiện — khoá/mở khoá tài khoản, sửa prompt, đổi setting, duyệt kiến thức.
+          History of every state-changing action taken by an admin — locking/unlocking accounts, editing prompts, changing settings, reviewing knowledge.
         </p>
       </div>
 
@@ -116,9 +116,9 @@ export default function AdminAuditPage() {
 
       {error && <ErrorBanner message={error} />}
 
-      {data === null && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {data === null && <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>}
       {data !== null && logs.length === 0 && (
-        <EmptyState title="Chưa có thao tác nào" description="Log sẽ xuất hiện ngay khi có admin thực hiện 1 thao tác đổi trạng thái." />
+        <EmptyState title="No actions yet" description="Log entries will appear as soon as an admin performs a state-changing action." />
       )}
 
       {logs.length > 0 && (
@@ -126,20 +126,20 @@ export default function AdminAuditPage() {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wider text-gray-500 dark:border-gray-800 dark:bg-gray-900/60 dark:text-gray-400">
               <tr>
-                <th className="px-5 py-3 font-medium">Thời gian</th>
+                <th className="px-5 py-3 font-medium">Time</th>
                 <th className="px-5 py-3 font-medium">Admin</th>
-                <th className="px-5 py-3 font-medium">Thao tác</th>
-                <th className="px-5 py-3 font-medium">Đối tượng</th>
+                <th className="px-5 py-3 font-medium">Action</th>
+                <th className="px-5 py-3 font-medium">Target</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {logs.map((log) => (
                 <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
                   <td className="px-5 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">
-                    {new Date(log.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+                    {new Date(log.createdAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}
                   </td>
                   <td className="px-5 py-4">
-                    <div className="font-medium text-gray-900 dark:text-white">{log.adminName ?? "(đã xoá)"}</div>
+                    <div className="font-medium text-gray-900 dark:text-white">{log.adminName ?? "(deleted)"}</div>
                     <div className="text-xs text-gray-400 dark:text-gray-500">{log.adminEmail}</div>
                   </td>
                   <td className="px-5 py-4">
@@ -162,7 +162,7 @@ export default function AdminAuditPage() {
         </div>
       )}
 
-      {data && <PaginationControls page={page} totalPages={totalPages} total={data.total} itemLabel="thao tác" onPageChange={setPage} />}
+      {data && <PaginationControls page={page} totalPages={totalPages} total={data.total} itemLabel="actions" onPageChange={setPage} />}
     </div>
   );
 }

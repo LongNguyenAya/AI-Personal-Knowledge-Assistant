@@ -23,7 +23,7 @@ export function usePagedFetch<T>(fetcher: (page: number) => Promise<PagedData<T>
         }
       } catch (err) {
         if (requestSeqRef.current !== seq) return;
-        setError(err instanceof Error ? err.message : "Không tải được dữ liệu");
+        setError(err instanceof Error ? err.message : "Couldn't load data");
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

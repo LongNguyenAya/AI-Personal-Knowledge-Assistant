@@ -9,5 +9,5 @@ export async function sendVerificationEmail(userId: string, to: string, url: str
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ to, url }),
   });
-  if (!res.ok) throw new Error("Gửi email xác nhận thất bại");
+  if (!res.ok) throw new Error("Failed to send verification email");
 }

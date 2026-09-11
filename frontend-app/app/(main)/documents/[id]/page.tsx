@@ -44,14 +44,14 @@ export default function DocumentDetailPage() {
         setDoc(docData);
         setRelated(relatedData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Không tải được tài liệu");
+        setError(err instanceof Error ? err.message : "Couldn't load the document");
       }
     })();
   }, [params.id]);
 
   function goCompare(fileNameB: string) {
     if (!doc) return;
-    sessionStorage.setItem(CHAT_PREFILL_STORAGE_KEY, `So sánh tài liệu "${doc.fileName}" và "${fileNameB}"`);
+    sessionStorage.setItem(CHAT_PREFILL_STORAGE_KEY, `Compare the documents "${doc.fileName}" and "${fileNameB}"`);
     router.push("/chat");
   }
 
@@ -59,12 +59,12 @@ export default function DocumentDetailPage() {
     <div className="mx-auto max-w-3xl">
       <Link href="/documents" className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
         <ArrowLeft className="h-4 w-4" />
-        Quay lại danh sách tài liệu
+        Back to documents
       </Link>
 
       {error && <ErrorBanner message={error} />}
 
-      {!doc && !error && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {!doc && !error && <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>}
 
       {doc && (
         <>
@@ -74,20 +74,20 @@ export default function DocumentDetailPage() {
               {doc.status}
             </span>
           </div>
-          <p className="mb-4 text-xs text-gray-400 dark:text-gray-500">Tải lên lúc {new Date(doc.createdAt).toLocaleString("vi-VN")}</p>
+          <p className="mb-4 text-xs text-gray-400 dark:text-gray-500">Uploaded {new Date(doc.createdAt).toLocaleString("en-US")}</p>
 
           {doc.flaggedSuspicious && (
             <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-700 dark:text-amber-400">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{doc.flagReason ?? "Phát hiện dấu hiệu bất thường trong nội dung."}</span>
+              <span>{doc.flagReason ?? "Detected something unusual in the content."}</span>
             </div>
           )}
 
           <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-soft dark:border-gray-800 dark:bg-gray-900">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Nội dung đã trích xuất</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Extracted content</h2>
             {doc.content.trim().length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-gray-500">
-                {doc.status === "processed" ? "Chưa có nội dung nào." : "Tài liệu chưa xử lý xong, chưa có nội dung để xem."}
+                {doc.status === "processed" ? "No content yet." : "The document hasn't finished processing, no content to show yet."}
               </p>
             ) : (
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">{doc.content}</p>
@@ -95,10 +95,10 @@ export default function DocumentDetailPage() {
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-soft dark:border-gray-800 dark:bg-gray-900">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Tài liệu liên quan</h2>
-            {related === null && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tìm...</p>}
+            <h2 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Related documents</h2>
+            {related === null && <p className="text-sm text-gray-400 dark:text-gray-500">Searching...</p>}
             {related !== null && related.length === 0 && (
-              <p className="text-sm text-gray-400 dark:text-gray-500">Không tìm thấy tài liệu nào đủ liên quan.</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">No sufficiently related documents found.</p>
             )}
             {related && related.length > 0 && (
               <div className="flex flex-col gap-2">
@@ -111,7 +111,7 @@ export default function DocumentDetailPage() {
                       onClick={() => goCompare(r.fileName)}
                       className="shrink-0 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
                     >
-                      So sánh
+                      Compare
                     </button>
                   </div>
                 ))}

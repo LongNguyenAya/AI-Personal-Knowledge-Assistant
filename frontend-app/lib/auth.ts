@@ -56,7 +56,7 @@ export const auth = betterAuth({
 
       const [user] = await dbAdmin.select({ deletedAt: schema.users.deletedAt }).from(schema.users).where(eq(schema.users.email, email));
       if (user?.deletedAt) {
-        throw new APIError("FORBIDDEN", { message: "Tài khoản này đã bị xoá. Vui lòng liên hệ admin để khôi phục." });
+        throw new APIError("FORBIDDEN", { message: "This account has been deleted. Please contact an admin to restore it." });
       }
     }),
   },

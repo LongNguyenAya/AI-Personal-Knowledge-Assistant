@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   // Forwarding the response straight through on a backend error would make the client receive a malformed stream, response.ok has to be checked first.
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    return new Response(text || "Backend service lỗi", { status: response.status });
+    return new Response(text || "Backend service error", { status: response.status });
   }
 
   // Forwards the response as-is, keeping the exact content-type header that toUIMessageStreamResponse() already set

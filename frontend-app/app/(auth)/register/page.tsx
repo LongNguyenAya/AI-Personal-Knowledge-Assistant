@@ -19,11 +19,11 @@ export default function RegisterPage() {
 
     // 8 = better-auth's default minPasswordLength, validated client-side too for instant feedback instead of waiting on the API.
     if (password.length < 8) {
-      setError("Mật khẩu phải có ít nhất 8 ký tự");
+      setError("Password must be at least 8 characters");
       return;
     }
     if (password !== confirmPassword) {
-      setError("Mật khẩu xác nhận không khớp");
+      setError("Passwords don't match");
       return;
     }
 
@@ -31,7 +31,7 @@ export default function RegisterPage() {
     const { error } = await signUp.email({ email, password, name });
     setLoading(false);
     if (error) {
-      setError(error.message ?? "Đăng ký thất bại");
+      setError(error.message ?? "Sign up failed");
       return;
     }
 
@@ -49,20 +49,20 @@ export default function RegisterPage() {
           </span>
         </div>
         <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-soft dark:border-gray-800 dark:bg-gray-900">
-          <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Kiểm tra email của bạn</h1>
+          <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Check your email</h1>
           <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-            Nếu <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span> chưa từng đăng ký, chúng tôi
-            vừa gửi 1 email xác nhận tới đó — bấm vào đường dẫn trong email để kích hoạt tài khoản.
+            If <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span> hasn&apos;t registered before, we
+            just sent a verification email to it — click the link in the email to activate your account.
           </p>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-            Nếu email này đã có tài khoản từ trước, hãy thử{" "}
+            If this email already has an account, try{" "}
             <Link href="/login" className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-              đăng nhập
+              logging in
             </Link>{" "}
-            — nếu tài khoản đó chưa xác nhận, hệ thống sẽ tự gửi lại email xác nhận cho bạn.
+            — if that account isn&apos;t verified yet, we&apos;ll automatically resend the verification email.
           </p>
           <Link href="/login" className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-            Quay lại đăng nhập
+            Back to login
           </Link>
         </div>
       </div>
@@ -76,23 +76,23 @@ export default function RegisterPage() {
           <Bot className="h-6 w-6" />
           AI Knowledge Assistant
         </span>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Trợ lý tri thức cá nhân của bạn</p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Your personal knowledge assistant</p>
       </div>
 
       <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-soft dark:border-gray-800 dark:bg-gray-900">
-        <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Đăng ký</h1>
-        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">Tạo tài khoản mới để bắt đầu.</p>
+        <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Sign up</h1>
+        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">Create a new account to get started.</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="register-name" className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              Tên
+              Name
             </label>
             <input
               id="register-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nguyễn Văn A"
+              placeholder="Jane Doe"
               type="text"
               required
               className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-indigo-500/20"
@@ -114,13 +114,13 @@ export default function RegisterPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="register-password" className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              Mật khẩu
+              Password
             </label>
             <input
               id="register-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Tối thiểu 8 ký tự"
+              placeholder="At least 8 characters"
               type="password"
               required
               className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-indigo-500/20"
@@ -128,7 +128,7 @@ export default function RegisterPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="register-confirm-password" className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              Xác nhận mật khẩu
+              Confirm password
             </label>
             <input
               id="register-confirm-password"
@@ -148,14 +148,14 @@ export default function RegisterPage() {
             disabled={loading}
             className="mt-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? "Đang tạo tài khoản..." : "Đăng ký"}
+            {loading ? "Creating account..." : "Sign up"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          Đã có tài khoản?{" "}
+          Already have an account?{" "}
           <Link href="/login" className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-            Đăng nhập
+            Log in
           </Link>
         </p>
       </div>

@@ -54,7 +54,7 @@ const PAD_BOTTOM = 40;
 const MAX_X_LABELS = 8; // with too many points (e.g. granularity="hour" for 24 points) some labels are dropped instead of cramming them all in
 
 function formatValue(value: number): string {
-  return Math.round(value).toLocaleString("vi-VN");
+  return Math.round(value).toLocaleString("en-US");
 }
 
 function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outliers, movingAverage, softForecast }: ChartBlockProps) {
@@ -142,10 +142,10 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
-        aria-label="Biểu đồ dữ liệu"
+        aria-label="Data chart"
         className="w-full max-w-sm text-gray-400 dark:text-gray-500"
       >
-        {/* lưới + nhãn trục y */}
+        {/* grid + y-axis labels */}
         {yTicks.map((t, i) => (
           <g key={i}>
             <line
@@ -175,8 +175,8 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
               fill={outlierLabels.has(d.label) ? "#ef4444" : "#4f46e5"}
             />
           ))}
-        {/* dashedPath/softForecastPath KHÔNG dùng chart-draw — class đó set stroke-dasharray:1 qua
-            CSS (ưu tiên hơn XML strokeDasharray), sẽ đè mất hoa văn nét đứt thật nếu áp dụng chung. */}
+        {/* dashedPath/softForecastPath do NOT use chart-draw — that class sets stroke-dasharray:1
+            via CSS (which beats the XML strokeDasharray), it would override the real dashed pattern if applied together. */}
         {isLine && dashedPath && <path d={dashedPath} fill="none" stroke="#4f46e5" strokeWidth={2} strokeDasharray="4 3" />}
         {maPath && <path className="chart-draw" pathLength={1} d={maPath} fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeOpacity={0.85} />}
         {softForecastPath && <path d={softForecastPath} fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="3 3" />}
@@ -204,7 +204,7 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
             );
           })}
 
-        {/* nhãn trục x — chỉ gắn cho dữ liệu THẬT, không bao giờ dùng nhãn dự đoán làm mốc trục */}
+        {/* x-axis labels — only attached to REAL data, forecast labels are never used as axis ticks */}
         {data.map((d, i) =>
           labeledIndexes.has(i) ? (
             <text
@@ -234,26 +234,26 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
           : null}
         {maPath ? (
           <p>
-            <span className="inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ backgroundColor: "#f59e0b" }} /> Đường cam liền nét:
-            trung bình trượt 3 kỳ gần nhất — chỉ mang tính tham khảo, chưa đủ ý nghĩa thống kê để khẳng định xu hướng.
+            <span className="inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ backgroundColor: "#f59e0b" }} /> Solid orange line:
+            3-period moving average — for reference only, not statistically significant enough to confirm a trend.
           </p>
         ) : null}
         {softForecastPath ? (
           <p>
-            Dự đoán tham khảo (đường cam nét đứt):{" "}
-            {softForecastLabels.map((l, i) => `${l} (~${formatValue(softForecastPoints[i])})`).join(", ")} — dựa trên xu hướng gần đây, KHÔNG
-            có bảo chứng thống kê như dự đoán chính thức.
+            Reference forecast (dashed orange line):{" "}
+            {softForecastLabels.map((l, i) => `${l} (~${formatValue(softForecastPoints[i])})`).join(", ")} — based on the recent trend, with NO
+            statistical backing like the official forecast.
           </p>
         ) : null}
         {futurePoints.length > 0 && (
           <p>
-            Dự đoán: {futureLabels.map((l, i) => `${l} (~${formatValue(futurePoints[i])})`).join(", ")}
-            {bandPath ? " — vùng tô mờ là khoảng có thể xảy ra, càng xa càng rộng." : ""}
+            Forecast: {futureLabels.map((l, i) => `${l} (~${formatValue(futurePoints[i])})`).join(", ")}
+            {bandPath ? " — the shaded band is the plausible range, widening further out." : ""}
           </p>
         )}
         {outliers.length > 0 ? (
           <p>
-            Cảnh báo: {outliers[0].label} có giá trị bất thường ({formatValue(outliers[0].value)}), đã loại khỏi tính toán đường xu hướng.
+            Warning: {outliers[0].label} has an unusual value ({formatValue(outliers[0].value)}), excluded from the trend line calculation.
           </p>
         ) : null}
       </figcaption>
@@ -297,7 +297,7 @@ function PieChart({ data }: { data: ChartDatum[] }) {
   return (
     <figure className="mt-1">
       <div className="flex items-center gap-4">
-        <svg viewBox="0 0 140 140" role="img" aria-label="Biểu đồ phân bổ" className="h-32 w-32 flex-shrink-0">
+        <svg viewBox="0 0 140 140" role="img" aria-label="Distribution chart" className="h-32 w-32 flex-shrink-0">
           {singleSlice ? (
             <circle cx={cx} cy={cy} r={r} fill={singleColor ?? PIE_COLORS[0]} />
           ) : (

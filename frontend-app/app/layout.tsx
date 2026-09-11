@@ -14,7 +14,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 
 export const metadata: Metadata = {
   title: "AI Personal Knowledge Assistant",
-  description: "Trợ lý AI đa tác vụ: tra cứu tài liệu, tạo task/reminder, chat có ngữ cảnh.",
+  description: "Multi-purpose AI assistant: document lookup, task/reminder creation, context-aware chat.",
 };
 
 export default function RootLayout({
@@ -29,8 +29,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* Chạy đồng bộ trước khi React hydrate — set đúng class .dark ngay từ frame đầu tiên,
-            tránh nháy sai theme (xem giải thích chi tiết ở THEME_INIT_SCRIPT, lib/theme.ts). */}
+        {/* Runs synchronously before React hydrates — sets the .dark class correctly from the very
+            first frame, avoiding a theme flash (see THEME_INIT_SCRIPT in lib/theme.ts for the full explanation). */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col font-sans">

@@ -27,7 +27,7 @@ export const GET = withAuthedContext(async (req, { session, tx }) => {
 export const POST = withAuthedContext(async (req, { session, tx }) => {
   const { title } = await req.json();
   if (typeof title !== "string" || title.trim().length === 0) {
-    return new Response("Thiếu tiêu đề task", { status: 400 });
+    return new Response("Missing task title", { status: 400 });
   }
 
   const [created] = await tx.insert(tasks).values({

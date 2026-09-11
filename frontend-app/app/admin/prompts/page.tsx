@@ -7,23 +7,23 @@ import type { AgentPrompt } from "@/types/admin";
 const LABELS: Record<AgentPrompt["agentType"], { title: string; desc: string }> = {
   research: {
     title: "Research",
-    desc: "Trả lời câu hỏi tra cứu tài liệu",
+    desc: "Answers document lookup questions",
   },
   action: {
     title: "Action",
-    desc: "Thực hiện hành động: tạo task/reminder",
+    desc: "Performs actions: creates tasks/reminders",
   },
   orchestrator: {
     title: "Orchestrator",
-    desc: "Phân loại ý định của câu hỏi",
+    desc: "Classifies the intent of a question",
   },
   pdf_extraction: {
     title: "PDF Extraction",
-    desc: "Trích xuất nội dung + mô tả ảnh khi upload PDF",
+    desc: "Extracts content + describes images when a PDF is uploaded",
   },
   image_extraction: {
     title: "Image Extraction",
-    desc: "Trích xuất nội dung khi upload ảnh chụp (ghi chú, bảng trắng, ảnh chụp trang tài liệu...)",
+    desc: "Extracts content when a photo is uploaded (notes, whiteboards, scanned document pages...)",
   },
 };
 
@@ -42,7 +42,7 @@ export default function AdminPromptsPage() {
       setDrafts(Object.fromEntries(data.map((p) => [p.agentType, p.systemPrompt])));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải được prompt");
+      setError(err instanceof Error ? err.message : "Couldn't load prompts");
     } finally {
       setLoaded(true);
     }
@@ -66,7 +66,7 @@ export default function AdminPromptsPage() {
       setTimeout(() => setSavedType(null), 2000);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lưu prompt thất bại");
+      setError(err instanceof Error ? err.message : "Failed to save prompt");
     } finally {
       setSavingType(null);
     }
@@ -77,13 +77,13 @@ export default function AdminPromptsPage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Agent Prompts</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Sửa xong sẽ tạo 1 phiên bản mới — phiên bản cũ vẫn được giữ lại.
+          Saving creates a new version — the old version is kept.
         </p>
       </div>
 
       {error && <ErrorBanner message={error} />}
 
-      {!loaded && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {!loaded && <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>}
       <div className="grid gap-5 sm:grid-cols-2">
         {prompts.map((p) => {
           const dirty = drafts[p.agentType] !== p.systemPrompt;
@@ -111,14 +111,14 @@ export default function AdminPromptsPage() {
                 />
                 <div className="mt-3 flex items-center justify-end gap-3">
                   {savedType === p.agentType && (
-                    <span className="text-xs font-medium text-green-600 dark:text-green-400">Đã lưu</span>
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400">Saved</span>
                   )}
                   <button
                     onClick={() => save(p.agentType)}
                     disabled={savingType === p.agentType || !dirty}
                     className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300 dark:disabled:bg-gray-700"
                   >
-                    {savingType === p.agentType ? "Đang lưu..." : "Lưu (tạo version mới)"}
+                    {savingType === p.agentType ? "Saving..." : "Save (creates new version)"}
                   </button>
                 </div>
               </div>

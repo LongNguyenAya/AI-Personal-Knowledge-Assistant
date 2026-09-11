@@ -1,7 +1,6 @@
 @import "tailwindcss";
-/* Chuyển dark mode sang điều khiển bằng class .dark trên <html> (thay vì chỉ theo
-   prefers-color-scheme của hệ điều hành) — cần thiết để nút chuyển theme (ThemeToggle) tự set
-   class này hoạt động được. */
+/* Switches dark mode to being controlled by a .dark class on <html> (instead of just following
+   the OS's prefers-color-scheme) — needed so the theme toggle button (ThemeToggle) setting this class actually works. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
@@ -24,14 +23,13 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  /* KHÔNG hardcode font-family ở đây — trước đây dòng này (Arial, Helvetica) đè mất
-     --font-sans/class font-sans áp trên <body> trong layout.tsx, khiến app hiển thị Arial mặc
-     định của trình duyệt dù đã cấu hình Geist/Be Vietnam Pro qua next/font. */
+  /* Do NOT hardcode font-family here — this line (Arial, Helvetica) used to override the
+     --font-sans/font-sans class applied on <body> in layout.tsx, making the app show the browser's default Arial despite Geist/Be Vietnam Pro being configured via next/font. */
 }
 
-/* Thanh cuộn mảnh, màu trung tính — thay cho thanh cuộn to bản mặc định của trình duyệt (đặc
-   biệt xấu trên Windows/Chrome) ở mọi khung cuộn nội bộ trong app (danh sách hội thoại, khung tin
-   nhắn...). scrollbar-width/scrollbar-color cho Firefox, ::-webkit-scrollbar cho Chrome/Edge/Safari. */
+/* A thin, neutral-colored scrollbar — replaces the browser's bulky default one (especially ugly
+   on Windows/Chrome) on every internal scroll area in the app (conversation list, message
+   panel...). scrollbar-width/scrollbar-color for Firefox, ::-webkit-scrollbar for Chrome/Edge/Safari. */
 .thin-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
@@ -53,8 +51,8 @@ body {
   background-color: #374151;
 }
 
-/* Con trỏ nhấp nháy cuối câu AI đang trả lời (theo mockup Main.dc.html) — nhấp nháy CỨNG (bật/tắt
-   ngay lập tức), không mờ dần như animate-pulse có sẵn của Tailwind, nên cần keyframes riêng. */
+/* The blinking cursor at the end of the AI's in-progress reply (per the Main.dc.html mockup) —
+   a HARD blink (on/off instantly), not a fade like Tailwind's built-in animate-pulse, so it needs its own keyframes. */
 @keyframes blink-cursor {
   0%, 55% { opacity: 1; }
   60%, 100% { opacity: 0; }
@@ -63,7 +61,7 @@ body {
   animation: blink-cursor 1s steps(1) infinite;
 }
 
-/* Chữ tiêu đề landing page — dải gradient trôi ngang liên tục (theo mockup Landing.dc.html). */
+/* The landing page headline text — a continuously drifting horizontal gradient (per the Landing.dc.html mockup). */
 @keyframes headline-sweep {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -76,11 +74,10 @@ body {
   color: transparent;
   animation: headline-sweep 7s ease-in-out infinite;
 }
-/* Dark mode của app này chuyển bằng class .dark trên <html> (xem @custom-variant ở đầu file),
-   không phải data-theme — khác quy ước dùng cho artifact độc lập. */
-/* Biểu đồ tự vẽ khi tải trang (theo mockup AdminDashboard.dc.html) — dùng pathLength=1 trên chính
-   <path> (chuẩn hoá độ dài path về 1 bất kể hình học thật dài ngắn ra sao), nên dasharray/dashoffset
-   luôn đúng 1 con số cố định, không cần tính lại theo từng đường khác nhau. */
+/* This app's dark mode toggles via a .dark class on <html> (see @custom-variant at the top of the
+   file), not data-theme — different from the convention used for standalone artifacts. */
+/* A chart that draws itself in on page load (per the AdminDashboard.dc.html mockup) — uses
+   pathLength=1 on the <path> itself (normalizes the path's length to 1 regardless of its real geometry), so dasharray/dashoffset are always the same fixed number, no per-line recalculation needed. */
 @keyframes chart-draw {
   to { stroke-dashoffset: 0; }
 }
@@ -97,8 +94,8 @@ body {
   background-clip: text;
 }
 
-/* Hiện dần khi cuộn tới (components/Reveal.tsx) — mặc định ẩn + dịch nhẹ xuống, ".in-view" mới
-   hiện thật. Tắt hẳn cho ai bật prefers-reduced-motion, không chỉ làm animation nhanh hơn. */
+/* Fades in on scroll (components/Reveal.tsx) — hidden and shifted slightly down by default, only
+   ".in-view" actually shows it. Turned off entirely for anyone with prefers-reduced-motion, not just sped up. */
 .reveal {
   opacity: 0;
   transform: translateY(16px);
@@ -123,9 +120,8 @@ body {
   }
 }
 
-/* Nền trang trí cho hero landing (app/page.tsx) — lưới chấm mờ + 2 quầng sáng gradient, dùng lại
-   đúng cặp màu indigo/amber đã có ở logo/CTA thay vì bịa màu mới. Mờ dần về đáy (mask-image) để
-   hoà vào section trắng bên dưới, không cắt cứng. */
+/* Decorative background for the landing hero (app/page.tsx) — a faint dot grid + 2 gradient glow
+   orbs, reusing the exact indigo/amber pair already in the logo/CTA instead of inventing new colors. Fades out toward the bottom (mask-image) to blend into the white section below, no hard cutoff. */
 .hero-bg {
   position: absolute;
   inset: 0;
@@ -135,11 +131,8 @@ body {
   mask-image: linear-gradient(to bottom, black, transparent);
   -webkit-mask-image: linear-gradient(to bottom, black, transparent);
 }
-/* inset âm để lưới TO HƠN vùng nhìn thấy — chỗ dư này là "kho dự trữ" cho phần bị dịch ra ngoài
-   lúc animate, tránh lộ mép trống. Dịch chuyển ĐÚNG 1 chu kỳ background-size (22px) rồi lặp lại
-   bằng transform (được tăng tốc GPU, không phải background-position — cách đó bắt trình duyệt vẽ
-   lại mỗi khung hình, dễ giật trên máy yếu). Vì dịch đúng 1 chu kỳ nên lúc lặp lại là liền mạch,
-   không giật hình. */
+/* A negative inset so the grid is LARGER than the visible area — that extra margin is the
+   "reserve" for the part that shifts out during the animation, avoiding an exposed empty edge. Shifts by EXACTLY 1 background-size cycle (22px) then loops via transform (GPU-accelerated, unlike background-position, which forces the browser to repaint every frame and stutters on weaker machines). Since it shifts by exactly 1 cycle, the loop is seamless, no visible jump. */
 .hero-bg-grid {
   position: absolute;
   inset: -40px;
@@ -147,9 +140,8 @@ body {
   background-size: 22px 22px;
   animation: hero-grid-drift 15s linear infinite;
 }
-/* Dịch ĐÚNG 2 chu kỳ (44px = 22px × 2) — 30s/1 chu kỳ trước đó ra ~0.7px/giây, với các chấm giống
-   hệt nhau (không có điểm mốc để mắt bám) thì gần như không thấy chuyển động. 15s/2 chu kỳ ra
-   ~2.9px/giây, đủ nhận ra mà vẫn chậm rãi, không giật mắt. */
+/* Shifts by EXACTLY 2 cycles (44px = 22px × 2) — the earlier 30s/1 cycle worked out to ~0.7px/sec,
+   with identical dots (nothing for the eye to latch onto) that's nearly imperceptible. 15s/2 cycles works out to ~2.9px/sec, noticeable enough while still slow and unjarring. */
 @keyframes hero-grid-drift {
   from { transform: translate(0, 0); }
   to { transform: translate(-44px, -44px); }

@@ -9,5 +9,5 @@ export async function sendResetPasswordEmail(userId: string, to: string, url: st
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ to, url }),
   });
-  if (!res.ok) throw new Error("Gửi email đặt lại mật khẩu thất bại");
+  if (!res.ok) throw new Error("Failed to send password reset email");
 }

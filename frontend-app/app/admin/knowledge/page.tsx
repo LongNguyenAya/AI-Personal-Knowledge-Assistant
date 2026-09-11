@@ -6,10 +6,10 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import type { KnowledgeNote } from "@/types/admin";
 
 const TABS: { status: KnowledgeNote["status"]; label: string }[] = [
-  { status: "pending", label: "Chờ duyệt" },
-  { status: "approved", label: "Đã duyệt" },
-  { status: "rejected", label: "Từ chối" },
-  { status: "revoked", label: "Đã thu hồi" },
+  { status: "pending", label: "Pending" },
+  { status: "approved", label: "Approved" },
+  { status: "rejected", label: "Rejected" },
+  { status: "revoked", label: "Revoked" },
 ];
 
 export default function AdminKnowledgePage() {
@@ -26,7 +26,7 @@ export default function AdminKnowledgePage() {
       setNotes(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải được danh sách ghi chú");
+      setError(err instanceof Error ? err.message : "Couldn't load the notes list");
     } finally {
       setLoaded(true);
     }
@@ -46,7 +46,7 @@ export default function AdminKnowledgePage() {
       });
       await load(tab);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Thao tác thất bại");
+      setError(err instanceof Error ? err.message : "Action failed");
     } finally {
       setBusyId(null);
     }
@@ -57,12 +57,12 @@ export default function AdminKnowledgePage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Knowledge base</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Ghi chú do agent tự đề xuất — chỉ có hiệu lực (agent dùng để trả lời) sau khi được duyệt tại đây.
+          Notes the agent proposed on its own — only take effect (the agent uses them to answer) once approved here.
         </p>
       </div>
 
       <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-        Cảnh báo: ghi chú sau khi duyệt sẽ hiển thị cho MỌI user — kiểm tra kỹ nội dung không chứa tên, email, hay thông tin cá nhân của bất kỳ ai trước khi duyệt.
+        Warning: once approved, a note is shown to EVERY user — check carefully that the content contains no name, email, or personal information about anyone before approving.
       </div>
 
       {error && <ErrorBanner message={error} />}
@@ -84,9 +84,9 @@ export default function AdminKnowledgePage() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {!loaded && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+        {!loaded && <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>}
         {loaded && notes.length === 0 && (
-          <EmptyState title={`Không có ghi chú nào ở mục "${TABS.find((t) => t.status === tab)?.label}"`} />
+          <EmptyState title={`No notes in "${TABS.find((t) => t.status === tab)?.label}"`} />
         )}
         {notes.map((n) => (
           <div
@@ -98,11 +98,11 @@ export default function AdminKnowledgePage() {
                 {n.path}
               </span>
               <span className="text-xs text-gray-400 dark:text-gray-500">
-                Đề xuất lúc {new Date(n.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+                Proposed {new Date(n.createdAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}
               </span>
               {n.reviewedAt && (
                 <span className="text-xs text-gray-400 dark:text-gray-500">
-                  · Duyệt lúc {new Date(n.reviewedAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+                  · Reviewed {new Date(n.reviewedAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}
                 </span>
               )}
             </div>
@@ -117,14 +117,14 @@ export default function AdminKnowledgePage() {
                     disabled={busyId === n.id}
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                   >
-                    Từ chối
+                    Reject
                   </button>
                   <button
                     onClick={() => review(n.id, "approved")}
                     disabled={busyId === n.id}
                     className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
                   >
-                    Duyệt
+                    Approve
                   </button>
                 </>
               )}
@@ -134,7 +134,7 @@ export default function AdminKnowledgePage() {
                   disabled={busyId === n.id}
                   className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
                 >
-                  Thu hồi
+                  Revoke
                 </button>
               )}
             </div>

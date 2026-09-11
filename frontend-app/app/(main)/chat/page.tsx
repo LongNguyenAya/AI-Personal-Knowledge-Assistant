@@ -156,7 +156,7 @@ export default function ChatPage() {
               ...p,
               phase: "failed",
               failReason: result,
-              error: result === "timeout" ? "Xử lý hơi lâu — vẫn có thể đang chạy, bạn chờ thêm nhé." : "Xử lý tài liệu thất bại.",
+              error: result === "timeout" ? "Taking a while to process — it may still be running, please wait a bit longer." : "Document processing failed.",
             }
           : p
       );
@@ -188,7 +188,7 @@ export default function ChatPage() {
       formData.append("file", file);
       doc = await fetchJson<{ id: string; fileName: string }>("/api/documents", { method: "POST", body: formData });
     } catch {
-      setPendingTurn((p) => (p ? { ...p, phase: "failed", error: "Tải file lên thất bại." } : p));
+      setPendingTurn((p) => (p ? { ...p, phase: "failed", error: "File upload failed." } : p));
       return;
     }
 
@@ -208,7 +208,7 @@ export default function ChatPage() {
 
     fetchJson(`/api/documents/${documentId}/retry`, { method: "POST" })
       .then(() => runProcessingWait(documentId, fileName, questionText, startConversationId))
-      .catch(() => setPendingTurn((p) => (p ? { ...p, phase: "failed", failReason: "failed", error: "Thử lại thất bại." } : p)));
+      .catch(() => setPendingTurn((p) => (p ? { ...p, phase: "failed", failReason: "failed", error: "Retry failed." } : p)));
   }
 
   // body is a callback that only runs when the real request is sent, keeping the transport from being recreated every time conversationId changes.
@@ -238,7 +238,7 @@ export default function ChatPage() {
         setError(null);
       } catch (err) {
         if (requestSeqRef.current !== seq) return;
-        setError(err instanceof Error ? err.message : "Không tải được lịch sử chat");
+        setError(err instanceof Error ? err.message : "Couldn't load chat history");
       }
     },
     [setMessages, setError]
@@ -259,7 +259,7 @@ export default function ChatPage() {
         setActiveId(latest.id);
         await loadMessagesFor(latest.id);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Không tải được danh sách hội thoại");
+        setError(err instanceof Error ? err.message : "Couldn't load the conversation list");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -276,7 +276,7 @@ export default function ChatPage() {
       setMessages([]);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Tạo cuộc trò chuyện mới thất bại");
+      setError(err instanceof Error ? err.message : "Failed to create new conversation");
     }
   }
 
@@ -313,8 +313,8 @@ export default function ChatPage() {
   // 4rem = <main>'s py-8 at md+, below md the MainNav topbar (~3rem) also has to be subtracted so the chat frame doesn't overflow the viewport.
   return (
     <div className="flex h-[calc(100vh-7rem)] gap-4 md:h-[calc(100vh-4rem)]">
-      {/* Danh sách cuộc trò chuyện chiếm quá nhiều chỗ trên màn hình hẹp — ẩn mặc định dưới md,
-          hiện dạng overlay khi bấm nút (cùng pattern MainNav/AdminSidebar). */}
+      {/* The conversation list takes up too much room on narrow screens — hidden by default below
+          md, shown as an overlay when the button is clicked (same pattern as MainNav/AdminSidebar). */}
       {convOpen && <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setConvOpen(false)} />}
       <aside
         className={`${
@@ -328,7 +328,7 @@ export default function ChatPage() {
           }}
           className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
         >
-          + Cuộc trò chuyện mới
+          + New conversation
         </button>
         {conversationList.map((c) => (
           <button
@@ -343,9 +343,9 @@ export default function ChatPage() {
                 : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
             }`}
           >
-            <span className="w-full truncate text-xs font-medium">{c.title ?? "Cuộc trò chuyện mới"}</span>
+            <span className="w-full truncate text-xs font-medium">{c.title ?? "New conversation"}</span>
             <span className={`text-xs ${c.id === activeId ? "text-indigo-100" : "text-gray-500 dark:text-gray-400"}`}>
-              {new Date(c.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+              {new Date(c.createdAt).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}
             </span>
           </button>
         ))}
@@ -357,16 +357,16 @@ export default function ChatPage() {
             onClick={() => setConvOpen(true)}
             className="shrink-0 rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 md:hidden dark:border-gray-700 dark:text-gray-300"
           >
-            Cuộc trò chuyện
+            Conversations
           </button>
           <h1 className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-            {activeConversation?.title ?? "Cuộc trò chuyện mới"}
+            {activeConversation?.title ?? "New conversation"}
           </h1>
         </div>
         <div className="thin-scrollbar flex-1 space-y-4 overflow-y-auto p-5">
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           {messages.length === 0 && (
-            <p className="text-sm text-gray-400 dark:text-gray-500">Hỏi gì đó về tài liệu của bạn để bắt đầu.</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">Ask something about your documents to get started.</p>
           )}
           {messages.map((m) => {
             // Hides a transient tool error if that same tool already has another successful result in the same message.
@@ -400,7 +400,7 @@ export default function ChatPage() {
                   if (part.type === "source-document") {
                     return (
                       <div key={i} className="mt-1 text-xs opacity-80">
-                        Nguồn: {part.filename ?? part.title}
+                        Source: {part.filename ?? part.title}
                       </div>
                     );
                   }
@@ -414,8 +414,8 @@ export default function ChatPage() {
                           return (
                             <div key={i} className="mt-1 text-xs opacity-80">
                               {output.emptyReason === "no_data_ever"
-                                ? "Bạn chưa có dữ liệu nào để vẽ biểu đồ này."
-                                : "Không có hoạt động nào trong khoảng thời gian gần đây."}
+                                ? "You don't have any data yet to draw this chart."
+                                : "No activity in this recent time range."}
                             </div>
                           );
                         return <ChartBlock key={i} {...output} />;
@@ -441,18 +441,18 @@ export default function ChatPage() {
                         if (fileNames.length === 0)
                           return (
                             <div key={i} className="mt-1 text-xs opacity-80">
-                              Không tìm thấy thông tin liên quan trong tài liệu.
+                              No relevant information found in your documents.
                             </div>
                           );
                         return (
                           <div key={i} className="mt-1 text-xs opacity-80">
-                            Nguồn: {fileNames.join(", ")}
+                            Source: {fileNames.join(", ")}
                           </div>
                         );
                       }
                       return (
                         <div key={i} className="mt-1 text-xs opacity-80">
-                          Đã dùng tool: {name}
+                          Used tool: {name}
                         </div>
                       );
                     }
@@ -460,13 +460,13 @@ export default function ChatPage() {
                       if (succeededTools.has(name)) return null;
                       return (
                         <div key={i} className="mt-1 text-xs opacity-80">
-                          Lỗi khi gọi tool: {name}
+                          Error calling tool: {name}
                         </div>
                       );
                     }
                     return (
                       <div key={i} className="mt-1 text-xs opacity-80">
-                        AI đang gọi tool: {name}...
+                        AI is calling tool: {name}...
                       </div>
                     );
                   }
@@ -496,10 +496,10 @@ export default function ChatPage() {
                 <div className="max-w-[80%] rounded-2xl rounded-bl-md border-l-2 border-indigo-600 bg-white px-4 py-2.5 text-sm text-gray-800 shadow-soft dark:bg-gray-900 dark:text-gray-100">
                   <p className="mb-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400">AI Knowledge Assistant</p>
                   {pendingTurn.phase === "uploading" && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Đang tải lên...</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Uploading...</p>
                   )}
                   {pendingTurn.phase === "processing" && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Đang xử lý tài liệu... ({pendingTurn.elapsedSeconds}s)</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">Processing document... ({pendingTurn.elapsedSeconds}s)</p>
                   )}
                   {pendingTurn.phase === "failed" && (
                     <div className="flex items-center gap-2">
@@ -509,7 +509,7 @@ export default function ChatPage() {
                         onClick={retryPendingUpload}
                         className="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300"
                       >
-                        {pendingTurn.failReason === "timeout" ? "Chờ thêm" : "Thử lại"}
+                        {pendingTurn.failReason === "timeout" ? "Wait longer" : "Retry"}
                       </button>
                     </div>
                   )}
@@ -517,8 +517,8 @@ export default function ChatPage() {
               </div>
             </>
           )}
-          {status === "submitted" && <p className="text-xs text-gray-400 dark:text-gray-500">Đang đọc câu hỏi...</p>}
-          {status === "streaming" && <p className="text-xs text-gray-400 dark:text-gray-500">AI đang trả lời...</p>}
+          {status === "submitted" && <p className="text-xs text-gray-400 dark:text-gray-500">Reading your question...</p>}
+          {status === "streaming" && <p className="text-xs text-gray-400 dark:text-gray-500">AI is replying...</p>}
           {chatError && <p className="text-sm text-red-600 dark:text-red-400">{chatError.message}</p>}
         </div>
 
@@ -531,21 +531,21 @@ export default function ChatPage() {
                 <button
                   type="button"
                   onClick={attachedDocument ? detachDocument : () => setStagedNewFile(null)}
-                  aria-label="Bỏ đính kèm"
+                  aria-label="Remove attachment"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </span>
               <span className="text-[11px] text-gray-400 dark:text-gray-500">
                 {attachedDocument
-                  ? "Câu hỏi sẽ chỉ tìm trong tài liệu này"
-                  : "Tài liệu mới — sẽ tải lên và xử lý ngay khi bạn gửi câu hỏi"}
+                  ? "The question will only search this document"
+                  : "New document — will upload and process as soon as you send the question"}
               </span>
             </div>
           )}
 
-          {/* Viền gradient chỉ nổi rõ lúc focus — dùng focus-within thay vì state riêng, trình
-              duyệt tự báo khi phần tử con bên trong đang được focus, không cần code JS theo dõi. */}
+          {/* The gradient border only shows up clearly on focus — uses focus-within instead of a
+              separate state, the browser reports on its own when a child element inside is focused, no JS tracking code needed. */}
           <div className="rounded-[18px] bg-gray-200 p-px transition-colors duration-200 focus-within:bg-gradient-to-br focus-within:from-indigo-600/85 focus-within:to-amber-500/55 dark:bg-gray-800">
           <form onSubmit={handleSubmit} className="flex items-center gap-2 rounded-[17px] bg-white px-2 py-1.5 dark:bg-gray-950">
             <input
@@ -559,7 +559,7 @@ export default function ChatPage() {
               <button
                 type="button"
                 onClick={openPicker}
-                title="Đính kèm tài liệu"
+                title="Attach a document"
                 disabled={!!pendingTurn}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
               >
@@ -572,12 +572,12 @@ export default function ChatPage() {
                     onClick={openNewFilePicker}
                     className="block w-full truncate rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-500/10"
                   >
-                    Tải tài liệu mới lên...
+                    Upload a new document...
                   </button>
                   <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
-                  {pickableDocuments === null && <p className="p-2 text-xs text-gray-400 dark:text-gray-500">Đang tải...</p>}
+                  {pickableDocuments === null && <p className="p-2 text-xs text-gray-400 dark:text-gray-500">Loading...</p>}
                   {pickableDocuments?.length === 0 && (
-                    <p className="p-2 text-xs text-gray-400 dark:text-gray-500">Chưa có tài liệu nào đã xử lý xong.</p>
+                    <p className="p-2 text-xs text-gray-400 dark:text-gray-500">No processed documents yet.</p>
                   )}
                   {pickableDocuments?.map((doc) => (
                     <button
@@ -599,17 +599,17 @@ export default function ChatPage() {
               disabled={!!pendingTurn}
               placeholder={
                 stagedNewFile
-                  ? `Hỏi về "${stagedNewFile.name}"...`
+                  ? `Ask about "${stagedNewFile.name}"...`
                   : attachedDocument
-                    ? `Hỏi về "${attachedDocument.fileName}"...`
-                    : "Hỏi về tài liệu của bạn..."
+                    ? `Ask about "${attachedDocument.fileName}"...`
+                    : "Ask about your documents..."
               }
               className="flex-1 border-0 bg-transparent px-1 py-1.5 text-sm text-gray-900 outline-none disabled:opacity-50 dark:text-white"
             />
             <button
               type="submit"
               disabled={!!pendingTurn}
-              aria-label="Gửi"
+              aria-label="Send"
               className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-amber-500 text-white shadow-[0_4px_14px_rgba(79,70,229,0.35)] transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               <Send className="h-[15px] w-[15px]" />
