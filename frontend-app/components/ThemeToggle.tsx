@@ -34,11 +34,11 @@ export default function ThemeToggle({ variant = "floating" }: { variant?: "float
   return (
     <button
       onClick={handleClick}
-      aria-label="Đổi giao diện sáng/tối"
+      aria-label="Toggle light/dark theme"
       className={variant === "floating" ? "fixed right-4 bottom-4 z-50" : undefined}
     >
-      {/* Track — nền gradient nhạt cố định (không đổi theo trạng thái), chỉ viên tròn bên trong
-          trượt qua lại và đổi màu. */}
+      {/* Track — a fixed light gradient background (doesn't change with state), only the inner
+          dot slides back and forth and changes color. */}
       <span className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-gray-200 bg-gradient-to-br from-indigo-600/15 to-amber-500/15 dark:border-gray-700">
         <span
           className={`absolute left-0.5 h-5 w-5 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-transform duration-200 ${

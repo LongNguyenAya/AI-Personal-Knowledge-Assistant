@@ -9,8 +9,8 @@ type Metric = "signups" | "ai-queries";
 type Analysis = { analysisText: string; createdAt: string };
 
 const METRICS: { value: Metric; label: string }[] = [
-  { value: "signups", label: "Người dùng" },
-  { value: "ai-queries", label: "Lượt hỏi" },
+  { value: "signups", label: "Users" },
+  { value: "ai-queries", label: "Queries" },
 ];
 
 // A panel shared by both blocks, the metric is picked via a filter button instead of duplicating a separate "Analyze" button, `view` comes from the parent component.
@@ -31,7 +31,7 @@ export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView
         // Only reads back the result saved from the last click, doesn't run a new AI analysis when metric/view changes.
         setAnalysis(await fetchJson<Analysis | null>(`${endpoint}?view=${view}`));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Không tải được kết quả phân tích");
+        setError(err instanceof Error ? err.message : "Couldn't load the analysis");
       }
     })();
   }, [metric, view, endpoint]);
@@ -48,7 +48,7 @@ export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView
       );
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Phân tích thất bại");
+      setError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
       setAnalyzing(false);
     }
@@ -56,7 +56,7 @@ export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView
 
   return (
     <div className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-soft dark:border-gray-800 dark:bg-gray-900">
-      <h3 className="font-semibold text-gray-900 dark:text-white">Phân tích</h3>
+      <h3 className="font-semibold text-gray-900 dark:text-white">Analysis</h3>
 
       <div className="mt-3 flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
         {METRICS.map((m) => (
@@ -85,7 +85,7 @@ export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView
         disabled={analyzing}
         className="mt-4 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
       >
-        {analyzing ? "Đang phân tích..." : analysis ? "Phân tích lại" : "Phân tích"}
+        {analyzing ? "Analyzing..." : analysis ? "Re-analyze" : "Analyze"}
       </button>
 
       <div className="mt-4 flex-1">
@@ -96,13 +96,13 @@ export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView
               <Markdown text={analysis.analysisText} />
             </div>
             <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-              Phân tích lúc {new Date(analysis.createdAt).toLocaleString("vi-VN")}
+              Analyzed {new Date(analysis.createdAt).toLocaleString("en-US")}
             </p>
           </div>
         ) : (
           <p className="text-sm text-gray-400 dark:text-gray-500">
-            Chưa có phân tích nào cho "{METRICS.find((m) => m.value === metric)?.label}" ở khoảng thời gian này — bấm "Phân
-            tích" để AI đọc biểu đồ hiện tại và viết nhận xét.
+            No analysis yet for "{METRICS.find((m) => m.value === metric)?.label}" in this time range — click "Analyze"
+            to have the AI read the current chart and write a note.
           </p>
         )}
       </div>

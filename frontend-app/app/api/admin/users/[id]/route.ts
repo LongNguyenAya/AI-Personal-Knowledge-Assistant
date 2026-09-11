@@ -7,7 +7,7 @@ export const PATCH = withAdminContext<{ id: string }>(async (req, { db, session,
 
   // Fully blocks an admin from locking/deleting their own logged-in account, avoiding a lockout nobody can undo.
   if (params.id === session.user.id) {
-    return new Response("Không thể tự thao tác lên chính tài khoản admin đang đăng nhập", { status: 400 });
+    return new Response("Can't perform this action on your own logged-in admin account", { status: 400 });
   }
 
   if (typeof body.isActive === "boolean") {

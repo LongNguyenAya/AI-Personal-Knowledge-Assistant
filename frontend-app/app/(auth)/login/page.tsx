@@ -7,12 +7,12 @@ import Link from "next/link";
 
 // better-auth returns fixed error codes verbatim in English, translated here to match the UI, other errors are left as-is.
 const KNOWN_ERROR_MESSAGES: Record<string, string> = {
-  "Email not verified": "Tài khoản chưa xác nhận email — chúng tôi vừa gửi lại 1 email xác nhận mới, vui lòng kiểm tra hộp thư.",
-  "Invalid email or password": "Sai email hoặc mật khẩu.",
+  "Email not verified": "Account email not verified — we just sent a new verification email, please check your inbox.",
+  "Invalid email or password": "Wrong email or password.",
 };
 
 // ?error=... shows up when the user clicks an expired/invalid email verification link, better-auth redirects here with this query itself.
-const VERIFY_ERROR_MESSAGE = "Đường dẫn xác nhận không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại để nhận email xác nhận mới.";
+const VERIFY_ERROR_MESSAGE = "The verification link is invalid or has expired. Please log in again to receive a new verification email.";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -30,7 +30,7 @@ function LoginForm() {
     const { data, error } = await signIn.email({ email, password });
     setLoading(false);
     if (error) {
-      setError(KNOWN_ERROR_MESSAGES[error.message ?? ""] ?? error.message ?? "Đăng nhập thất bại");
+      setError(KNOWN_ERROR_MESSAGES[error.message ?? ""] ?? error.message ?? "Login failed");
       return;
     }
 
@@ -48,12 +48,12 @@ function LoginForm() {
           <Bot className="h-6 w-6" />
           AI Knowledge Assistant
         </span>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Trợ lý tri thức cá nhân của bạn</p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Your personal knowledge assistant</p>
       </div>
 
       <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-soft dark:border-gray-800 dark:bg-gray-900">
-        <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Đăng nhập</h1>
-        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">Đăng nhập để truy cập tài liệu, task và reminder của bạn.</p>
+        <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Log in</h1>
+        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">Log in to access your documents, tasks, and reminders.</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
@@ -73,10 +73,10 @@ function LoginForm() {
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <label htmlFor="login-password" className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                Mật khẩu
+                Password
               </label>
               <Link href="/forgot-password" className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-                Quên mật khẩu?
+                Forgot password?
               </Link>
             </div>
             <input
@@ -97,14 +97,14 @@ function LoginForm() {
             disabled={loading}
             className="mt-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+            {loading ? "Logging in..." : "Log in"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          Chưa có tài khoản?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/register" className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-            Đăng ký
+            Sign up
           </Link>
         </p>
       </div>

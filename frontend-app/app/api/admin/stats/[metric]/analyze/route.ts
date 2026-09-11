@@ -26,9 +26,9 @@ function isValidView(v: unknown): v is "week" | "month" | "year" {
 // Fetches the latest saved analysis row, called on mount/view change so the old result isn't lost when leaving and returning to the page.
 export const GET = withAdminContext<{ metric: string }>(async (req, { db, params }) => {
   const config = METRIC_CONFIG[params.metric];
-  if (!config) return new Response("Metric không hợp lệ", { status: 400 });
+  if (!config) return new Response("Invalid metric", { status: 400 });
   const view = new URL(req.url).searchParams.get("view");
-  if (!isValidView(view)) return new Response("view không hợp lệ — dùng week/month/year", { status: 400 });
+  if (!isValidView(view)) return new Response("Invalid view — use week/month/year", { status: 400 });
 
   const [row] = await db
     .select({ analysisText: adminChartAnalyses.analysisText, createdAt: adminChartAnalyses.createdAt })
@@ -43,9 +43,9 @@ export const GET = withAdminContext<{ metric: string }>(async (req, { db, params
 // Only runs when the admin actively clicks the button, this is the one step that calls AI and spends real tokens, always INSERTs a new row to keep history.
 export const POST = withAdminContext<{ metric: string }>(async (req, { db, session, params }) => {
   const config = METRIC_CONFIG[params.metric];
-  if (!config) return new Response("Metric không hợp lệ", { status: 400 });
+  if (!config) return new Response("Invalid metric", { status: 400 });
   const body = await req.json();
-  if (!isValidView(body.view)) return new Response("view không hợp lệ — dùng week/month/year", { status: 400 });
+  if (!isValidView(body.view)) return new Response("Invalid view — use week/month/year", { status: 400 });
   const view = body.view;
 
   let dataDescription: string;
@@ -82,9 +82,9 @@ export const POST = withAdminContext<{ metric: string }>(async (req, { db, sessi
     });
     text = result.text;
   } catch (err) {
-    console.error("[admin-chart-analysis] Lỗi khi gọi Gemini:", err);
+    console.error("[admin-chart-analysis] Error calling Gemini:", err);
     return new Response(
-      "Gọi AI thất bại — có thể do hết hạn mức miễn phí tạm thời hoặc thiếu cấu hình API key, vui lòng thử lại sau.",
+      "AI call failed — could be a temporary free-tier limit or missing API key configuration, please try again later.",
       { status: 502 }
     );
   }

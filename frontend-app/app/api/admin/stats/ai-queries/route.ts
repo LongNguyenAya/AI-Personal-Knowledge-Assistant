@@ -14,5 +14,5 @@ export const GET = withAdminContext(async (req, { db }) => {
 
   if (view === "month") return Response.json(await getMonthComparison(db, "chat_history", true));
 
-  return new Response("Invalid view — dùng week/month/year", { status: 400 });
+  return new Response("Invalid view — use week/month/year", { status: 400 });
 });

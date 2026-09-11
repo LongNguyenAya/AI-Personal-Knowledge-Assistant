@@ -13,5 +13,5 @@ export const GET = withAdminContext(async (req, { db }) => {
 
   if (view === "month") return Response.json(await getMonthComparison(db, "users"));
 
-  return new Response("Invalid view — dùng week/month/year", { status: 400 });
+  return new Response("Invalid view — use week/month/year", { status: 400 });
 });

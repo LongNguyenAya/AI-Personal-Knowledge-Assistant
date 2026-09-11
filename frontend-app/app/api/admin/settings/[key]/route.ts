@@ -7,17 +7,17 @@ function isValidKey(key: string): key is SettingKey {
 }
 
 export const PATCH = withAdminContext<{ key: string }>(async (req, { db, session, params }) => {
-  if (!isValidKey(params.key)) return new Response("Setting không tồn tại", { status: 404 });
+  if (!isValidKey(params.key)) return new Response("Setting doesn't exist", { status: 404 });
 
   const body = await req.json().catch(() => null);
   const value = body?.value;
   if (typeof value !== "number" || !Number.isFinite(value)) {
-    return new Response("Thiếu value hoặc sai kiểu dữ liệu", { status: 400 });
+    return new Response("Missing value or wrong data type", { status: 400 });
   }
 
   const meta = SETTINGS_REGISTRY[params.key];
   if (value < meta.min || value > meta.max) {
-    return new Response(`value phải trong khoảng ${meta.min} - ${meta.max}`, { status: 400 });
+    return new Response(`value must be between ${meta.min} and ${meta.max}`, { status: 400 });
   }
 
   // An upsert, since if nobody has ever changed this setting there's no row yet, the first edit is what creates it.

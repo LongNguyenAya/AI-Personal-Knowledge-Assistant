@@ -7,12 +7,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
       <AdminHeader />
-      {/* flex-col trên mobile — cùng lý do với (main)/layout.tsx: AdminSidebar tự render 1 nút
-          "Menu" (không phải sidebar) khi màn hình hẹp, phải xếp chồng lên main thay vì nằm cạnh. */}
+      {/* flex-col on mobile — same reason as (main)/layout.tsx: AdminSidebar renders a "Menu"
+          button (not a sidebar) on narrow screens, so it has to stack above main instead of sitting beside it. */}
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         <AdminSidebar />
-        {/* Không còn mx-auto max-w-4xl bọc children — khung quá hẹp so với layout dạng grid
-            (Dashboard, Prompts). Trang nào cần tự giới hạn bề rộng thì tự set trong page đó. */}
+        {/* No longer wrapping children in mx-auto max-w-4xl — too narrow for grid-based layouts
+            (Dashboard, Prompts). Any page that needs to cap its own width sets it itself. */}
         <main className="flex-1 overflow-y-auto overflow-x-auto p-8">{children}</main>
       </div>
     </div>

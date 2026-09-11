@@ -18,9 +18,9 @@ type SeriesResponse = {
 type CompareResponse = { current: number; previous: number; changePercent: number | null };
 
 const VIEWS: { value: View; label: string }[] = [
-  { value: "week", label: "7 ngày" },
-  { value: "month", label: "1 tháng" },
-  { value: "year", label: "1 năm" },
+  { value: "week", label: "7 days" },
+  { value: "month", label: "1 month" },
+  { value: "year", label: "1 year" },
 ];
 
 // Just the chart/comparison part now, the AI analysis was split out into AdminAnalysisPanel.tsx, `view`/`onViewChange` are managed by the parent component.
@@ -51,7 +51,7 @@ export function AdminMetricChart({
           setSeries(await fetchJson<SeriesResponse>(`${endpoint}?view=${view}`));
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Không tải được số liệu");
+        setError(err instanceof Error ? err.message : "Couldn't load the data");
       }
     })();
   }, [view, endpoint]);
@@ -81,19 +81,19 @@ export function AdminMetricChart({
 
       {error && <ErrorBanner message={error} />}
 
-      {/* min-h cố định theo trường hợp cao nhất — tránh card nhảy layout khi đổi tab giữa view
-          "1 tháng" (ngắn) và "7 ngày"/"1 năm" (biểu đồ SVG). Căn giữa dọc cho nội dung ngắn. */}
+      {/* min-h fixed to the tallest case — avoids the card jumping layout when switching between
+          the "1 month" tab (short) and "7 days"/"1 year" (SVG chart). Centers short content vertically. */}
       <div className="flex min-h-[340px] flex-col justify-center">
         {view === "month" ? (
           compare ? (
             <div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Tháng này</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">This month</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">{compare.current}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Tháng trước</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Last month</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">{compare.previous}</p>
                 </div>
               </div>
@@ -107,17 +107,17 @@ export function AdminMetricChart({
                 }`}
               >
                 {compare.changePercent === null
-                  ? "Mới — chưa có dữ liệu tháng trước để so sánh"
-                  : `${compare.changePercent >= 0 ? "+" : ""}${compare.changePercent}% so với tháng trước`}
+                  ? "New — no data from last month to compare yet"
+                  : `${compare.changePercent >= 0 ? "+" : ""}${compare.changePercent}% vs last month`}
               </p>
             </div>
           ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>
           )
         ) : series === null ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>
         ) : isEmpty ? (
-          <EmptyState title="Chưa có dữ liệu trong khoảng thời gian này" />
+          <EmptyState title="No data in this time range" />
         ) : (
           <ChartBlock
             chartType="line"

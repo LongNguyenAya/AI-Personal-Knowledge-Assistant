@@ -20,7 +20,7 @@ export function UploadDropzone({ onUploaded }: { onUploaded?: () => void }) {
 
     // The actual upload is processed asynchronously via SQS, the POST only returns once enqueued, the parent page handles polling until processing finishes.
     setMessage(
-      res.ok ? { text: "Upload thành công, đã xử lý xong.", ok: true } : { text: "Upload thất bại", ok: false }
+      res.ok ? { text: "Upload succeeded, queued for processing.", ok: true } : { text: "Upload failed", ok: false }
     );
     if (res.ok) onUploaded?.();
   }
@@ -36,10 +36,10 @@ export function UploadDropzone({ onUploaded }: { onUploaded?: () => void }) {
           className="hidden"
         />
         <span className="inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700">
-          {uploading ? "Đang upload..." : "Chọn file để upload"}
+          {uploading ? "Uploading..." : "Choose file to upload"}
         </span>
       </label>
-      <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Hỗ trợ .pdf, .docx, .pptx, .txt, .md, .png, .jpg, .jpeg, .webp</p>
+      <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Supports .pdf, .docx, .pptx, .txt, .md, .png, .jpg, .jpeg, .webp</p>
       {message && (
         <p className={`mt-3 text-sm ${message.ok ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
           {message.text}

@@ -9,7 +9,7 @@ export const PATCH = withAuthedContext<{ id: string }>(async (req, { session, pa
   const body = await req.json().catch(() => null);
   const status = body?.status;
   if (!ALLOWED_TARGET_STATUSES.includes(status)) {
-    return new Response(`status phải là "active", "dismissed" hoặc "inactive"`, { status: 400 });
+    return new Response(`status must be "active", "dismissed", or "inactive"`, { status: 400 });
   }
 
   const [updated] = await tx

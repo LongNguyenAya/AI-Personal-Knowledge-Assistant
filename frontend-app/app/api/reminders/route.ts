@@ -26,11 +26,11 @@ export const POST = withAuthedContext(async (req, { session, tx }) => {
   const { title, content, dueAt } = await req.json();
 
   if (typeof title !== "string" || title.trim().length === 0) {
-    return new Response("Thiếu tiêu đề reminder", { status: 400 });
+    return new Response("Missing reminder title", { status: 400 });
   }
   const parsedDueAt = new Date(dueAt);
   if (Number.isNaN(parsedDueAt.getTime())) {
-    return new Response("Thời gian không hợp lệ", { status: 400 });
+    return new Response("Invalid time", { status: 400 });
   }
 
   const [created] = await tx.insert(reminders).values({

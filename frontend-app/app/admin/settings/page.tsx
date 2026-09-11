@@ -28,7 +28,7 @@ export default function AdminSettingsPage() {
       setDrafts(Object.fromEntries(data.map((s) => [s.key, String(s.value)])));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải được danh sách cài đặt");
+      setError(err instanceof Error ? err.message : "Couldn't load settings list");
     }
   }
 
@@ -39,7 +39,7 @@ export default function AdminSettingsPage() {
   async function save(setting: Setting) {
     const value = Number(drafts[setting.key]);
     if (!Number.isFinite(value) || value < setting.min || value > setting.max) {
-      setError(`Giá trị phải là số trong khoảng ${setting.min} - ${setting.max}`);
+      setError(`Value must be a number between ${setting.min} and ${setting.max}`);
       return;
     }
     setSavingKey(setting.key);
@@ -54,7 +54,7 @@ export default function AdminSettingsPage() {
       setError(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lưu thất bại");
+      setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSavingKey(null);
     }
@@ -63,15 +63,15 @@ export default function AdminSettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Cài đặt hệ thống</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">System settings</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Các ngưỡng chỉ là ước lượng ban đầu, chưa có đủ dữ liệu thật để hiệu chỉnh sẵn — tự tinh chỉnh nếu thấy hành vi chưa hợp lý.
+          These thresholds are just initial estimates, not yet calibrated on enough real data — adjust them if you see the behavior isn&apos;t quite right.
         </p>
       </div>
 
       {error && <ErrorBanner message={error} />}
 
-      {settings === null && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {settings === null && <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {settings?.map((s) => {
@@ -96,14 +96,14 @@ export default function AdminSettingsPage() {
                   disabled={savingKey === s.key || !dirty}
                   className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300 dark:disabled:bg-gray-700"
                 >
-                  {savingKey === s.key ? "Đang lưu..." : "Lưu"}
+                  {savingKey === s.key ? "Saving..." : "Save"}
                 </button>
-                {savedKey === s.key && <span className="text-xs font-medium text-green-600 dark:text-green-400">Đã lưu</span>}
+                {savedKey === s.key && <span className="text-xs font-medium text-green-600 dark:text-green-400">Saved</span>}
               </div>
 
               <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-                Mặc định: {s.default} (khoảng hợp lệ {s.min}–{s.max})
-                {s.updatedAt && ` · Cập nhật lúc ${new Date(s.updatedAt).toLocaleString("vi-VN")}`}
+                Default: {s.default} (valid range {s.min}–{s.max})
+                {s.updatedAt && ` · Updated ${new Date(s.updatedAt).toLocaleString("en-US")}`}
               </p>
             </div>
           );

@@ -14,13 +14,13 @@ export const PATCH = withAuthedContext<{ id: string }>(async (req, { session, pa
 
     if (key === "title") {
       if (typeof body.title !== "string" || body.title.trim().length === 0) {
-        return new Response("Tiêu đề không hợp lệ", { status: 400 });
+        return new Response("Invalid title", { status: 400 });
       }
       patch.title = body.title.trim();
     } else if (key === "dueAt") {
       const parsedDueAt = new Date(body.dueAt);
       if (Number.isNaN(parsedDueAt.getTime())) {
-        return new Response("Thời gian không hợp lệ", { status: 400 });
+        return new Response("Invalid time", { status: 400 });
       }
       patch.dueAt = parsedDueAt;
     } else {

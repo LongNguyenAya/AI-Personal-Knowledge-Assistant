@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
     const { error } = await authClient.requestPasswordReset({ email, redirectTo: "/reset-password" });
     setLoading(false);
     if (error) {
-      setError(error.message ?? "Gửi email đặt lại mật khẩu thất bại");
+      setError(error.message ?? "Failed to send password reset email");
       return;
     }
     setSent(true);
@@ -34,13 +34,13 @@ export default function ForgotPasswordPage() {
           </span>
         </div>
         <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-soft dark:border-gray-800 dark:bg-gray-900">
-          <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Kiểm tra email của bạn</h1>
+          <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Check your email</h1>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-            Nếu <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span> có tài khoản trong hệ thống,
-            chúng tôi vừa gửi 1 đường dẫn đặt lại mật khẩu tới đó — đường dẫn có hiệu lực trong 1 tiếng.
+            If <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span> has an account in the system,
+            we just sent a password reset link to it — the link is valid for 1 hour.
           </p>
           <Link href="/login" className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-            Quay lại đăng nhập
+            Back to login
           </Link>
         </div>
       </div>
@@ -54,13 +54,13 @@ export default function ForgotPasswordPage() {
           <Bot className="h-6 w-6" />
           AI Knowledge Assistant
         </span>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Trợ lý tri thức cá nhân của bạn</p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Your personal knowledge assistant</p>
       </div>
 
       <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-soft dark:border-gray-800 dark:bg-gray-900">
-        <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Quên mật khẩu</h1>
+        <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Forgot password</h1>
         <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-          Nhập email đã đăng ký, chúng tôi sẽ gửi đường dẫn để bạn đặt lại mật khẩu.
+          Enter your registered email, and we&apos;ll send you a link to reset your password.
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -86,14 +86,14 @@ export default function ForgotPasswordPage() {
             disabled={loading}
             className="mt-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? "Đang gửi..." : "Gửi đường dẫn đặt lại"}
+            {loading ? "Sending..." : "Send reset link"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          Nhớ ra mật khẩu rồi?{" "}
+          Remembered your password?{" "}
           <Link href="/login" className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-            Đăng nhập
+            Log in
           </Link>
         </p>
       </div>

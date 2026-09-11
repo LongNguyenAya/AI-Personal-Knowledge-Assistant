@@ -30,7 +30,7 @@ export function DiagramBlock({ title, mermaidCode }: { title: string; mermaidCod
         if (!cancelled && containerRef.current) containerRef.current.innerHTML = svg;
       } catch (err) {
         // Mermaid code written by the AI can have syntax errors, not a system bug, shows a compact error instead of crashing the whole page.
-        if (!cancelled) setError(err instanceof Error ? err.message : "Không vẽ được sơ đồ này.");
+        if (!cancelled) setError(err instanceof Error ? err.message : "Couldn't render this diagram.");
       }
     })();
     return () => {

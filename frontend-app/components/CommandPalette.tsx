@@ -19,12 +19,12 @@ import {
 
 const MAIN_LINKS = [
   { href: "/chat", label: "Chat", icon: MessageSquare },
-  { href: "/documents", label: "Tài liệu", icon: FileText },
+  { href: "/documents", label: "Documents", icon: FileText },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/reminders", label: "Reminders", icon: Bell },
-  { href: "/digest", label: "Tóm tắt tuần", icon: Sparkles },
-  { href: "/corrections", label: "Ghi chú AI", icon: NotebookPen },
-  { href: "/settings", label: "Hồ sơ cá nhân", icon: UserRound },
+  { href: "/digest", label: "Weekly Digest", icon: Sparkles },
+  { href: "/corrections", label: "AI Notes", icon: NotebookPen },
+  { href: "/settings", label: "Profile", icon: UserRound },
 ];
 
 const ADMIN_LINKS = [
@@ -61,23 +61,23 @@ export default function CommandPalette() {
 
   return (
     <>
-      {/* cmdk style qua data-attribute ([cmdk-overlay]), không phải className — Command.Dialog
-          luôn render overlay nhưng không tự có nền tối, phải tự thêm CSS này. */}
+      {/* cmdk is styled via a data-attribute ([cmdk-overlay]), not className — Command.Dialog
+          always renders the overlay but doesn't give it a dark background itself, this CSS has to add it. */}
       <style>{`[cmdk-overlay]{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:99;}`}</style>
       <Command.Dialog
         open={open}
         onOpenChange={setOpen}
-        label="Điều hướng nhanh"
+        label="Quick navigation"
         className="fixed top-[15vh] left-1/2 z-[100] w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-gray-900"
       >
         <Command.Input
           autoFocus
-          placeholder="Đi tới trang... (Esc để đóng)"
+          placeholder="Go to a page... (Esc to close)"
           className="w-full border-b border-gray-100 px-4 py-3 text-sm text-gray-900 outline-none dark:border-gray-800 dark:bg-gray-900 dark:text-white"
         />
         <Command.List className="max-h-80 overflow-y-auto p-2">
           <Command.Empty className="px-3 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
-            Không tìm thấy trang nào.
+            No pages found.
           </Command.Empty>
           {links.map((link) => {
             const Icon = link.icon;

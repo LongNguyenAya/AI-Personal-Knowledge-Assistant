@@ -36,21 +36,21 @@ type CorrectionsResponse = {
 };
 
 const TABS: { status: CorrectionStatus; label: string }[] = [
-  { status: "inactive", label: "Chờ duyệt" },
-  { status: "active", label: "Đã duyệt" },
-  { status: "dismissed", label: "Đã bỏ qua" },
+  { status: "inactive", label: "Pending" },
+  { status: "active", label: "Approved" },
+  { status: "dismissed", label: "Dismissed" },
 ];
 
 const EMPTY_TITLE: Record<CorrectionStatus, string> = {
-  inactive: "Chưa có ghi chú nào chờ duyệt",
-  active: "Chưa có ghi chú nào đã duyệt",
-  dismissed: "Chưa có ghi chú nào đã bỏ qua",
+  inactive: "No notes pending review",
+  active: "No approved notes yet",
+  dismissed: "No dismissed notes yet",
 };
 
 const EMPTY_DESCRIPTION: Record<CorrectionStatus, string> = {
-  inactive: "AI sẽ tự đề xuất ghi chú khi gặp tình huống khó xử lý — chưa có gì ở đây cả.",
-  active: "Các ghi chú bạn đã duyệt sẽ xuất hiện ở đây.",
-  dismissed: "Các ghi chú bạn đã bỏ qua sẽ xuất hiện ở đây.",
+  inactive: "The AI will suggest a note on its own when it runs into a tricky situation — nothing here yet.",
+  active: "Notes you've approved will show up here.",
+  dismissed: "Notes you've dismissed will show up here.",
 };
 
 const PAGE_SIZE = 20;
@@ -86,7 +86,7 @@ export default function CorrectionsPage() {
       });
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Thao tác thất bại");
+      setError(err instanceof Error ? err.message : "Action failed");
     } finally {
       setPendingId(null);
     }
@@ -97,9 +97,9 @@ export default function CorrectionsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ghi chú AI</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Notes</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          AI tự đề xuất các quan sát khi gặp tình huống mơ hồ trong lúc xử lý — chỉ có hiệu lực sau khi bạn duyệt.
+          The AI suggests observations on its own when it runs into an ambiguous situation while processing — these only take effect once you approve them.
         </p>
       </div>
 
@@ -121,7 +121,7 @@ export default function CorrectionsPage() {
 
       {error && <ErrorBanner message={error} />}
 
-      {data === null && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {data === null && <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>}
       {data !== null && items.length === 0 && (
         <EmptyState title={EMPTY_TITLE[tab]} description={EMPTY_DESCRIPTION[tab]} />
       )}
@@ -133,15 +133,15 @@ export default function CorrectionsPage() {
               <span className="rounded-full bg-indigo-50 px-2 py-0.5 font-medium text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
                 {item.sourceType} / {item.fieldName}
               </span>
-              {/* Dữ liệu này quyết định thứ hạng đưa vào prompt AI (ORDER BY confidence DESC,
-                  usageCount DESC) — hiện ra để biết vì sao 1 ghi chú được ưu tiên hơn ghi chú khác. */}
+              {/* This value drives the ranking fed into the AI prompt (ORDER BY confidence DESC,
+                  usageCount DESC) — shown so you can see why 1 note is prioritized over another. */}
               <span className={`rounded-full px-2 py-0.5 font-medium ${confidenceBadgeStyle(item.confidence)}`}>
-                Tin cậy {item.confidence}
+                Confidence {item.confidence}
                 {item.usageCount > 1 ? ` · ×${item.usageCount}` : ""}
               </span>
             </div>
-            {/* wrongValue chỉ có ở correction do người dùng tự sửa — ghi chú AI tự đề xuất thì
-                không có gì để so sánh nên hiện suông. Diff theo từng từ để chỉ tô đúng chỗ khác. */}
+            {/* wrongValue only exists for a correction the user made themselves — an AI-suggested
+                note has nothing to compare against so it's just shown plain. Diffed word by word so only the actual difference is highlighted. */}
             {item.wrongValue ? (
               <p className="text-sm text-gray-800 dark:text-gray-100">
                 {wordDiff(item.wrongValue, item.correctedValue ?? "").map((seg, i) => {
@@ -167,8 +167,8 @@ export default function CorrectionsPage() {
             )}
             <div className="text-xs text-gray-400 dark:text-gray-500">
               {tab === "inactive"
-                ? new Date(item.createdAt).toLocaleString("vi-VN")
-                : `Cập nhật lúc ${new Date(item.updatedAt).toLocaleString("vi-VN")}`}
+                ? new Date(item.createdAt).toLocaleString("en-US")
+                : `Updated ${new Date(item.updatedAt).toLocaleString("en-US")}`}
             </div>
             <div className="flex gap-2">
               {tab === "inactive" ? (
@@ -178,24 +178,24 @@ export default function CorrectionsPage() {
                     disabled={pendingId === item.id}
                     className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
                   >
-                    Duyệt
+                    Approve
                   </button>
                   <button
                     onClick={() => patchStatus(item.id, "dismissed")}
                     disabled={pendingId === item.id}
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                   >
-                    Bỏ qua
+                    Dismiss
                   </button>
                 </>
               ) : (
                 <button
                   onClick={() => patchStatus(item.id, "inactive")}
                   disabled={pendingId === item.id}
-                  title="Đưa ghi chú này trở lại hàng chờ duyệt"
+                  title="Return this note to the pending queue"
                   className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
-                  Hoàn tác
+                  Undo
                 </button>
               )}
             </div>
@@ -204,7 +204,7 @@ export default function CorrectionsPage() {
       </div>
 
       {data && (
-        <PaginationControls page={page} totalPages={totalPages} total={data.total} itemLabel="ghi chú" onPageChange={setPage} />
+        <PaginationControls page={page} totalPages={totalPages} total={data.total} itemLabel="notes" onPageChange={setPage} />
       )}
     </div>
   );

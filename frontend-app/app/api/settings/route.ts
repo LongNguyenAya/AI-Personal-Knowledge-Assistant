@@ -14,10 +14,10 @@ export const PATCH = withAuthedContext(async (req, { session, tx }) => {
   const body = await req.json().catch(() => null);
   const personalNote = body?.personalNote;
   if (typeof personalNote !== "string") {
-    return new Response("Thiếu personalNote hoặc sai kiểu dữ liệu", { status: 400 });
+    return new Response("Missing personalNote or wrong data type", { status: 400 });
   }
   if (personalNote.length > MAX_NOTE_LENGTH) {
-    return new Response(`Ghi chú quá dài — tối đa ${MAX_NOTE_LENGTH} ký tự`, { status: 400 });
+    return new Response(`Note is too long — max ${MAX_NOTE_LENGTH} characters`, { status: 400 });
   }
 
   await tx

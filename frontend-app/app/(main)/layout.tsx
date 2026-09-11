@@ -7,8 +7,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <WsProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-gray-50 md:flex-row dark:bg-gray-950">
         <MainNav />
-        {/* Không giới hạn max-width ở đây — trang chat cần dùng hết chiều rộng còn lại, còn các
-            trang danh sách (tasks/reminders/documents) tự giới hạn max-w-4xl trong chính file chúng. */}
+        {/* No max-width capped here — the chat page needs to use all the remaining width, while
+            list pages (tasks/reminders/documents) cap their own max-w-4xl inside their own files. */}
         <main className="min-h-0 flex-1 overflow-x-auto overflow-y-auto px-6 py-8">{children}</main>
       </div>
     </WsProvider>

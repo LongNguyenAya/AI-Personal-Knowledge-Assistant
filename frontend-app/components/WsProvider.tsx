@@ -25,7 +25,7 @@ export function WsProvider({ children }: { children: ReactNode }) {
       if (stopped) return;
       try {
         const res = await fetch("/api/ws-token");
-        if (!res.ok) throw new Error("Không lấy được token WS");
+        if (!res.ok) throw new Error("Couldn't get WS token");
         const { token } = await res.json();
         if (stopped) return;
 

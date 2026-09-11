@@ -41,16 +41,16 @@ export const POST = withAuthedContext(async (req, { session, tx }) => {
   };
 
   if (typeof sourceType !== "string" || sourceType.trim().length === 0) {
-    return new Response("Thiếu sourceType", { status: 400 });
+    return new Response("Missing sourceType", { status: 400 });
   }
   if (typeof fieldName !== "string" || fieldName.trim().length === 0) {
-    return new Response("Thiếu fieldName", { status: 400 });
+    return new Response("Missing fieldName", { status: 400 });
   }
   if (typeof wrongValue === "undefined" && typeof correctedValue === "undefined") {
-    return new Response("Cần ít nhất một trong wrongValue hoặc correctedValue", { status: 400 });
+    return new Response("Need at least one of wrongValue or correctedValue", { status: 400 });
   }
   if (wrongValue === correctedValue) {
-    return new Response("wrongValue và correctedValue không được giống nhau", { status: 400 });
+    return new Response("wrongValue and correctedValue can't be the same", { status: 400 });
   }
 
   const contextSignature = buildContextSignature(context ?? null);

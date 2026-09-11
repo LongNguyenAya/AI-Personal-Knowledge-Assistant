@@ -43,12 +43,12 @@ export const PATCH = withAuthedContext<{ id: string }>(async (req, { session, pa
   if (typeof isDone === "boolean") updates.isDone = isDone;
   if (typeof title === "string") {
     const normalizedTitle = title.trim();
-    if (!normalizedTitle) return new Response("Thiếu tiêu đề task", { status: 400 });
+    if (!normalizedTitle) return new Response("Missing task title", { status: 400 });
     updates.title = normalizedTitle;
   }
 
   if (Object.keys(updates).length === 0) {
-    return new Response("Không có trường nào cần cập nhật", { status: 400 });
+    return new Response("No fields to update", { status: 400 });
   }
 
   const [updated] = await tx.update(tasks).set(updates)
@@ -121,7 +121,7 @@ export const PATCH = withAuthedContext<{ id: string }>(async (req, { session, pa
         }
       });
     } catch (err) {
-      console.error("[tasks] Không ghi được correction memory — không ảnh hưởng việc sửa task:", err);
+      console.error("[tasks] Failed to record correction memory — doesn't affect the task update:", err);
     }
   }
 

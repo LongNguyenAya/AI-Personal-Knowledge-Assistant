@@ -19,7 +19,7 @@ export default function SettingsPage() {
         const { personalNote } = await fetchJson<{ personalNote: string }>("/api/settings");
         setNote(personalNote);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Không tải được hồ sơ cá nhân");
+        setError(err instanceof Error ? err.message : "Couldn't load your personal profile");
       } finally {
         setLoaded(true);
       }
@@ -37,7 +37,7 @@ export default function SettingsPage() {
       setError(null);
       setSavedAt(Date.now());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lưu thất bại");
+      setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -46,9 +46,9 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Hồ sơ cá nhân</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Personal profile</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Viết 1 lần, AI sẽ luôn đọc thông tin này mỗi khi xử lý yêu cầu của bạn — vd thói quen làm việc, cách bạn muốn AI ưu tiên việc.
+          Write this once — the AI will always read it whenever it handles your requests, e.g. your work habits or how you want it to prioritize things.
         </p>
       </div>
 
@@ -59,7 +59,7 @@ export default function SettingsPage() {
       )}
 
       {!loaded ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>
       ) : (
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-soft dark:border-gray-800 dark:bg-gray-900">
           <textarea
@@ -67,20 +67,20 @@ export default function SettingsPage() {
             onChange={(e) => setNote(e.target.value)}
             maxLength={MAX_LENGTH}
             rows={6}
-            placeholder={`Ví dụ: "Tôi làm việc giờ hành chính, ưu tiên deadline trong tuần hơn cuối tuần."`}
+            placeholder={`Example: "I work standard business hours, and prioritize weekday deadlines over weekend ones."`}
             className="w-full resize-y rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-indigo-500/20"
           />
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-gray-400 dark:text-gray-500">
               {note.length}/{MAX_LENGTH}
-              {savedAt && !saving ? " · Đã lưu" : ""}
+              {savedAt && !saving ? " · Saved" : ""}
             </span>
             <button
               onClick={handleSave}
               disabled={saving}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
             >
-              {saving ? "Đang lưu..." : "Lưu"}
+              {saving ? "Saving..." : "Save"}
             </button>
           </div>
         </div>

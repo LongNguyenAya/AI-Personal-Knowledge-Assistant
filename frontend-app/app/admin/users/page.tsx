@@ -32,7 +32,7 @@ export default function AdminUsersPage() {
       });
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Thao tác thất bại");
+      setError(err instanceof Error ? err.message : "Action failed");
     } finally {
       setPendingId(null);
     }
@@ -43,7 +43,7 @@ export default function AdminUsersPage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Users</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {data ? `${data.total} tài khoản` : "Đang tải..."}
+          {data ? `${data.total} accounts` : "Loading..."}
         </p>
       </div>
 
@@ -55,18 +55,18 @@ export default function AdminUsersPage() {
             <tr>
               <th className="px-5 py-3 font-medium">User</th>
               <th className="px-5 py-3 font-medium">Role</th>
-              <th className="px-5 py-3 font-medium">Trạng thái</th>
-              <th className="px-5 py-3 font-medium">Ngày tạo</th>
+              <th className="px-5 py-3 font-medium">Status</th>
+              <th className="px-5 py-3 font-medium">Created</th>
               <th className="px-5 py-3 font-medium text-right">Task</th>
               <th className="px-5 py-3 font-medium text-right">Reminder</th>
-              <th className="px-5 py-3 font-medium text-right">Hành động</th>
+              <th className="px-5 py-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {userList?.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-5 py-8 text-center text-gray-400">
-                  Chưa có user nào.
+                  No users yet.
                 </td>
               </tr>
             )}
@@ -95,7 +95,7 @@ export default function AdminUsersPage() {
                     {isDeleted ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-800 px-2.5 py-0.5 text-xs font-medium text-white dark:bg-gray-700">
                         <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
-                        Đã xoá
+                        Deleted
                       </span>
                     ) : (
                       <span
@@ -106,12 +106,12 @@ export default function AdminUsersPage() {
                         }`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${u.isActive ? "bg-green-500" : "bg-red-500"}`} />
-                        {u.isActive ? "Hoạt động" : "Đã khoá"}
+                        {u.isActive ? "Active" : "Locked"}
                       </span>
                     )}
                   </td>
                   <td className="px-5 py-4 text-gray-500 dark:text-gray-400">
-                    {new Date(u.createdAt).toLocaleDateString("vi-VN")}
+                    {new Date(u.createdAt).toLocaleDateString("en-US")}
                   </td>
                   <td className="px-5 py-4 text-right tabular-nums text-gray-700 dark:text-gray-300">{u.taskCount}</td>
                   <td className="px-5 py-4 text-right tabular-nums text-gray-700 dark:text-gray-300">
@@ -120,14 +120,14 @@ export default function AdminUsersPage() {
                   <td className="px-5 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       {isSelf ? (
-                        <span className="px-3 py-1.5 text-xs text-gray-400 dark:text-gray-500">Tài khoản của bạn</span>
+                        <span className="px-3 py-1.5 text-xs text-gray-400 dark:text-gray-500">Your account</span>
                       ) : isDeleted ? (
                         <button
                           onClick={() => patchUser(u.id, { softDelete: false })}
                           disabled={pendingId === u.id}
                           className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-600 transition-colors hover:bg-green-100 disabled:opacity-50 dark:bg-green-500/10 dark:text-green-300 dark:hover:bg-green-500/20"
                         >
-                          {pendingId === u.id ? "Đang xử lý..." : "Khôi phục"}
+                          {pendingId === u.id ? "Processing..." : "Restore"}
                         </button>
                       ) : (
                         <>
@@ -140,14 +140,14 @@ export default function AdminUsersPage() {
                                 : "bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-500/10 dark:text-green-300 dark:hover:bg-green-500/20"
                             }`}
                           >
-                            {pendingId === u.id ? "..." : u.isActive ? "Khoá" : "Mở khoá"}
+                            {pendingId === u.id ? "..." : u.isActive ? "Lock" : "Unlock"}
                           </button>
                           <button
                             onClick={() => setConfirmTarget({ id: u.id, email: u.email })}
                             disabled={pendingId === u.id}
                             className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-800 hover:text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                           >
-                            Xoá
+                            Delete
                           </button>
                         </>
                       )}
@@ -164,10 +164,10 @@ export default function AdminUsersPage() {
 
       <ConfirmModal
         open={confirmTarget !== null}
-        title="Xoá tài khoản này?"
+        title="Delete this account?"
         description={
           confirmTarget
-            ? `Tài khoản "${confirmTarget.email}" sẽ bị khoá và ẩn khỏi hệ thống ngay lập tức. Có thể khôi phục lại sau.`
+            ? `The account "${confirmTarget.email}" will be locked and hidden from the system immediately. It can be restored later.`
             : ""
         }
         onCancel={() => setConfirmTarget(null)}

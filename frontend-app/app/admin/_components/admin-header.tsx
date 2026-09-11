@@ -24,7 +24,7 @@ export default function AdminHeader() {
           href="/chat"
           className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
         >
-          Về ứng dụng
+          Back to app
         </Link>
       </div>
 
@@ -36,7 +36,7 @@ export default function AdminHeader() {
           onClick={handleSignOut}
           className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
         >
-          Đăng xuất
+          Log out
         </button>
       </div>
     </header>

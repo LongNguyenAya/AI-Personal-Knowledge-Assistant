@@ -15,7 +15,7 @@ const STATUS_STYLE: Record<string, string> = {
 const DEFAULT_STATUS_STYLE = "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300";
 
 // source distinguishes a reminder the user typed themselves from one the AI extracted from a document, it used to show the raw "manual"/"ai_created" text which was confusing.
-const SOURCE_LABEL: Record<string, string> = { manual: "Tạo thủ công", ai_created: "AI tạo từ tài liệu" };
+const SOURCE_LABEL: Record<string, string> = { manual: "Created manually", ai_created: "AI-created from a document" };
 const SOURCE_STYLE: Record<string, string> = {
   manual: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
   ai_created: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300",
@@ -53,7 +53,7 @@ export default function RemindersPage() {
       if (page === 1) await reload();
       else setPage(1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Tạo reminder thất bại");
+      setError(err instanceof Error ? err.message : "Failed to create reminder");
     } finally {
       setCreating(false);
     }
@@ -64,7 +64,7 @@ export default function RemindersPage() {
       await fetchJson(`/api/reminders/${id}`, { method: "DELETE" });
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xoá reminder thất bại");
+      setError(err instanceof Error ? err.message : "Failed to delete reminder");
     }
   }
 
@@ -72,7 +72,7 @@ export default function RemindersPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reminders</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Tạo và theo dõi các nhắc nhở của bạn.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Create and track your reminders.</p>
       </div>
 
       <form
@@ -80,17 +80,17 @@ export default function RemindersPage() {
         className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900"
       >
         <div className="flex flex-1 flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Tiêu đề</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Title</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Nhắc tôi..."
+            placeholder="Remind me to..."
             required
             className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-indigo-500/20"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Thời gian</label>
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Time</label>
           <input
             type="datetime-local"
             value={dueAt}
@@ -104,15 +104,15 @@ export default function RemindersPage() {
           disabled={creating}
           className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
         >
-          {creating ? "Đang tạo..." : "Tạo"}
+          {creating ? "Creating..." : "Create"}
         </button>
       </form>
 
       {error && <ErrorBanner message={error} />}
 
-      {data === null && <p className="text-sm text-gray-400 dark:text-gray-500">Đang tải...</p>}
+      {data === null && <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>}
       {data !== null && reminders.length === 0 && (
-        <EmptyState title="Chưa có reminder nào" description="Tạo reminder ở ô phía trên, hoặc nhờ AI trích từ tài liệu trong lúc chat." />
+        <EmptyState title="No reminders yet" description="Create one above, or ask the AI to extract one from a document during chat." />
       )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {reminders.map((r) => (
@@ -126,10 +126,10 @@ export default function RemindersPage() {
                 onClick={() => setConfirmTarget({ id: r.id, title: r.title })}
                 className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
               >
-                Xoá
+                Delete
               </button>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(r.dueAt).toLocaleString("vi-VN")}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(r.dueAt).toLocaleString("en-US")}</div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span
                 className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${
@@ -147,20 +147,20 @@ export default function RemindersPage() {
               </span>
             </div>
             <div className="text-xs text-gray-400 dark:text-gray-500">
-              Tạo lúc {new Date(r.createdAt).toLocaleDateString("vi-VN")}
+              Created {new Date(r.createdAt).toLocaleDateString("en-US")}
             </div>
           </div>
         ))}
       </div>
 
       {data && (
-        <PaginationControls page={page} totalPages={totalPages} total={data.total} itemLabel="reminder" onPageChange={setPage} />
+        <PaginationControls page={page} totalPages={totalPages} total={data.total} itemLabel="reminders" onPageChange={setPage} />
       )}
 
       <ConfirmModal
         open={confirmTarget !== null}
-        title="Xoá reminder này?"
-        description={confirmTarget ? `"${confirmTarget.title}" sẽ bị xoá vĩnh viễn, không thể hoàn tác.` : ""}
+        title="Delete this reminder?"
+        description={confirmTarget ? `"${confirmTarget.title}" will be permanently deleted, this can't be undone.` : ""}
         onCancel={() => setConfirmTarget(null)}
         onConfirm={() => {
           if (confirmTarget) handleDelete(confirmTarget.id);

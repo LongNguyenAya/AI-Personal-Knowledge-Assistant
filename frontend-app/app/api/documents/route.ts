@@ -34,13 +34,13 @@ export async function POST(req: Request) {
   const formData = await req.formData();
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return new Response("Thiếu file hoặc file rỗng", { status: 400 });
+    return new Response("Missing file or empty file", { status: 400 });
   }
 
   // Admin adjusts this via /admin/settings, matching "maxUploadMb" on the backend-service side.
   const maxUploadMb = await getSettingValue("maxUploadMb");
   if (file.size > maxUploadMb * 1024 * 1024) {
-    return new Response(`File quá lớn — tối đa ${maxUploadMb}MB`, { status: 400 });
+    return new Response(`File too large — max ${maxUploadMb}MB`, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -72,10 +72,10 @@ export async function POST(req: Request) {
         base64: buffer.toString("base64"),
       }),
     });
-    if (!response.ok) throw new Error(`backend-service trả về status ${response.status}`);
+    if (!response.ok) throw new Error(`backend-service returned status ${response.status}`);
   } catch (err) {
     // fetch() can throw an error (lost connection/timeout), not just return !response.ok, without a catch the document would get stuck at "uploaded" forever.
-    console.error("[documents/upload] Forward sang backend-service thất bại:", err);
+    console.error("[documents/upload] Forward to backend-service failed:", err);
     await withUserContext(session.user.id, (tx) =>
       tx.update(documents).set({ status: "failed" }).where(eq(documents.id, doc.id))
     );
