@@ -1,28 +1,28 @@
 # AI Personal Knowledge Assistant
 
-Trợ lý cá nhân: upload tài liệu, hỏi đáp có trích dẫn (RAG), tự tạo task/nhắc nhở qua chat, tự học từ những lần ta nhắc lỗi cần cải thiện, và có khu quản trị đầy đủ (settings động, duyệt kiến thức, audit log, dashboard xu hướng).
+A personal assistant: upload documents, ask questions with real citations (RAG), automatically create tasks/reminders through chat, learn from the corrections you make, and a full admin area (dynamic settings, knowledge review, audit log, trend dashboard).
 
 > **Deployed app**: https://ai-personal-knowledge-assistant.onrender.com/
 
-## Tính năng chính
+## Key features
 
-- **Chat với AI**: Có trích dẫn nguồn thật (research) hoặc gọi công cụ hành động (action) — tạo task, tạo nhắc nhở, vẽ biểu đồ số liệu, vẽ sơ đồ quy trình, tìm/đọc tài liệu.
-- **Upload tài liệu**: Hỗ trợ các loại tệp .pdf, .docx, .pptx, .txt, .md, ảnh; tự trích văn bản, tự phát hiện prompt injection và cảnh báo trích xuất thiếu.
-- **Đính kèm tài liệu ngay trong lúc chat**: Chọn tài liệu có sẵn hoặc upload mới, chờ xử lý xong tự hỏi luôn.
-- **Tasks / Reminders**: Tạo thủ công hoặc để AI tạo giúp, nhắc nhở tự đẩy qua WebSocket + email khi tới hạn.
-- **Ghi chú AI (correction memory)**: Hệ thống tự học khi bạn sửa lỗi nó, hoặc khi nó tự nhận ra tình huống mơ hồ (chờ người dùng duyệt).
-- **Tóm tắt hoạt động hàng tuần**: Qua email + trang riêng trong app.
-- **Khu quản trị** (`/admin`): Quản lý user, sửa system prompt từng loại agent, duyệt/thu hồi kiến thức global, cấu hình hệ thống động (không cần deploy lại), dashboard thống kê kèm phân tích xu hướng thật (hồi quy tuyến tính có kiểm định) + nhận định AI theo yêu cầu, audit log mọi thao tác admin.
+- **Chat with AI**: Answers with real source citations (research) or calls action tools (action) — create a task, create a reminder, draw a data chart, draw a process diagram, search/read documents.
+- **Document upload**: Supports .pdf, .docx, .pptx, .txt, .md, and images; extracts text automatically, detects prompt injection, and flags likely incomplete extraction.
+- **Attach a document right in chat**: Pick an existing document or upload a new one, the question is asked automatically once processing finishes.
+- **Tasks / Reminders**: Create manually or let the AI create them for you, reminders push through WebSocket + email when they're due.
+- **AI Notes (correction memory)**: The system learns automatically when you correct it, or when it notices an ambiguous situation on its own (pending your approval).
+- **Weekly activity digest**: Delivered by email + a dedicated page in the app.
+- **Admin area** (`/admin`): Manage users, edit each agent's system prompt, approve/revoke global knowledge, dynamic system configuration (no redeploy needed), a stats dashboard with real trend analysis (linear regression with significance testing) plus on-demand AI commentary, an audit log of every admin action.
 
-## Kiến trúc tổng quan
+## Architecture overview
 
-Monorepo dùng npm workspaces, 2 service độc lập cùng nói chuyện với 1 Postgres:
+A monorepo using npm workspaces, 2 independent services both talking to 1 Postgres:
 
 ```
                         ┌───────────────┐
-                        │  Trình duyệt  │
+                        │    Browser    │
                         └───┬───────┬───┘
-                    HTTPS   │       │  WSS — thẳng tới EC2, không qua Render
+                    HTTPS   │       │  WSS — straight to EC2, not through Render
                             ▼       ▼
                   ┌──────────────┐    ┌────────────────────┐
                   │    Render    │──> │         EC2        │
@@ -38,85 +38,85 @@ Monorepo dùng npm workspaces, 2 service độc lập cùng nói chuyện với 
                             └──────────────────┘
 ```
 
-`backend-service` còn nói chuyện riêng với **S3** (file gốc), **SQS** (2 hàng đợi: ingest tài liệu + trigger tóm tắt tuần), **EventBridge Scheduler** (cron), **Gemini + Groq**, và **Langfuse** (trace mọi lệnh gọi LLM) — không cái nào trong số này Render/frontend-app chạm tới trực tiếp.
+`backend-service` also talks directly to **S3** (raw files), **SQS** (2 queues: document ingestion + weekly digest trigger), **EventBridge Scheduler** (cron), **Gemini + Groq**, and **Langfuse** (traces every LLM call) — none of these are ever touched directly by Render/frontend-app.
 
 ```
-frontend-app     Next.js App Router — toàn bộ UI + hầu hết route API (auth, CRUD, admin)
-backend-service  Hono trên Node — HTTP API, WebSocket, agent/LangGraph, scheduler, 2 worker nền
-packages/db            Schema Drizzle + client dùng chung cho cả 2 app
-packages/shared-types  Kiểu dữ liệu dùng chung, SETTINGS_REGISTRY, hồi quy tuyến tính cho dashboard
+frontend-app     Next.js App Router — all UI + most API routes (auth, CRUD, admin)
+backend-service  Hono on Node — HTTP API, WebSocket, agent/LangGraph, scheduler, 2 background workers
+packages/db            Drizzle schema + client shared by both apps
+packages/shared-types  Shared types, SETTINGS_REGISTRY, linear regression for the dashboard
 ```
 
 ## Tech stack
 
-| Lớp | Công nghệ |
+| Layer | Technology |
 |---|---|
 | Frontend | Next.js (App Router), React, Tailwind CSS, Vercel AI SDK (`useChat`) |
 | Backend | Hono, Node.js, LangGraph (orchestrator agent) |
-| Dữ liệu | PostgreSQL 16 + pgvector, Drizzle ORM |
-| Xác thực | better-auth (frontend-app) + JWT EdDSA (cầu nối sang backend-service) |
-| AI | Google Gemini (`gemini-flash-lite-latest`, `gemini-embedding-001`), Groq (xác minh trích dẫn) |
-| Hạ tầng | AWS S3 (file), AWS SQS (hàng đợi xử lý nền), AWS EventBridge Scheduler (cron tuần) |
-| Quan sát | Langfuse (trace mọi lệnh gọi LLM) |
+| Data | PostgreSQL 16 + pgvector, Drizzle ORM |
+| Auth | better-auth (frontend-app) + JWT EdDSA (bridge to backend-service) |
+| AI | Google Gemini (`gemini-flash-lite-latest`, `gemini-embedding-001`), Groq (citation verification) |
+| Infra | AWS S3 (files), AWS SQS (background processing queues), AWS EventBridge Scheduler (weekly cron) |
+| Observability | Langfuse (traces every LLM call) |
 
-## Công cụ AI dùng được trong chat
+## AI tools available in chat
 
-Action-agent tự chọn gọi tool nào dựa trên câu hỏi, không có luật cứng nào trong code ép buộc — mô tả tool là thứ duy nhất "dạy" nó khi nào nên dùng cái gì.
+The action-agent picks which tool to call based on the question itself, with no hardcoded rule forcing it — the tool's description is the only thing "teaching" it when to use what.
 
-| Tool | Làm gì |
+| Tool | What it does |
 |---|---|
-| `createTask` / `listTasks` | Tạo / liệt kê task |
-| `createReminder` | Tạo nhắc nhở gắn giờ, có thể liên kết sẵn với task đã có |
-| `searchDocuments` | Tìm đoạn liên quan trong tài liệu đã upload (RAG) |
-| `readFullDocuments` | Đọc nguyên văn 1 tài liệu — dùng khi cần tóm tắt cả bài, không chỉ 1 đoạn |
-| `createChart` | Tự truy vấn DB thật rồi vẽ biểu đồ, kèm tính xu hướng có kiểm định thống kê |
-| `createDiagram` | Tự viết mã Mermaid vẽ sơ đồ quy trình nhiều bước/nhánh |
-| `extractActionItems` | Quét 1 tài liệu tìm việc cần làm/deadline — chỉ đề xuất, không tự tạo reminder |
-| `proposeKnowledgeNote` | Đề xuất 1 bài học *chung* để nhớ mãi mãi — chờ admin duyệt mới có hiệu lực |
-| `noteObservation` | Tự ghi lại 1 tình huống mơ hồ vừa gặp — chờ chính user duyệt |
+| `createTask` / `listTasks` | Create / list tasks |
+| `createReminder` | Create a time-bound reminder, optionally linked to an existing task |
+| `searchDocuments` | Find relevant excerpts in uploaded documents (RAG) |
+| `readFullDocuments` | Read a document in full — used when summarizing the whole thing, not just an excerpt |
+| `createChart` | Query the real DB and draw a chart, with statistically-tested trend detection |
+| `createDiagram` | Write Mermaid code to draw a multi-step/branching process diagram |
+| `extractActionItems` | Scan a document for action items/deadlines — only suggests, never creates a reminder on its own |
+| `proposeKnowledgeNote` | Propose a *general* lesson to remember forever — only takes effect after admin approval |
+| `noteObservation` | Record an ambiguous situation it just ran into — waits for the user's own approval |
 
-Riêng route "research" (câu hỏi tra cứu thuần, không cần hành động) không dùng tool nào ở trên — nó bị ép buộc trả lời qua `submitAnswer`, có 2 lớp kiểm tra thuần code để chặn bịa nguồn trước khi trả lời được chấp nhận.
+The "research" route (pure lookup questions, no action needed) doesn't use any of the tools above — it's forced to answer through `submitAnswer`, which has 2 pure-code checks to block a fabricated source before an answer is accepted.
 
-## Kĩ thuật được áp dụng
+## Techniques applied
 
-| Kĩ thuật | Mục đích |
+| Technique | Purpose |
 |---|---|
-| Row-Level Security ở Postgres, không lọc `WHERE` trong code | Postgres tự chặn ở tầng row bất kể code có lỡ quên gì — an toàn hơn 1 lớp lọc application-level dễ quên |
-| JWT ký bất đối xứng (EdDSA) giữa 2 service | backend-service chỉ *verify* được, không tự *tạo* token giả danh user nào — khác HMAC (khoá dùng chung, rủi ro cao hơn nếu 1 trong 2 service bị lộ) |
-| 2 hệ thống trí nhớ tách biệt hoàn toàn (riêng-user vs global) | Trộn "AI tự học từ lỗi của 1 người" với "kiến thức áp dụng cho mọi người" sẽ rò ngữ cảnh riêng tư của người này sang người khác |
-| Rate limit dùng fixed window, không token bucket/sliding log | Đơn giản, đủ cho mục tiêu "chặn spam thô" — đánh đổi: chấp nhận có thể burst nhẹ ở đúng ranh giới cửa sổ |
-| Biểu đồ trong chat tự vẽ SVG tay, không dùng thư viện chart | Cần vẽ đúng hình dạng riêng (dải tin cậy dự đoán, đường trung bình trượt) mà thư viện có sẵn không hỗ trợ đúng ý |
-| System prompt của agent lưu trong DB, không hardcode trong code | Admin sửa hành vi AI ngay qua `/admin/prompts`, không cần deploy lại |
+| Row-Level Security in Postgres, not a `WHERE` filter in code | Postgres blocks at the row level regardless of anything code might forget — safer than an application-level filter that's easy to miss |
+| Asymmetric JWT signing (EdDSA) between the 2 services | backend-service can only *verify*, never *create*, a token impersonating any user — unlike HMAC (a shared key, higher risk if either service is compromised) |
+| 2 fully separate memory systems (per-user vs global) | Mixing "the AI learns from 1 person's mistakes" with "knowledge that applies to everyone" would leak one person's private context into another's |
+| Rate limiting via a fixed window, not a token bucket/sliding log | Simple, enough for the goal of "block crude spam" — the trade-off is accepting a small burst right at the window boundary |
+| Charts in chat are hand-drawn SVG, no charting library | Needed to draw shapes a stock library doesn't support well (a forecast confidence band, a moving-average line) |
+| Agent system prompts live in the DB, not hardcoded | Admin changes AI behavior directly via `/admin/prompts`, no redeploy needed |
 
 ## Database
 
-`packages/db/src/schema.ts` là schema Drizzle duy nhất, dùng chung cho cả `frontend-app` và `backend-service` — không service nào tự định nghĩa lại bảng riêng. Hiện có 17 bảng, migration nằm ở `frontend-app/drizzle/migrations/` (sinh và áp bằng `drizzle-kit`).
+`packages/db/src/schema.ts` is the single Drizzle schema, shared by both `frontend-app` and `backend-service` — neither service defines its own tables. Currently 17 tables, migrations live in `frontend-app/drizzle/migrations/` (generated and applied with `drizzle-kit`).
 
-**2 role Postgres, không tự lọc `WHERE user_id = ...` trong code:**
+**2 Postgres roles, no `WHERE user_id = ...` filtering in code:**
 
-| Role | Dùng khi nào | Cách hoạt động |
+| Role | Used for | How it works |
 |---|---|---|
-| `app_user` | Mọi request người dùng bình thường | RLS tự lọc theo `current_setting('app.current_user_id')`, giá trị này được set qua `withUserContext()` ở đầu mỗi transaction |
-| `admin_user` | Thao tác admin (`/admin/*`) | `BYPASSRLS` — đọc/sửa được dữ liệu của mọi user |
+| `app_user` | Every normal user request | RLS filters automatically by `current_setting('app.current_user_id')`, set via `withUserContext()` at the start of each transaction |
+| `admin_user` | Admin actions (`/admin/*`) | `BYPASSRLS` — can read/write every user's data |
 
-8/17 bảng bật RLS (`documents`, `chunks`, `tasks`, `conversations`, `reminders`, `chat_history`, `user_correction_memories`, `weekly_digests`), mỗi bảng có 1 `pgPolicy` so khớp `user_id` với `current_setting`. 9 bảng còn lại không bật RLS vì là dữ liệu dùng chung/toàn cục: bảng của better-auth (`users`, `session`, `account`, `verification`), hoặc dữ liệu chỉ admin đụng tới (`admin_audit_log`, `agent_prompts`, `knowledge_files`, `admin_chart_analyses`, `system_settings`).
+8 of 17 tables have RLS enabled (`documents`, `chunks`, `tasks`, `conversations`, `reminders`, `chat_history`, `user_correction_memories`, `weekly_digests`), each with a `pgPolicy` matching `user_id` against `current_setting`. The other 9 tables don't have RLS since they're shared/global data: better-auth's own tables (`users`, `session`, `account`, `verification`), or data only admins touch (`admin_audit_log`, `agent_prompts`, `knowledge_files`, `admin_chart_analyses`, `system_settings`).
 
-`chunks.embedding` dùng kiểu `vector` (pgvector) — tìm đoạn liên quan cho RAG bằng khoảng cách cosine, không phải full-text search thường.
+`chunks.embedding` uses the `vector` type (pgvector) — relevant excerpts for RAG are found by cosine distance, not ordinary full-text search.
 
-## Bắt đầu chạy local
+## Running locally
 
-### Yêu cầu trước khi chạy dự án
+### Prerequisites
 
-Vì `backend-service` từ chối khởi động nếu thiếu cấu hình AWS thật, và nhiều tính năng cần API key thật, nên ta cần chuẩn bị trước:
+Since `backend-service` refuses to start without real AWS configuration, and many features need real API keys, prepare these first:
 
-- Node.js 24+, Docker (chạy Postgres local qua `docker-compose`).
-- 1 bucket **S3** + 1 hàng đợi **SQS** trên AWS (bắt buộc, `backend-service` throw lỗi ngay lúc khởi động nếu thiếu).
-- API key **Gemini** (`GEMINI_API_KEY`/`GOOGLE_API_KEY`/`GOOGLE_GENERATIVE_AI_API_KEY` — cùng 1 key, dùng ở 3 chỗ khác nhau trong code) và **Groq** (miễn phí, dùng để xác minh trích dẫn).
-- Tài khoản **Langfuse** (miễn phí) lấy `LANGFUSE_SECRET_KEY`/`LANGFUSE_PUBLIC_KEY`.
-- 1 tài khoản Gmail bật **App Password** để gửi email thật (xác nhận đăng ký, nhắc nhở, tóm tắt tuần).
-- `EventBridge Scheduler` + hàng đợi SQS thứ 2 cho tóm tắt tuần là **tuỳ chọn** — thiếu `WEEKLY_DIGEST_QUEUE_URL` chỉ tắt tính năng đó, không chặn khởi động.
+- Node.js 24+, Docker (runs Postgres locally via `docker-compose`).
+- 1 **S3** bucket + 1 **SQS** queue on AWS (required, `backend-service` throws immediately at startup if missing).
+- A **Gemini** API key (`GEMINI_API_KEY`/`GOOGLE_API_KEY`/`GOOGLE_GENERATIVE_AI_API_KEY` — the same key, used in 3 different places in the code) and a **Groq** key (free, used for citation verification).
+- A **Langfuse** account (free) for `LANGFUSE_SECRET_KEY`/`LANGFUSE_PUBLIC_KEY`.
+- A Gmail account with an **App Password** enabled, to send real email (signup confirmation, reminders, weekly digest).
+- `EventBridge Scheduler` + a second SQS queue for the weekly digest are **optional** — missing `WEEKLY_DIGEST_QUEUE_URL` just disables that feature, it doesn't block startup.
 
-### Các bước
+### Steps
 
 ```bash
 git clone <repo-url>
@@ -124,41 +124,41 @@ cd AIPersonalKnowledgeAssistantProject
 npm install
 ```
 
-**1. Postgres local:**
+**1. Local Postgres:**
 
 ```bash
 docker-compose up -d
 ```
 
-**2. Biến môi trường** — copy 2 file mẫu rồi điền giá trị thật:
+**2. Environment variables** — copy the 2 example files and fill in real values:
 
 ```bash
 cp frontend-app/.env.example frontend-app/.env.local
 cp backend-service/.env.example backend-service/.env
 ```
 
-Sinh cặp khoá JWT (EdDSA/Ed25519) — dán nửa `JWT_PRIVATE_KEY` vào `frontend-app/.env.local`, nửa `JWT_PUBLIC_KEY` vào `backend-service/.env`:
+Generate a JWT key pair (EdDSA/Ed25519) — paste the `JWT_PRIVATE_KEY` half into `frontend-app/.env.local`, the `JWT_PUBLIC_KEY` half into `backend-service/.env`:
 
 ```bash
 cd frontend-app
 node -e "import('jose').then(async ({generateKeyPair, exportJWK}) => { const {publicKey, privateKey} = await generateKeyPair('EdDSA', {crv: 'Ed25519', extractable: true}); console.log('JWT_PRIVATE_KEY=' + JSON.stringify(await exportJWK(privateKey))); console.log('JWT_PUBLIC_KEY=' + JSON.stringify(await exportJWK(publicKey))); });"
 ```
 
-`BETTER_AUTH_SECRET` — 1 chuỗi ngẫu nhiên bất kỳ: `openssl rand -base64 32`.
+`BETTER_AUTH_SECRET` — any random string: `openssl rand -base64 32`.
 
-**3. Migration** — tạo bảng + role + RLS policy trong Postgres local:
+**3. Migrations** — creates tables + roles + RLS policies in local Postgres:
 
 ```bash
 cd frontend-app
 npx drizzle-kit migrate
 ```
 
-> **Lưu ý:** lệnh trên từng bị treo (không rõ nguyên nhân). Nếu bị treo, Ctrl+C rồi áp từng file migration thủ công theo đúng thứ tự bằng `psql`:
+> **Note:** this command has hung before (root cause unclear). If it hangs, Ctrl+C and apply each migration file manually in order with `psql`:
 > ```bash
 > for f in frontend-app/drizzle/migrations/*.sql; do psql "$DATABASE_MIGRATION_URL" -f "$f"; done
 > ```
 
-**4. Chạy dev** — 2 terminal riêng:
+**4. Run dev** — 2 separate terminals:
 
 ```bash
 # Terminal 1
@@ -168,44 +168,52 @@ cd backend-service && npm run dev
 cd frontend-app && npm run dev
 ```
 
-Mở `http://localhost:3000`.
+Open `http://localhost:3000`.
 
-## Biến môi trường
+## Environment variables
 
-Danh sách đầy đủ đã có sẵn trong 2 file `.env.example` (`frontend-app/`, `backend-service/`) kèm comment giải thích từng biến. Giải thích sâu hơn — biến nào bắt buộc, biến nào tuỳ chọn, vì sao — xem mục "Triển khai & hạ tầng" trong tài liệu Field Notes ở dưới.
+The full list already lives in the 2 `.env.example` files (`frontend-app/`, `backend-service/`) with a comment explaining each variable. For a deeper explanation — which are required, which are optional, and why — see the "Deployment & infrastructure" section of the Field Notes document mentioned below.
 
-## Cấu trúc thư mục
+## Directory structure
 
 ```
 frontend-app/
-  app/                  Route Next.js — trang (main)/, admin/, (auth)/, và route API
-  components/           UI dùng chung + component riêng cho chat/admin
-  lib/                  Helper phía server (auth, settings, db context...)
-  drizzle/migrations/   Migration SQL, áp trực tiếp lên Postgres
+  app/                  Next.js routes — (main)/, admin/, (auth)/ pages, and API routes
+  components/           Shared UI + components specific to chat/admin
+  lib/                  Server-side helpers (auth, settings, db context...)
+  drizzle/migrations/   Migration SQL, applied directly to Postgres
 
 backend-service/
-  src/agents/           Orchestrator (LangGraph), tool cho AI, system prompt
-  src/routes/           Route Hono (documents, orchestrator, ws, email)
-  src/services/         Ingest tài liệu, gửi email, weekly digest, SQS
-  src/workers/          2 worker nền (ingest tài liệu, digest tuần)
-  src/scheduler/        Quét reminder tới hạn mỗi phút
-  src/db/repositories/  Truy vấn DB, tách theo domain
+  src/agents/           Orchestrator (LangGraph), AI tools, system prompts
+  src/routes/           Hono routes (documents, orchestrator, ws, email)
+  src/services/         Document ingestion, sending email, weekly digest, SQS
+  src/workers/          2 background workers (document ingestion, weekly digest)
+  src/scheduler/        Scans for due reminders every minute
+  src/db/repositories/  DB queries, split by domain
 
 packages/
-  db/                   schema.ts (17 bảng) + client Drizzle
-  shared-types/         Type dùng chung, SETTINGS_REGISTRY, hồi quy tuyến tính
+  db/                   schema.ts (17 tables) + Drizzle client
+  shared-types/         Shared types, SETTINGS_REGISTRY, linear regression
 ```
 
-## Triển khai production
+## Production deployment
 
-Frontend-app deploy trên Render, Backend-service deploy bằng Docker (`Dockerfile` ở gốc repo) lên EC2, Postgres dùng Neon. `NEXT_PUBLIC_BACKEND_WS_URL` phải đổi từ `ws://localhost:4000` sang `wss://<domain-EC2-thật>` khi lên production.
+frontend-app deploys on Render, backend-service deploys via Docker (`Dockerfile` at the repo root) to EC2, Postgres runs on Neon. `NEXT_PUBLIC_BACKEND_WS_URL` has to switch from `ws://localhost:4000` to `wss://<real-EC2-domain>` in production.
 
-## Phạm vi & giả định
+## Scope & assumptions
 
-- Thiết kế cho 1 cá nhân dùng, không phải SaaS nhiều tenant lớn. Vì thế nhiều chỗ tối ưu cho "đúng và đơn giản" hơn là "chịu tải cao" (ví dụ: fixed window rate limit, WS registry trong RAM).
-- Chưa có bộ test tự động end-to-end qua trình duyệt, cũng chưa có bộ eval cố định chạy lại được mỗi lần đổi code. Phần lớn tính năng được kiểm chứng bằng script/DB thật ngay lúc code xong (throwaway, không giữ lại), không phải bằng 1 quy trình test lặp lại được.
+- Designed for 1 individual user, not a large multi-tenant SaaS. Because of that, several places optimize for "correct and simple" over "handles heavy load" (e.g. fixed-window rate limiting, the WS registry living in RAM).
+- No automated end-to-end browser test suite yet, and no fixed eval suite that reruns on every code change. Most features were verified with real scripts/DB right after writing the code (throwaway, not kept), not through a repeatable test process.
 
-## Giới hạn đã biết
+## Known limitations
 
-- WebSocket registry sống trong RAM của 1 process — chưa hỗ trợ chạy nhiều instance backend-service cùng lúc, cần thêm Redis pub/sub hoặc tương tự nếu scale ngang.
-- `/corrections`, `/digest`, `/settings` chưa được `middleware.ts` bảo vệ redirect ngay như `/chat`/`/documents`/`/tasks`/`/reminders` — chỉ được chặn ở tầng API, không redirect `/login` ngay lúc vào trang.
+- The WebSocket registry lives in the RAM of 1 process — running multiple backend-service instances at once isn't supported yet. A Redis pub/sub fix for this was built and tested on a separate branch (`experiment/redis-ws-registry`, not merged into `master`) — see the note below. Not merged into production since current traffic doesn't need horizontal scaling yet.
+- `/corrections`, `/digest`, `/settings` aren't protected by an immediate redirect in `middleware.ts` the way `/chat`/`/documents`/`/tasks`/`/reminders` are — they're only blocked at the API layer, without an immediate redirect to `/login` on page load.
+
+## Self-hosting & concurrency exploration
+
+Separate from this app's real architecture, self-hosting an LLM (Qwen2.5-1.5B-Instruct-AWQ, served locally with vLLM) was used as a hands-on exercise to explore concurrency concepts that don't come up when just calling a hosted API — continuous batching and its effect on throughput (measured with concurrent `curl` benchmarks), and the GPU KV cache as the real, VRAM-dependent limit on how many requests can run at once, rather than a fixed constant.
+
+That exercise led directly into testing horizontal scaling for `backend-service` itself: running 2 instances side by side surfaced the exact WebSocket registry limitation noted above, which the Redis pub/sub branch was built to fix. Testing that fix by deliberately killing Redis mid-request also surfaced a real finding — the API reports a message as sent even when it hasn't reached the client yet, since `ioredis` queues commands locally instead of failing immediately when the connection is down; the message arrives once Redis recovers, so it's delayed rather than lost, but the API response doesn't reflect that.
+
+None of this self-hosted setup is part of the deployed application — it's exploratory work kept off `master`, done purely to build real understanding of concurrency and horizontal-scaling trade-offs.
