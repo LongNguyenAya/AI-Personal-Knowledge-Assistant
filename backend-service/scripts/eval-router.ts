@@ -1,4 +1,4 @@
-// Đo độ chính xác thật của AI qua routerNode, tốn Gemini thật nên chỉ chạy tay bằng npm run eval:router.
+// Measures the AI's real accuracy through routerNode, costs real Gemini calls so it's only run by hand via npm run eval:router.
 
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
@@ -14,13 +14,13 @@ type Route = "research" | "action" | "both" | "unknown";
 type Fixture = {
   question: string;
   expectedRoute: Route;
-  // Chỉ áp dụng khi expectedRoute là "research"/"both", tên file phải lọt vào top sources mà retrieveRelevantChunks tìm được.
+  // Only applies when expectedRoute is "research"/"both", the file name must land in the top sources retrieveRelevantChunks returns.
   expectedFileName?: string;
 };
 
-const MAX_DOCUMENT_FIXTURES = 5; // giới hạn số lệnh gọi Gemini để sinh câu hỏi, tránh chạy quá lâu/tốn
+const MAX_DOCUMENT_FIXTURES = 5; // caps how many Gemini calls generate questions, avoids running too long/too expensive
 
-// Tham số hoá ngẫu nhiên mỗi lần chạy, đủ để kiểm tra router có nhận đúng đây là "action" hay không.
+// Randomized parameters on every run, enough to check whether the router correctly recognizes this as "action".
 const RANDOM_HOURS = ["9h sáng", "14h chiều", "18h tối", "20h tối"];
 const RANDOM_TASKS = ["dọn bàn làm việc", "gửi báo cáo tuần", "gọi điện cho khách hàng", "kiểm tra lại hợp đồng"];
 function pickRandom<T>(arr: T[]): T {
@@ -35,7 +35,7 @@ async function resolveUser(): Promise<{ id: string; email: string }> {
     return user;
   }
 
-  // Không chỉ định --user thì tự lấy user active bất kỳ đang có ít nhất 1 tài liệu processed.
+  // When --user isn't given, picks any active user who has at least 1 processed document.
   const candidates = await dbAdmin
     .selectDistinct({ id: users.id, email: users.email })
     .from(users)

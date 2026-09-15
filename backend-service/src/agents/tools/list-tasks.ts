@@ -1,11 +1,11 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { listTasks } from "../../db/repositories/tasks";
+import { listTasks, countAllTasks } from "../../db/repositories/tasks";
 
 export function listTasksTool(userId: string) {
   return tool({
     description:
-      "Liệt kê các task cụ thể (kèm tiêu đề) của user, có thể lọc theo trạng thái hoàn thành và/hoặc khoảng thời gian. Dùng khi user muốn xem TÊN/NỘI DUNG task cụ thể — không dùng cho câu hỏi về số lượng/thống kê/xu hướng (những câu đó dùng createChart).",
+      "Liệt kê các task cụ thể (kèm tiêu đề) của user, có thể lọc theo trạng thái hoàn thành và/hoặc khoảng thời gian. Dùng khi user muốn xem TÊN/NỘI DUNG task cụ thể — không dùng cho câu hỏi về số lượng/thống kê/xu hướng (những câu đó dùng createChart). Nếu count=0, xem thêm totalTaskCountIgnoringFilters: > 0 nghĩa là user CÓ task khác, chỉ là không khớp bộ lọc đang dùng — nói rõ điều đó và gợi ý nới bộ lọc (vd thử khoảng thời gian khác), thay vì chỉ báo 'không tìm thấy task nào' cụt lủn. Bằng 0 nghĩa là user chưa từng tạo task nào cả.",
     inputSchema: z.object({
       onlyDone: z
         .boolean()
@@ -29,6 +29,13 @@ export function listTasksTool(userId: string) {
       const results = await listTasks(userId, { onlyDone, from: parsedFrom, to: parsedTo });
       // Serializes Date to an ISO string, the AI SDK rejects a raw Date and would crash the whole request.
       const tasks = results.map((t) => ({ ...t, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() }));
+
+      // Only worth the extra query when there's actually nothing to explain, same pattern as create-chart.ts's emptyReason.
+      if (tasks.length === 0) {
+        const totalTaskCountIgnoringFilters = await countAllTasks(userId);
+        return { tasks, count: 0, totalTaskCountIgnoringFilters };
+      }
+
       return { tasks, count: tasks.length };
     },
   });

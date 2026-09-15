@@ -7,4 +7,5 @@ export interface TaskListItem {
 }
 
 // Real output of the listTasks tool, success returns tasks/count, malformed from/to returns an error.
-export type ListTasksOutput = { error: string } | { tasks: TaskListItem[]; count: number };
+// totalTaskCountIgnoringFilters is only present when count is 0, tells apart "no tasks at all" from "has tasks, none match the filter".
+export type ListTasksOutput = { error: string } | { tasks: TaskListItem[]; count: number; totalTaskCountIgnoringFilters?: number };

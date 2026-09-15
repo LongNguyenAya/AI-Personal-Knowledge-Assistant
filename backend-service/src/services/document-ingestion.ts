@@ -74,10 +74,13 @@ export async function processDocumentIngestion(
   fileName: string
 ): Promise<{ success: true; chunksCreated: number } | { success: false; error: string }> {
   try {
+    log.info(`[document-ingestion] Bắt đầu xử lý document ${documentId} (${fileName})`);
     await updateStatusAndNotify(userId, documentId, "processing");
 
     const buffer = await readFile(userId, key);
+    log.info(`[document-ingestion] Đã đọc file ${documentId} từ S3, ${buffer.length} bytes`);
     const text = await extractText(fileName, buffer);
+    log.info(`[document-ingestion] Đã trích xuất text ${documentId}, ${text.length} ký tự`);
     const ext = fileName.toLowerCase().split(".").pop() ?? "";
 
     // Merges the 2 possible reasons into exactly 1 call to flagSuspicious, calling it twice separately would overwrite the earlier reason.
@@ -106,17 +109,23 @@ export async function processDocumentIngestion(
     }
 
     const textChunks = chunkText(text);
+    log.info(`[document-ingestion] Đã chia ${documentId} thành ${textChunks.length} chunk, bắt đầu embedding`);
 
     const items = [];
     for (let i = 0; i < textChunks.length; i++) {
       const embedding = await embedText(textChunks[i]);
       items.push({ content: textChunks[i], chunkIndex: i, embedding });
     }
+    log.info(`[document-ingestion] Đã embed xong ${textChunks.length} chunk cho ${documentId}, ghi vào DB`);
     await insertChunks(userId, documentId, items);
+    log.info(`[document-ingestion] Đã ghi chunks cho ${documentId}, cập nhật status "processed"`);
 
     await updateStatusAndNotify(userId, documentId, "processed");
+    log.info(`[document-ingestion] Hoàn tất document ${documentId}`);
     return { success: true as const, chunksCreated: textChunks.length };
   } catch (err) {
+    // Logs the real error immediately, String(err) in the return value alone was silently swallowed by the caller before.
+    log.error(`[document-ingestion] Lỗi khi xử lý document ${documentId}:`, err);
     // updateStatus can also fail, without its own wrapper the document would get stuck in processing forever.
     try {
       await updateStatusAndNotify(userId, documentId, "failed");

@@ -10,7 +10,11 @@ async function pollOnce(): Promise<void> {
   for (const message of messages) {
     try {
       const payload = JSON.parse(message.Body ?? "{}") as DocumentIngestionMessage;
-      await processDocumentIngestion(payload.userId, payload.documentId, payload.key, payload.fileName);
+      // processDocumentIngestion catches its own errors and returns {success:false}, without this check that error was silently discarded.
+      const result = await processDocumentIngestion(payload.userId, payload.documentId, payload.key, payload.fileName);
+      if (!result.success) {
+        log.error(`[document-ingestion-worker] Xử lý document ${payload.documentId} thất bại:`, result.error);
+      }
     } catch (err) {
       log.error("[document-ingestion-worker] Lỗi không mong đợi khi xử lý message:", err);
     } finally {

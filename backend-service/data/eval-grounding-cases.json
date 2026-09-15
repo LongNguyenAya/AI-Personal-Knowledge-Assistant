@@ -1,0 +1,13 @@
+[
+  { "question": "định luật Moore nói gì về số transistor trên 1 con chip?", "shouldFindInfo": true, "expectedDocumentId": "fabf8eba-720d-4af6-baa2-6e82f43ef687" },
+  { "question": "deadline hoàn thành thiết kế UI trong sprint 3 là ngày nào?", "shouldFindInfo": true, "expectedDocumentId": "54fb69b6-68e6-41b5-a1df-2c042456dde9" },
+  { "question": "quy tắc đặt tên nhánh feature trong quy trình git là gì?", "shouldFindInfo": true, "expectedDocumentId": "34f6d20c-9b98-447f-a64f-436de824e279" },
+  { "question": "trong Dockerfile deploy AWS, dòng nào COPY khác biệt so với phần còn lại?", "shouldFindInfo": true, "expectedDocumentId": "b517c60e-4785-42b3-acd3-9507b5644d8f" },
+  { "question": "tài liệu năng lượng tái tạo nói gì về hiện trạng chuyển dịch xanh ở Việt Nam?", "shouldFindInfo": true, "expectedDocumentId": "68990572-7095-43aa-9523-818ea4160cbf" },
+
+  { "question": "công thức nấu phở bò truyền thống là gì?", "shouldFindInfo": false },
+  { "question": "giá cổ phiếu Apple hôm nay bao nhiêu?", "shouldFindInfo": false },
+  { "question": "cách nuôi cá cảnh tại nhà cho người mới bắt đầu?", "shouldFindInfo": false },
+  { "question": "sao Hỏa được hình thành như thế nào?", "shouldFindInfo": false },
+  { "question": "quy định nghỉ phép năm của công ty là gì?", "shouldFindInfo": false }
+]

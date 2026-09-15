@@ -432,6 +432,12 @@ export default function ChatPage() {
                       }
                       if (name === "createDiagram") {
                         const output = part.output as DiagramToolOutput;
+                        if (!output.success)
+                          return (
+                            <div key={i} className="mt-1 text-xs opacity-80">
+                              Couldn't draw this diagram: {output.error}
+                            </div>
+                          );
                         return <DiagramBlock key={i} title={output.title} mermaidCode={output.mermaidCode} />;
                       }
                       if (name === "searchDocuments") {
