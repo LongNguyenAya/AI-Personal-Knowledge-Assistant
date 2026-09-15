@@ -1,7 +1,16 @@
 import { tasks } from "@ai-assistant/db/src/schema";
-import { and, desc, eq, gte, ilike, isNull, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, isNull, lte } from "drizzle-orm";
 import { withUserContext } from "../context";
 import type { ListTasksOptions } from "../../types/tasks";
+
+// Cheap count ignoring onlyDone/from/to, only called when listTasks comes back empty — tells apart
+// "user has no tasks at all" from "has tasks, just none match this filter".
+export async function countAllTasks(userId: string): Promise<number> {
+  const [row] = await withUserContext(userId, (tx) =>
+    tx.select({ total: count() }).from(tasks).where(and(eq(tasks.userId, userId), isNull(tasks.deletedAt)))
+  );
+  return row?.total ?? 0;
+}
 
 export async function createTask(userId: string, title: string) {
   const [created] = await withUserContext(userId, (tx) =>

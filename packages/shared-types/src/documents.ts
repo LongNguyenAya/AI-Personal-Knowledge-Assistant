@@ -5,4 +5,5 @@ export interface DocumentSearchResult {
 }
 
 // Output of the searchDocuments tool, includes documentId/fileName so the FE can show the real source, not just plain content.
-export type SearchDocumentsOutput = { results: DocumentSearchResult[] };
+// hasAnyDocuments is only meaningful when results is empty, tells apart "no documents at all" from "nothing relevant to this query".
+export type SearchDocumentsOutput = { results: DocumentSearchResult[]; hasAnyDocuments?: boolean };
