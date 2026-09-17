@@ -9,9 +9,9 @@ export function searchDocumentsTool(userId: string) {
   return tool({
     description:
       "Tìm kiếm thông tin trong tài liệu của user để trả lời câu hỏi cần dữ liệu cụ thể. Mỗi kết " +
-      "quả kèm fileName — CHỈ được nói tài liệu nào chứa thông tin gì dựa đúng theo fileName trong " +
+      "quả kèm fileName. CHỈ được nói tài liệu nào chứa thông tin gì dựa đúng theo fileName trong " +
       "kết quả trả về, không tự suy đoán/gọi tên tài liệu khác. Nếu results rỗng, xem thêm " +
-      "hasAnyDocuments: false nghĩa là user CHƯA upload/xử lý xong tài liệu nào — nói rõ điều đó " +
+      "hasAnyDocuments: false nghĩa là user CHƯA upload/xử lý xong tài liệu nào, nói rõ điều đó " +
       "thay vì nói 'không tìm thấy thông tin liên quan' (2 tình huống khác hẳn nhau).",
     inputSchema: z.object({
       query: z.string().describe("Câu hỏi hoặc từ khóa cần tìm trong tài liệu"),

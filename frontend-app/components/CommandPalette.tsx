@@ -28,11 +28,11 @@ const MAIN_LINKS = [
 ];
 
 const ADMIN_LINKS = [
-  { href: "/admin/dashboard", label: "Admin — Dashboard", icon: LayoutDashboard },
-  { href: "/admin/users", label: "Admin — Users", icon: Users },
-  { href: "/admin/prompts", label: "Admin — Prompts", icon: Sparkles },
-  { href: "/admin/knowledge", label: "Admin — Knowledge base", icon: BookOpen },
-  { href: "/admin/settings", label: "Admin — Settings", icon: SlidersHorizontal },
+  { href: "/admin/dashboard", label: "Admin, Dashboard", icon: LayoutDashboard },
+  { href: "/admin/users", label: "Admin, Users", icon: Users },
+  { href: "/admin/prompts", label: "Admin, Prompts", icon: Sparkles },
+  { href: "/admin/knowledge", label: "Admin, Knowledge base", icon: BookOpen },
+  { href: "/admin/settings", label: "Admin, Settings", icon: SlidersHorizontal },
 ];
 
 // Cmd/Ctrl+K merges the main and admin pages into 1 type-to-filter panel, navigation only, no quick actions yet.
@@ -61,7 +61,7 @@ export default function CommandPalette() {
 
   return (
     <>
-      {/* cmdk is styled via a data-attribute ([cmdk-overlay]), not className — Command.Dialog
+      {/* cmdk is styled via a data-attribute ([cmdk-overlay]), not className. Command.Dialog
           always renders the overlay but doesn't give it a dark background itself, this CSS has to add it. */}
       <style>{`[cmdk-overlay]{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:99;}`}</style>
       <Command.Dialog

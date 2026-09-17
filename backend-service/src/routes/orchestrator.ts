@@ -82,7 +82,7 @@ app.post("/agent/orchestrate/stream", chatPerMinute, chatPerDay, async (c) => {
     if (i !== lastChartMessageIndex) return { role: m.role, content: m.content };
     const chartResult = m.toolResults?.find((tr) => tr.toolName === "createChart");
     const dataBlock = chartResult
-      ? `\n\n[Dữ liệu đầy đủ của biểu đồ vừa tạo — dùng để trả lời chi tiết nếu user hỏi thêm về bất kỳ điểm nào: ${JSON.stringify(chartResult.output)}]`
+      ? `\n\n[Dữ liệu đầy đủ của biểu đồ vừa tạo, dùng để trả lời chi tiết nếu user hỏi thêm về bất kỳ điểm nào: ${JSON.stringify(chartResult.output)}]`
       : "";
     return { role: m.role, content: m.content + dataBlock };
   });

@@ -48,7 +48,7 @@ export default function SettingsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Personal profile</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Write this once — the AI will always read it whenever it handles your requests, e.g. your work habits or how you want it to prioritize things.
+          Write this once, the AI will always read it whenever it handles your requests, e.g. your work habits or how you want it to prioritize things.
         </p>
       </div>
 

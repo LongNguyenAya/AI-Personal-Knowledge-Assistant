@@ -101,7 +101,7 @@ export function AdminAnalysisPanel({ signupsView, aiQueriesView }: { signupsView
           </div>
         ) : (
           <p className="text-sm text-gray-400 dark:text-gray-500">
-            No analysis yet for "{METRICS.find((m) => m.value === metric)?.label}" in this time range — click "Analyze"
+            No analysis yet for "{METRICS.find((m) => m.value === metric)?.label}" in this time range, click "Analyze"
             to have the AI read the current chart and write a note.
           </p>
         )}

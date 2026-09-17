@@ -81,7 +81,7 @@ export function AdminMetricChart({
 
       {error && <ErrorBanner message={error} />}
 
-      {/* min-h fixed to the tallest case — avoids the card jumping layout when switching between
+      {/* min-h fixed to the tallest case, avoids the card jumping layout when switching between
           the "1 month" tab (short) and "7 days"/"1 year" (SVG chart). Centers short content vertically. */}
       <div className="flex min-h-[340px] flex-col justify-center">
         {view === "month" ? (
@@ -107,7 +107,7 @@ export function AdminMetricChart({
                 }`}
               >
                 {compare.changePercent === null
-                  ? "New — no data from last month to compare yet"
+                  ? "New, no data from last month to compare yet"
                   : `${compare.changePercent >= 0 ? "+" : ""}${compare.changePercent}% vs last month`}
               </p>
             </div>

@@ -29,7 +29,7 @@ Câu: "{{message}}"`;
 const PDF_EXTRACTION_TEMPLATE = `Bạn đang đọc một file PDF. Hãy trích xuất TOÀN BỘ nội dung của file theo đúng thứ tự xuất hiện, dưới dạng văn bản thuần, theo các quy tắc sau:
 - Với đoạn text: giữ nguyên nội dung, không tóm tắt, không bỏ sót.
 - Với bảng biểu: chuyển thành text có cấu trúc rõ ràng (mỗi dòng 1 hàng, giữ tên cột).
-- Với hình ảnh, biểu đồ, sơ đồ nhúng trong PDF: chèn 1 đoạn mô tả chi tiết ngay tại vị trí xuất hiện, bắt đầu bằng "[Hình ảnh: ...]", mô tả đầy đủ nội dung, số liệu, chữ trong hình, ý nghĩa của biểu đồ — vì đây là phần AI sau này phải dựa vào để trả lời câu hỏi liên quan đến hình ảnh.
+- Với hình ảnh, biểu đồ, sơ đồ nhúng trong PDF: chèn 1 đoạn mô tả chi tiết ngay tại vị trí xuất hiện, bắt đầu bằng "[Hình ảnh: ...]", mô tả đầy đủ nội dung, số liệu, chữ trong hình, ý nghĩa của biểu đồ, vì đây là phần AI sau này phải dựa vào để trả lời câu hỏi liên quan đến hình ảnh.
 - Không thêm bình luận, nhận xét, hay lời dẫn của riêng bạn ngoài nội dung trích xuất.
 - Trả về đúng 1 khối văn bản duy nhất.`;
 

@@ -20,7 +20,7 @@ export function PaginationControls({
     <div className="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
       <span>
         Page {page}/{totalPages}
-        {itemLabel ? ` — ${total} ${itemLabel}` : ""}
+        {itemLabel ? `, ${total} ${itemLabel}` : ""}
       </span>
       <div className="flex gap-2">
         <button

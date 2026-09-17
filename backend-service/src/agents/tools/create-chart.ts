@@ -114,7 +114,7 @@ function buildFutureLabels(lastPeriodStart: string, count: number, granularity: 
 export function createChartTool(userId: string) {
   return tool({
     description:
-      "Vẽ biểu đồ dựa trên dữ liệu thật của user (task, reminder, tài liệu). Tự query DB và tính toán — không tự bịa số liệu.",
+      "Vẽ biểu đồ dựa trên dữ liệu thật của user (task, reminder, tài liệu). Tự query DB và tính toán, không tự bịa số liệu.",
     inputSchema: z.object({
       metric: z.enum([...TIME_SERIES_METRICS, ...BREAKDOWN_METRICS]).describe(
         "Loại dữ liệu cần vẽ. Dùng task_completion/reminder_creation/document_uploads khi user hỏi xu hướng/thay đổi theo thời gian; dùng *_breakdown khi user hỏi phân bổ/tỷ lệ hiện tại."
@@ -129,14 +129,14 @@ export function createChartTool(userId: string) {
         .string()
         .optional()
         .describe(
-          "Mốc bắt đầu khoảng thời gian CỤ THỂ user hỏi (vd user hỏi 'tháng 7' thì lấy đầu tháng 7), ISO 8601. CHỈ điền khi user hỏi về 1 khoảng thời gian đã xác định rõ ràng — nếu user chỉ hỏi 'gần đây'/'xu hướng' chung chung không nói rõ mốc, để trống cả from lẫn to để tự lấy N kỳ gần nhất."
+          "Mốc bắt đầu khoảng thời gian CỤ THỂ user hỏi (vd user hỏi 'tháng 7' thì lấy đầu tháng 7), ISO 8601. CHỈ điền khi user hỏi về 1 khoảng thời gian đã xác định rõ ràng, nếu user chỉ hỏi 'gần đây'/'xu hướng' chung chung không nói rõ mốc, để trống cả from lẫn to để tự lấy N kỳ gần nhất."
         ),
       to: z.string().optional().describe("Mốc kết thúc khoảng thời gian, ISO 8601, đi kèm với from (phải điền cả 2 hoặc để trống cả 2)."),
       chartType: z
         .enum(["bar", "pie"])
         .optional()
         .describe(
-          "CHỈ áp dụng cho metric *_breakdown (phân bổ theo nhóm) — bar hoặc pie tuỳ ý. Bỏ trống nếu metric là time-series (task_completion/reminder_creation/document_uploads): nhóm đó LUÔN vẽ line, không cho chọn loại khác — biểu đồ theo thời gian nối các điểm bằng đường mới thể hiện đúng xu hướng, cột chỉ nhấn mạnh từng điểm rời rạc, gây khó đọc xu hướng."
+          "CHỈ áp dụng cho metric *_breakdown (phân bổ theo nhóm), bar hoặc pie tuỳ ý. Bỏ trống nếu metric là time-series (task_completion/reminder_creation/document_uploads): nhóm đó LUÔN vẽ line, không cho chọn loại khác. Biểu đồ theo thời gian nối các điểm bằng đường mới thể hiện đúng xu hướng, cột chỉ nhấn mạnh từng điểm rời rạc, gây khó đọc xu hướng."
         ),
     }),
     execute: async ({ metric, granularity, from, to, chartType }): Promise<ChartToolOutput> => {

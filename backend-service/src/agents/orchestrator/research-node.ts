@@ -7,7 +7,7 @@ import { submitAnswerTool, extractGroundedAnswer, stopWhenAnswerAccepted } from 
 import { toUserFacingErrorMessage, isRetryableProviderError, PROVIDER_OVERLOADED_MESSAGE } from "../../utils/provider-errors";
 import { appendMessage } from "../../db/repositories/chat-history";
 
-const FALLBACK_ANSWER = "Xin lỗi, tôi chưa thể xác nhận đủ độ tin cậy cho câu trả lời này — bạn thử hỏi lại theo cách khác giúp tôi nhé.";
+const FALLBACK_ANSWER = "Xin lỗi, tôi chưa thể xác nhận đủ độ tin cậy cho câu trả lời này, bạn thử hỏi lại theo cách khác giúp tôi nhé.";
 
 const MAX_FALLBACK_CHUNKS = 5;
 
@@ -28,7 +28,7 @@ function buildOverloadFallback(
   const body = shown.map((c) => `**${c.fileName}**\n${c.content}`).join("\n\n---\n\n");
   return (
     `${PROVIDER_OVERLOADED_MESSAGE} Trong lúc chờ, đây là ${shown.length} đoạn tài liệu liên quan đã tìm được ` +
-    `(CHƯA qua AI tổng hợp hay kiểm tra — bạn tự đọc và đối chiếu):\n\n${body}` +
+    `(CHƯA qua AI tổng hợp hay kiểm tra, bạn tự đọc và đối chiếu):\n\n${body}` +
     (remaining > 0 ? `\n\n...và ${remaining} đoạn khác.` : "")
   );
 }

@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
           <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Check your email</h1>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
             If <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span> has an account in the system,
-            we just sent a password reset link to it — the link is valid for 1 hour.
+            we just sent a password reset link to it, the link is valid for 1 hour.
           </p>
           <Link href="/login" className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">
             Back to login

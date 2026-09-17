@@ -6,7 +6,7 @@ import { dbAdmin } from "../src/db/admin-client";
 
 const DIAGRAM_GUIDANCE = `Vẽ sơ đồ minh hoạ quy trình/luồng:
 - Nếu user muốn MINH HOẠ 1 quy trình có nhiều bước hoặc nhiều nhánh rẽ liên kết nhau bằng HÌNH (vd
-  "vẽ sơ đồ quy trình...", "minh hoạ luồng... bằng sơ đồ"), gọi tool createDiagram — KHÔNG dùng cho
+  "vẽ sơ đồ quy trình...", "minh hoạ luồng... bằng sơ đồ"), gọi tool createDiagram, KHÔNG dùng cho
   câu hỏi chỉ cần trả lời vài dòng chữ là đủ, và KHÔNG dùng cho số liệu/xu hướng (dùng createChart).
 - Chỉ vẽ đúng các bước có thật trong tài liệu/ngữ cảnh đã đọc được (qua searchDocuments/
   readFullDocuments nếu cần), TUYỆT ĐỐI không bịa thêm bước nào không có.
@@ -35,10 +35,10 @@ async function main() {
   const PERSONAL_NOTE_ANCHOR = "Ghi nhớ từ những lần bị sửa sai trước đó (nếu có):{{correctionContext}}";
 
   if (!current.systemPrompt.includes(DIAGRAM_ANCHOR)) {
-    throw new Error(`Không tìm thấy điểm neo "${DIAGRAM_ANCHOR}" trong prompt đang active — prompt có thể đã đổi khác, cần tự kiểm tra lại.`);
+    throw new Error(`Không tìm thấy điểm neo "${DIAGRAM_ANCHOR}" trong prompt đang active, prompt có thể đã đổi khác, cần tự kiểm tra lại.`);
   }
   if (!current.systemPrompt.includes(PERSONAL_NOTE_ANCHOR)) {
-    throw new Error(`Không tìm thấy điểm neo "${PERSONAL_NOTE_ANCHOR}" trong prompt đang active — prompt có thể đã đổi khác, cần tự kiểm tra lại.`);
+    throw new Error(`Không tìm thấy điểm neo "${PERSONAL_NOTE_ANCHOR}" trong prompt đang active, prompt có thể đã đổi khác, cần tự kiểm tra lại.`);
   }
 
   const newPrompt = current.systemPrompt

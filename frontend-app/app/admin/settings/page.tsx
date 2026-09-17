@@ -65,7 +65,7 @@ export default function AdminSettingsPage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">System settings</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          These thresholds are just initial estimates, not yet calibrated on enough real data — adjust them if you see the behavior isn&apos;t quite right.
+          These thresholds are just initial estimates, not yet calibrated on enough real data, adjust them if you see the behavior isn&apos;t quite right.
         </p>
       </div>
 

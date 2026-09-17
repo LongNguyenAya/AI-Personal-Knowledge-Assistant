@@ -35,7 +35,7 @@ function ExpandableText({ text }: { text: string }) {
 }
 
 function JsonValue({ value }: { value: unknown }) {
-  if (value === null || value === undefined) return <span className="text-gray-400 dark:text-gray-600">—</span>;
+  if (value === null || value === undefined) return <span className="text-gray-400 dark:text-gray-600">N/A</span>;
   if (typeof value === "string") return value === "" ? <span className="text-gray-400 dark:text-gray-600">(empty)</span> : <ExpandableText text={value} />;
   if (typeof value === "number" || typeof value === "boolean") return <span>{String(value)}</span>;
 

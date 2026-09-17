@@ -37,7 +37,7 @@ export default function ThemeToggle({ variant = "floating" }: { variant?: "float
       aria-label="Toggle light/dark theme"
       className={variant === "floating" ? "fixed right-4 bottom-4 z-50" : undefined}
     >
-      {/* Track — a fixed light gradient background (doesn't change with state), only the inner
+      {/* Track, a fixed light gradient background (doesn't change with state), only the inner
           dot slides back and forth and changes color. */}
       <span className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-gray-200 bg-gradient-to-br from-indigo-600/15 to-amber-500/15 dark:border-gray-700">
         <span

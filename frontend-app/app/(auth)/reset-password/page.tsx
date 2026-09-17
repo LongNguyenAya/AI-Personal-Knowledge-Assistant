@@ -31,7 +31,7 @@ function ResetPasswordForm() {
       return;
     }
     if (!token) {
-      setError("Missing token — please use the link from the email again.");
+      setError("Missing token, please use the link from the email again.");
       return;
     }
 

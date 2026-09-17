@@ -123,7 +123,7 @@ export default function DocumentsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My documents</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Upload documents (.pdf, .docx, .pptx, .txt, .md, .png, .jpg, .webp) for the AI to look up when answering — PDFs and images are read for both text and embedded images/charts.
+          Upload documents (.pdf, .docx, .pptx, .txt, .md, .png, .jpg, .webp) for the AI to look up when answering. PDFs and images are read for both text and embedded images/charts.
         </p>
       </div>
 
@@ -175,7 +175,7 @@ export default function DocumentsPage() {
               <HoverDetail content={d.flagReason ?? "No specific details."}>
                 <div className="flex items-start gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>Detected something unusual in the content — the AI will lower its confidence when citing this document.</span>
+                  <span>Detected something unusual in the content, the AI will lower its confidence when citing this document.</span>
                 </div>
               </HoverDetail>
             )}

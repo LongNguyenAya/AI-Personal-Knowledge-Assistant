@@ -5,7 +5,7 @@ const SUSPICIOUS_PATTERNS: { pattern: RegExp; reason: string }[] = [
   { pattern: /bỏ\s*qua\s*(mọi|các|toàn\s*bộ)?\s*(chỉ\s*dẫn|hướng\s*dẫn|lệnh|yêu\s*cầu)\s*(trước\s*đó|ở\s*trên)?/i, reason: "Yêu cầu bỏ qua chỉ dẫn trước đó (tiếng Việt)" },
   { pattern: /you\s+are\s+now\s+(a|an)\s/i, reason: "Yêu cầu đóng vai/đổi vai trò hệ thống" },
   { pattern: /(từ\s*(giờ|bây\s*giờ|nay)\s*(trở\s*đi)?[,\s]*)(bạn|hãy)\s*là\s/i, reason: "Yêu cầu đóng vai/đổi vai trò hệ thống (tiếng Việt)" },
-  { pattern: /system\s*prompt/i, reason: "Nhắc tới \"system prompt\" — dấu hiệu cố dò/ghi đè chỉ dẫn hệ thống" },
+  { pattern: /system\s*prompt/i, reason: "Nhắc tới \"system prompt\", dấu hiệu cố dò/ghi đè chỉ dẫn hệ thống" },
   { pattern: /reveal\s+(your\s+)?(system\s+)?(prompt|instructions)/i, reason: "Yêu cầu tiết lộ chỉ dẫn hệ thống" },
   { pattern: /tiết\s*lộ\s*(prompt|chỉ\s*dẫn|hướng\s*dẫn)\s*hệ\s*thống/i, reason: "Yêu cầu tiết lộ chỉ dẫn hệ thống (tiếng Việt)" },
   { pattern: /print\s+(your\s+)?system\s+prompt/i, reason: "Yêu cầu in ra chỉ dẫn hệ thống" },

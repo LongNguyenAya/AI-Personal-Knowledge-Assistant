@@ -156,7 +156,7 @@ export default function ChatPage() {
               ...p,
               phase: "failed",
               failReason: result,
-              error: result === "timeout" ? "Taking a while to process — it may still be running, please wait a bit longer." : "Document processing failed.",
+              error: result === "timeout" ? "Taking a while to process, it may still be running, please wait a bit longer." : "Document processing failed.",
             }
           : p
       );
@@ -313,7 +313,7 @@ export default function ChatPage() {
   // 4rem = <main>'s py-8 at md+, below md the MainNav topbar (~3rem) also has to be subtracted so the chat frame doesn't overflow the viewport.
   return (
     <div className="flex h-[calc(100vh-7rem)] gap-4 md:h-[calc(100vh-4rem)]">
-      {/* The conversation list takes up too much room on narrow screens — hidden by default below
+      {/* The conversation list takes up too much room on narrow screens, hidden by default below
           md, shown as an overlay when the button is clicked (same pattern as MainNav/AdminSidebar). */}
       {convOpen && <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setConvOpen(false)} />}
       <aside
@@ -545,12 +545,12 @@ export default function ChatPage() {
               <span className="text-[11px] text-gray-400 dark:text-gray-500">
                 {attachedDocument
                   ? "The question will only search this document"
-                  : "New document — will upload and process as soon as you send the question"}
+                  : "New document, will upload and process as soon as you send the question"}
               </span>
             </div>
           )}
 
-          {/* The gradient border only shows up clearly on focus — uses focus-within instead of a
+          {/* The gradient border only shows up clearly on focus. Uses focus-within instead of a
               separate state, the browser reports on its own when a child element inside is focused, no JS tracking code needed. */}
           <div className="rounded-[18px] bg-gray-200 p-px transition-colors duration-200 focus-within:bg-gradient-to-br focus-within:from-indigo-600/85 focus-within:to-amber-500/55 dark:bg-gray-800">
           <form onSubmit={handleSubmit} className="flex items-center gap-2 rounded-[17px] bg-white px-2 py-1.5 dark:bg-gray-950">

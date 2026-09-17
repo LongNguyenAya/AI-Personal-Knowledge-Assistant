@@ -24,7 +24,7 @@ async function main() {
 
   const marker = "Danh sách tài liệu hiện có của user";
   if (!current.systemPrompt.includes(marker)) {
-    throw new Error(`Không tìm thấy điểm chèn mong đợi ("${marker}") trong prompt hiện tại — kiểm tra lại thủ công.`);
+    throw new Error(`Không tìm thấy điểm chèn mong đợi ("${marker}") trong prompt hiện tại, kiểm tra lại thủ công.`);
   }
 
   const newPrompt = current.systemPrompt.replace(

@@ -39,7 +39,7 @@ export default function DigestPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Weekly digest</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          The AI automatically summarizes your activity every week — documents, tasks, conversations.
+          The AI automatically summarizes your activity every week, documents, tasks, conversations.
         </p>
       </div>
 

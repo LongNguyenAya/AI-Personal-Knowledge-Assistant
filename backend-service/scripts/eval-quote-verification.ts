@@ -7,8 +7,9 @@ import { dbAdmin } from "../src/db/admin-client";
 import { users, documents, chunks } from "@ai-assistant/db/src/schema";
 import { eq } from "drizzle-orm";
 import { extractActionItemsTool } from "../src/agents/tools/extract-action-items";
+import { writeEvalReport } from "./lib/eval-report";
 
-// 4 deliberately planted scenarios, each with a known correct answer beforehand — not meant to make
+// 4 deliberately planted scenarios, each with a known correct answer beforehand, not meant to make
 // the AI "look right by coincidence", but to check whether it correctly tells apart
 // real/hypothetical/ambiguous the way the tool was designed to.
 const FIXTURE_CONTENT = `BIÊN BẢN HỌP DỰ ÁN
@@ -56,15 +57,18 @@ async function main() {
 
     let correct = 0;
     const failures: string[] = [];
+    const rows: string[] = [];
     for (const exp of EXPECTATIONS) {
       const matched = result.items.find((i) => i.sourceQuote.includes(exp.matchText) || i.title.includes(exp.matchText));
       if (!matched) {
-        failures.push(`Không tìm thấy mục nào khớp "${exp.matchText}" (${exp.note}) — có thể AI đã bỏ sót.`);
+        failures.push(`Không tìm thấy mục nào khớp "${exp.matchText}" (${exp.note}), có thể AI đã bỏ sót.`);
+        rows.push(`| ${exp.note} | verified=${exp.expectVerified}/confidence=${exp.expectConfidence} | (không tìm thấy) | SAI |`);
         continue;
       }
       const verifiedOk = matched.verified === exp.expectVerified;
       const confidenceOk = matched.confidence === exp.expectConfidence;
-      if (verifiedOk && confidenceOk) {
+      const rowOk = verifiedOk && confidenceOk;
+      if (rowOk) {
         correct++;
       } else {
         failures.push(
@@ -72,6 +76,7 @@ async function main() {
             `thực tế verified=${matched.verified}/confidence=${matched.confidence}`
         );
       }
+      rows.push(`| ${exp.note} | verified=${exp.expectVerified}/confidence=${exp.expectConfidence} | verified=${matched.verified}/confidence=${matched.confidence} | ${rowOk ? "OK" : "SAI"} |`);
     }
 
     console.log(`\nĐộ chính xác quote-verification: ${correct}/${EXPECTATIONS.length}`);
@@ -79,6 +84,13 @@ async function main() {
       console.log("\nCác case sai:");
       for (const f of failures) console.log(`  - ${f}`);
     }
+
+    writeEvalReport("quote-verification", {
+      title: "extractActionItems quote verification",
+      summary: `Độ chính xác quote-verification: ${correct}/${EXPECTATIONS.length}. Tài liệu tạm cài sẵn 3 tình huống (deadline thật, deadline thật kèm giờ, deadline giả định), chạy trực tiếp qua tool thật, không mock.`,
+      table: { headers: ["Tình huống", "Mong đợi", "Thực tế", "Kết quả"], rows },
+      notes: failures,
+    });
   } finally {
     // Cleans up the temporary document, doesn't leave junk behind in the real user DB.
     await dbAdmin.delete(chunks).where(eq(chunks.documentId, testDoc.id));

@@ -13,6 +13,7 @@ import { buildResearchAgentSystemPrompt } from "../src/agents/prompts";
 import { submitAnswerTool, extractGroundedAnswer, stopWhenAnswerAccepted } from "../src/agents/tools/submit-answer";
 import { dbAdmin } from "../src/db/admin-client";
 import { users } from "@ai-assistant/db/src/schema";
+import { writeEvalReport } from "./lib/eval-report";
 
 type EvalCase = { question: string; shouldFindInfo: boolean; expectedDocumentId?: string };
 
@@ -39,6 +40,7 @@ async function main() {
 
   let correct = 0;
   const failures: string[] = [];
+  const rows: string[] = [];
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
   for (let i = 0; i < cases.length; i++) {
@@ -57,14 +59,16 @@ async function main() {
       }
 
       if (pass) correct++;
-      else failures.push(`"${c.question}" — mong đợi ${c.shouldFindInfo ? `trích dẫn ${c.expectedDocumentId}` : "KHÔNG trích dẫn gì"}, thực tế: [${citedIds.join(", ") || "rỗng"}]`);
+      else failures.push(`"${c.question}", mong đợi ${c.shouldFindInfo ? `trích dẫn ${c.expectedDocumentId}` : "KHÔNG trích dẫn gì"}, thực tế: [${citedIds.join(", ") || "rỗng"}]`);
 
       console.log(`${pass ? "OK" : "SAI"} [${c.shouldFindInfo ? "có info" : "không có info"}] "${c.question}"`);
       console.log(`   citedDocumentIds: [${citedIds.join(", ") || "rỗng"}]`);
       console.log(`   trả lời: ${(grounded?.answer ?? "(không có)").slice(0, 150)}...\n`);
+      rows.push(`| ${c.question} | ${c.shouldFindInfo ? "có info" : "không có info"} | ${citedIds.join(", ") || "rỗng"} | ${pass ? "OK" : "SAI"} |`);
     } catch (err) {
-      failures.push(`"${c.question}" — LỖI: ${err instanceof Error ? err.message.slice(0, 100) : err}`);
+      failures.push(`"${c.question}", LỖI: ${err instanceof Error ? err.message.slice(0, 100) : err}`);
       console.log(`LỖI "${c.question}"\n`);
+      rows.push(`| ${c.question} | ${c.shouldFindInfo ? "có info" : "không có info"} | LỖI | SAI |`);
     }
   }
 
@@ -74,6 +78,13 @@ async function main() {
     console.log("\nCác case sai:");
     for (const f of failures) console.log(`  - ${f}`);
   }
+
+  writeEvalReport("grounding", {
+    title: "Research route grounding",
+    summary: `Độ chính xác grounding: ${correct}/${cases.length} (${accuracy}%). 5 câu có đáp án thật (từ trace Langfuse) + 5 câu chắc chắn không có tài liệu liên quan, case cố định trong \`data/eval-grounding-cases.json\`.`,
+    table: { headers: ["Câu hỏi", "Loại", "citedDocumentIds", "Kết quả"], rows },
+    notes: failures,
+  });
 
   process.exit(0);
 }

@@ -175,7 +175,7 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
               fill={outlierLabels.has(d.label) ? "#ef4444" : "#4f46e5"}
             />
           ))}
-        {/* dashedPath/softForecastPath do NOT use chart-draw — that class sets stroke-dasharray:1
+        {/* dashedPath/softForecastPath do NOT use chart-draw, that class sets stroke-dasharray:1
             via CSS (which beats the XML strokeDasharray), it would override the real dashed pattern if applied together. */}
         {isLine && dashedPath && <path d={dashedPath} fill="none" stroke="#4f46e5" strokeWidth={2} strokeDasharray="4 3" />}
         {maPath && <path className="chart-draw" pathLength={1} d={maPath} fill="none" stroke="#f59e0b" strokeWidth={1.5} strokeOpacity={0.85} />}
@@ -204,7 +204,7 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
             );
           })}
 
-        {/* x-axis labels — only attached to REAL data, forecast labels are never used as axis ticks */}
+        {/* x-axis labels, only attached to REAL data, forecast labels are never used as axis ticks */}
         {data.map((d, i) =>
           labeledIndexes.has(i) ? (
             <text
@@ -235,20 +235,20 @@ function BarOrLineChart({ chartType, xAxisType, data, trend, trendMessage, outli
         {maPath ? (
           <p>
             <span className="inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ backgroundColor: "#f59e0b" }} /> Solid orange line:
-            3-period moving average — for reference only, not statistically significant enough to confirm a trend.
+            3-period moving average, for reference only, not statistically significant enough to confirm a trend.
           </p>
         ) : null}
         {softForecastPath ? (
           <p>
             Reference forecast (dashed orange line):{" "}
-            {softForecastLabels.map((l, i) => `${l} (~${formatValue(softForecastPoints[i])})`).join(", ")} — based on the recent trend, with NO
+            {softForecastLabels.map((l, i) => `${l} (~${formatValue(softForecastPoints[i])})`).join(", ")}, based on the recent trend, with NO
             statistical backing like the official forecast.
           </p>
         ) : null}
         {futurePoints.length > 0 && (
           <p>
             Forecast: {futureLabels.map((l, i) => `${l} (~${formatValue(futurePoints[i])})`).join(", ")}
-            {bandPath ? " — the shaded band is the plausible range, widening further out." : ""}
+            {bandPath ? ", the shaded band is the plausible range, widening further out." : ""}
           </p>
         )}
         {outliers.length > 0 ? (

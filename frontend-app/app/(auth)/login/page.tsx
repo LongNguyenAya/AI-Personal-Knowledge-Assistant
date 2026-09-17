@@ -7,7 +7,7 @@ import Link from "next/link";
 
 // better-auth returns fixed error codes verbatim in English, translated here to match the UI, other errors are left as-is.
 const KNOWN_ERROR_MESSAGES: Record<string, string> = {
-  "Email not verified": "Account email not verified — we just sent a new verification email, please check your inbox.",
+  "Email not verified": "Account email not verified, we just sent a new verification email, please check your inbox.",
   "Invalid email or password": "Wrong email or password.",
 };
 

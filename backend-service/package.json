@@ -9,7 +9,9 @@
     "eval:router": "tsx --env-file=.env scripts/eval-router.ts",
     "eval:grounding": "tsx --env-file=.env scripts/eval-grounding.ts",
     "eval:quote-verification": "tsx --env-file=.env scripts/eval-quote-verification.ts",
-    "eval:action-consistency": "tsx --env-file=.env scripts/eval-action-consistency.ts"
+    "eval:action-consistency": "tsx --env-file=.env scripts/eval-action-consistency.ts",
+    "eval:chart-narration": "tsx --env-file=.env scripts/eval-chart-narration.ts",
+    "eval:diagram-grounding": "tsx --env-file=.env scripts/eval-diagram-grounding.ts"
   },
   "keywords": [],
   "author": "",

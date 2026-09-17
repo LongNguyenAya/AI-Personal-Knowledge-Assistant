@@ -2,8 +2,8 @@ import { documents, type DocumentStatus } from "@ai-assistant/db/src/schema";
 import { and, eq } from "drizzle-orm";
 import { withUserContext } from "../context";
 
-// Cheap existence check (LIMIT 1, not a count), only called when searchDocuments comes back empty —
-// tells apart "no documents processed yet" from "processed, just nothing relevant to this query".
+// Cheap existence check (LIMIT 1, not a count), only called when searchDocuments comes back empty.
+// Tells apart "no documents processed yet" from "processed, just nothing relevant to this query".
 export async function hasAnyProcessedDocuments(userId: string): Promise<boolean> {
   const [row] = await withUserContext(userId, (tx) =>
     tx.select({ id: documents.id }).from(documents).where(and(eq(documents.userId, userId), eq(documents.status, "processed"))).limit(1)

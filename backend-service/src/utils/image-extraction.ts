@@ -34,7 +34,7 @@ export async function extractImageContent(buffer: Buffer, ext: string): Promise<
   // Admin adjusts this via /admin/settings, still enforced here for consistency even though images are usually smaller than PDFs.
   const maxImageBytes = (await getSettingValue("maxUploadMb")) * 1024 * 1024;
   if (buffer.length > maxImageBytes) {
-    throw new Error(`File ảnh quá lớn (${buffer.length} bytes) — vượt giới hạn ${maxImageBytes} bytes.`);
+    throw new Error(`File ảnh quá lớn (${buffer.length} bytes), vượt giới hạn ${maxImageBytes} bytes.`);
   }
   const mediaType = MIME_BY_EXT[ext];
   if (!mediaType) throw new Error(`Định dạng ảnh ".${ext}" không được hỗ trợ.`);

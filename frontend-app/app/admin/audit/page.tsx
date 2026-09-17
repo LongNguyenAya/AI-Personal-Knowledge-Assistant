@@ -94,7 +94,7 @@ export default function AdminAuditPage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Audit Log</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          History of every state-changing action taken by an admin — locking/unlocking accounts, editing prompts, changing settings, reviewing knowledge.
+          History of every state-changing action taken by an admin, locking/unlocking accounts, editing prompts, changing settings, reviewing knowledge.
         </p>
       </div>
 
@@ -152,7 +152,7 @@ export default function AdminAuditPage() {
                         <div className="text-xs text-gray-400 dark:text-gray-500">{log.targetEmail}</div>
                       </>
                     ) : (
-                      <span className="text-gray-400 dark:text-gray-500">—</span>
+                      <span className="text-gray-400 dark:text-gray-500">N/A</span>
                     )}
                   </td>
                 </tr>

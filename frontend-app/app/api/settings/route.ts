@@ -17,7 +17,7 @@ export const PATCH = withAuthedContext(async (req, { session, tx }) => {
     return new Response("Missing personalNote or wrong data type", { status: 400 });
   }
   if (personalNote.length > MAX_NOTE_LENGTH) {
-    return new Response(`Note is too long — max ${MAX_NOTE_LENGTH} characters`, { status: 400 });
+    return new Response(`Note is too long, max ${MAX_NOTE_LENGTH} characters`, { status: 400 });
   }
 
   await tx

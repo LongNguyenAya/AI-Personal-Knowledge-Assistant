@@ -17,7 +17,7 @@ async function verifyContentMatch(answer: string, sourceContents: string[]): Pro
         reason: z.string().nullable().describe("giải thích ngắn gọn lý do nếu supported=false, null nếu supported=true"),
       }),
       prompt:
-        `So sánh câu trả lời với nguồn bên dưới — câu trả lời có thực sự dựa đúng vào nội dung ` +
+        `So sánh câu trả lời với nguồn bên dưới, câu trả lời có thực sự dựa đúng vào nội dung ` +
         `nguồn, không bịa thêm chi tiết nào không?\n\nNguồn:\n${sourceContents.join("\n---\n")}\n\n` +
         `Câu trả lời cần kiểm tra:\n${answer}`,
       telemetry: { functionId: "content-verification" },
@@ -36,20 +36,20 @@ export function submitAnswerTool(contentsByDocumentId: Map<string, string[]>) {
   return tool({
     description:
       "Gửi câu trả lời cuối cùng cho user. BẮT BUỘC liệt kê đúng documentId đã thực sự dùng để " +
-      "trả lời trong citedDocumentIds — chỉ được liệt kê ID có trong nhãn [documentId: ...] ở " +
+      "trả lời trong citedDocumentIds. Chỉ được liệt kê ID có trong nhãn [documentId: ...] ở " +
       "context, TUYỆT ĐỐI không bịa thêm ID khác hoặc đoán ID không thấy trong context.",
     inputSchema: z.object({
       answer: z.string().describe("Câu trả lời đầy đủ, tự nhiên cho user, dựa trên context được cung cấp."),
       citedDocumentIds: z
         .array(z.string())
-        .describe("documentId của các nguồn thực sự dùng để trả lời — để mảng rỗng nếu không dựa vào tài liệu nào."),
+        .describe("documentId của các nguồn thực sự dùng để trả lời, để mảng rỗng nếu không dựa vào tài liệu nào."),
     }),
     execute: async ({ answer, citedDocumentIds }) => {
       const invalid = citedDocumentIds.filter((id) => !retrievedDocumentIds.has(id));
       if (invalid.length > 0) {
         return {
           accepted: false as const,
-          error: `citedDocumentIds chứa ID chưa từng xuất hiện trong context: ${invalid.join(", ")}. Chỉ trích những ID có nhãn [documentId: ...] thật trong context — viết lại answer và citedDocumentIds cho đúng.`,
+          error: `citedDocumentIds chứa ID chưa từng xuất hiện trong context: ${invalid.join(", ")}. Chỉ trích những ID có nhãn [documentId: ...] thật trong context, viết lại answer và citedDocumentIds cho đúng.`,
         };
       }
 

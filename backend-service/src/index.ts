@@ -24,16 +24,16 @@ import { startDigestWorker } from "./workers/digest-worker";
 import type { AppEnv } from "./types";
 
 if (!process.env.JWT_PUBLIC_KEY) {
-  throw new Error("JWT_PUBLIC_KEY chưa được set trong .env — backend-service không thể khởi động an toàn.");
+  throw new Error("JWT_PUBLIC_KEY chưa được set trong .env, backend-service không thể khởi động an toàn.");
 }
 if (!process.env.DATABASE_ADMIN_URL) {
-  throw new Error("DATABASE_ADMIN_URL chưa được set trong .env — scheduler cần role admin_user để quét reminder của mọi user.");
+  throw new Error("DATABASE_ADMIN_URL chưa được set trong .env, scheduler cần role admin_user để quét reminder của mọi user.");
 }
 if (!process.env.SQS_QUEUE_URL) {
-  throw new Error("SQS_QUEUE_URL chưa được set trong .env — cần cho worker xử lý tài liệu nền.");
+  throw new Error("SQS_QUEUE_URL chưa được set trong .env, cần cho worker xử lý tài liệu nền.");
 }
 if (!process.env.S3_BUCKET_NAME) {
-  throw new Error("S3_BUCKET_NAME chưa được set trong .env — cần để lưu file tài liệu upload.");
+  throw new Error("S3_BUCKET_NAME chưa được set trong .env, cần để lưu file tài liệu upload.");
 }
 
 const app = new Hono<AppEnv>();
@@ -69,5 +69,5 @@ startDocumentIngestionWorker();
 if (process.env.WEEKLY_DIGEST_QUEUE_URL) {
   startDigestWorker();
 } else {
-  console.warn("[digest-worker] WEEKLY_DIGEST_QUEUE_URL chưa được set trong .env — bỏ qua, tính năng tóm tắt tuần sẽ không chạy.");
+  console.warn("[digest-worker] WEEKLY_DIGEST_QUEUE_URL chưa được set trong .env, bỏ qua, tính năng tóm tắt tuần sẽ không chạy.");
 }

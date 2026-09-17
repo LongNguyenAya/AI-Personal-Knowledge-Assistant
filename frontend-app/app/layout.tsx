@@ -29,7 +29,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* Runs synchronously before React hydrates — sets the .dark class correctly from the very
+        {/* Runs synchronously before React hydrates, sets the .dark class correctly from the very
             first frame, avoiding a theme flash (see THEME_INIT_SCRIPT in lib/theme.ts for the full explanation). */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

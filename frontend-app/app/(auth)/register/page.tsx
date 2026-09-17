@@ -52,14 +52,14 @@ export default function RegisterPage() {
           <h1 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Check your email</h1>
           <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
             If <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span> hasn&apos;t registered before, we
-            just sent a verification email to it — click the link in the email to activate your account.
+            just sent a verification email to it, click the link in the email to activate your account.
           </p>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
             If this email already has an account, try{" "}
             <Link href="/login" className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">
               logging in
             </Link>{" "}
-            — if that account isn&apos;t verified yet, we&apos;ll automatically resend the verification email.
+            , if that account isn&apos;t verified yet, we&apos;ll automatically resend the verification email.
           </p>
           <Link href="/login" className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400">
             Back to login

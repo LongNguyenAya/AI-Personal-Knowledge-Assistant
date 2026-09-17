@@ -28,7 +28,7 @@ export async function extractPdfContent(buffer: Buffer): Promise<string> {
   // Admin adjusts this via /admin/settings, the real limit comes from Gemini's inline PDF request, capped at 15MB.
   const maxPdfBytes = (await getSettingValue("maxUploadMb")) * 1024 * 1024;
   if (buffer.length > maxPdfBytes) {
-    throw new Error(`File PDF quá lớn (${buffer.length} bytes) — vượt giới hạn ${maxPdfBytes} bytes cho inline PDF của Gemini.`);
+    throw new Error(`File PDF quá lớn (${buffer.length} bytes), vượt giới hạn ${maxPdfBytes} bytes cho inline PDF của Gemini.`);
   }
 
   const { systemPrompt } = await getActivePrompt("pdf_extraction");

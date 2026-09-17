@@ -57,12 +57,12 @@ export default function AdminKnowledgePage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Knowledge base</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Notes the agent proposed on its own — only take effect (the agent uses them to answer) once approved here.
+          Notes the agent proposed on its own, only take effect (the agent uses them to answer) once approved here.
         </p>
       </div>
 
       <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
-        Warning: once approved, a note is shown to EVERY user — check carefully that the content contains no name, email, or personal information about anyone before approving.
+        Warning: once approved, a note is shown to EVERY user, check carefully that the content contains no name, email, or personal information about anyone before approving.
       </div>
 
       {error && <ErrorBanner message={error} />}

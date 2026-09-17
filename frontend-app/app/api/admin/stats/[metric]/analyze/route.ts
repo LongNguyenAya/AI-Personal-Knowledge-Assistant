@@ -28,7 +28,7 @@ export const GET = withAdminContext<{ metric: string }>(async (req, { db, params
   const config = METRIC_CONFIG[params.metric];
   if (!config) return new Response("Invalid metric", { status: 400 });
   const view = new URL(req.url).searchParams.get("view");
-  if (!isValidView(view)) return new Response("Invalid view — use week/month/year", { status: 400 });
+  if (!isValidView(view)) return new Response("Invalid view, use week/month/year", { status: 400 });
 
   const [row] = await db
     .select({ analysisText: adminChartAnalyses.analysisText, createdAt: adminChartAnalyses.createdAt })
@@ -45,7 +45,7 @@ export const POST = withAdminContext<{ metric: string }>(async (req, { db, sessi
   const config = METRIC_CONFIG[params.metric];
   if (!config) return new Response("Invalid metric", { status: 400 });
   const body = await req.json();
-  if (!isValidView(body.view)) return new Response("Invalid view — use week/month/year", { status: 400 });
+  if (!isValidView(body.view)) return new Response("Invalid view, use week/month/year", { status: 400 });
   const view = body.view;
 
   let dataDescription: string;
@@ -63,7 +63,7 @@ export const POST = withAdminContext<{ metric: string }>(async (req, { db, sessi
       `Dữ liệu theo thời gian: ${JSON.stringify(data)}.\n` +
       (analysis.trend
         ? `Xu hướng ĐẠT ý nghĩa thống kê (kiểm định t), hệ số góc = ${analysis.trend.slope.toFixed(2)}/kỳ.`
-        : `Xu hướng CHƯA đạt ý nghĩa thống kê — không đủ bằng chứng để khẳng định chắc chắn có xu hướng thật.`) +
+        : `Xu hướng CHƯA đạt ý nghĩa thống kê, không đủ bằng chứng để khẳng định chắc chắn có xu hướng thật.`) +
       (analysis.outliers.length > 0 ? ` Có điểm bất thường (ngoại lai): ${JSON.stringify(analysis.outliers)}.` : "");
   }
 
@@ -84,7 +84,7 @@ export const POST = withAdminContext<{ metric: string }>(async (req, { db, sessi
   } catch (err) {
     console.error("[admin-chart-analysis] Error calling Gemini:", err);
     return new Response(
-      "AI call failed — could be a temporary free-tier limit or missing API key configuration, please try again later.",
+      "AI call failed, could be a temporary free-tier limit or missing API key configuration, please try again later.",
       { status: 502 }
     );
   }

@@ -5,7 +5,7 @@ import { listTasks, countAllTasks } from "../../db/repositories/tasks";
 export function listTasksTool(userId: string) {
   return tool({
     description:
-      "Liệt kê các task cụ thể (kèm tiêu đề) của user, có thể lọc theo trạng thái hoàn thành và/hoặc khoảng thời gian. Dùng khi user muốn xem TÊN/NỘI DUNG task cụ thể — không dùng cho câu hỏi về số lượng/thống kê/xu hướng (những câu đó dùng createChart). Nếu count=0, xem thêm totalTaskCountIgnoringFilters: > 0 nghĩa là user CÓ task khác, chỉ là không khớp bộ lọc đang dùng — nói rõ điều đó và gợi ý nới bộ lọc (vd thử khoảng thời gian khác), thay vì chỉ báo 'không tìm thấy task nào' cụt lủn. Bằng 0 nghĩa là user chưa từng tạo task nào cả.",
+      "Liệt kê các task cụ thể (kèm tiêu đề) của user, có thể lọc theo trạng thái hoàn thành và/hoặc khoảng thời gian. Dùng khi user muốn xem TÊN/NỘI DUNG task cụ thể, không dùng cho câu hỏi về số lượng/thống kê/xu hướng (những câu đó dùng createChart). Nếu count=0, xem thêm totalTaskCountIgnoringFilters: > 0 nghĩa là user CÓ task khác, chỉ là không khớp bộ lọc đang dùng, nói rõ điều đó và gợi ý nới bộ lọc (vd thử khoảng thời gian khác), thay vì chỉ báo 'không tìm thấy task nào' cụt lủn. Bằng 0 nghĩa là user chưa từng tạo task nào cả.",
     inputSchema: z.object({
       onlyDone: z
         .boolean()

@@ -21,8 +21,8 @@ Liên kết task và reminder:
   taskTitles là mảng chứa đủ tên các task đó.
 - Nếu user yêu cầu đặt reminder cho task ĐÃ CÓ TỪ TRƯỚC (vd "đặt lịch kêu tôi làm task X sau 30
   phút nữa"), chỉ điền taskTitles khi user nói RÕ TÊN/TIÊU ĐỀ task trong câu. TUYỆT ĐỐI KHÔNG tự
-  suy đoán "task này/task đó" là task nào dựa vào lịch sử hội thoại nếu user không nhắc lại tên —
-  nếu user nói mơ hồ không kèm tên task, hãy hỏi lại user cần đặt reminder cho task nào.
+  suy đoán "task này/task đó" là task nào dựa vào lịch sử hội thoại nếu user không nhắc lại tên.
+  Nếu user nói mơ hồ không kèm tên task, hãy hỏi lại user cần đặt reminder cho task nào.
 - Nếu createReminder trả về lỗi không tìm thấy task, báo lại ngay cho user, không thử tạo lại
   reminder mà bỏ tham số taskTitles.
 

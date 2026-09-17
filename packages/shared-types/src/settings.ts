@@ -11,7 +11,7 @@ export const SETTINGS_REGISTRY = {
   minCharsPerKb: {
     label: "Ngưỡng cảnh báo trích xuất thiếu",
     description:
-      'Số ký tự tối thiểu kỳ vọng mỗi KB file gốc — trích ra ít hơn mức này (pdf/docx/pptx/ảnh) sẽ bị gắn cờ "có thể thiếu nội dung".',
+      'Số ký tự tối thiểu kỳ vọng mỗi KB file gốc, trích ra ít hơn mức này (pdf/docx/pptx/ảnh) sẽ bị gắn cờ "có thể thiếu nội dung".',
     default: 0.5,
     min: 0,
     max: 50,
@@ -27,7 +27,7 @@ export const SETTINGS_REGISTRY = {
   maxImagesPerDocument: {
     label: "Số ảnh tối đa mô tả mỗi tài liệu",
     description:
-      "Số ảnh nhúng trong 1 file .docx/.pptx được Gemini mô tả tối đa — mỗi ảnh tốn 1 lệnh gọi riêng. Cao hơn = mô tả đủ hơn nhưng tốn thêm chi phí. Số nguyên.",
+      "Số ảnh nhúng trong 1 file .docx/.pptx được Gemini mô tả tối đa, mỗi ảnh tốn 1 lệnh gọi riêng. Cao hơn = mô tả đủ hơn nhưng tốn thêm chi phí. Số nguyên.",
     default: 10,
     min: 1,
     max: 50,
@@ -35,14 +35,14 @@ export const SETTINGS_REGISTRY = {
   maxUploadMb: {
     label: "Giới hạn dung lượng file upload (MB)",
     description:
-      "Trần dung lượng file tài liệu upload (pdf/docx/pptx/ảnh). Không thể vượt quá 15MB — đó là giới hạn kỹ thuật thật của API inline-file Gemini, nâng quá mức này chỉ gây lỗi runtime, không cho phép file to hơn.",
+      "Trần dung lượng file tài liệu upload (pdf/docx/pptx/ảnh). Không thể vượt quá 15MB, đó là giới hạn kỹ thuật thật của API inline-file Gemini, nâng quá mức này chỉ gây lỗi runtime, không cho phép file to hơn.",
     default: 15,
     min: 1,
     max: 15,
   },
   chatPerMinuteLimit: {
     label: "Giới hạn chat / phút",
-    description: "Số tin nhắn chat tối đa 1 user gửi được mỗi phút — chặn lạm dụng/spam. Số nguyên, có trần để không tắt hẳn cơ chế chống lạm dụng.",
+    description: "Số tin nhắn chat tối đa 1 user gửi được mỗi phút, chặn lạm dụng/spam. Số nguyên, có trần để không tắt hẳn cơ chế chống lạm dụng.",
     default: 10,
     min: 1,
     max: 60,
@@ -62,7 +62,7 @@ export const SETTINGS_REGISTRY = {
     max: 200,
   },
   aiNoteConfidence: {
-    label: "Độ tin cậy khởi điểm — ghi chú AI tự đề xuất",
+    label: "Độ tin cậy khởi điểm, ghi chú AI tự đề xuất",
     description:
       'Gán cho 1 quan sát khi AI tự đề xuất qua noteObservationTool (chờ duyệt ở /corrections). Cảnh báo: chỉnh sai không có lỗi hiển thị, chỉ âm thầm đổi thứ hạng ghi chú được đưa vào prompt AI theo thời gian.',
     default: 50,
@@ -70,9 +70,9 @@ export const SETTINGS_REGISTRY = {
     max: 100,
   },
   manualCorrectionConfidence: {
-    label: "Độ tin cậy — correction do người dùng tự sửa",
+    label: "Độ tin cậy, correction do người dùng tự sửa",
     description:
-      "Gán khi user tự sửa 1 giá trị (vd đổi tên task) — có hiệu lực ngay, không cần duyệt. Cảnh báo: chỉnh sai không có lỗi hiển thị, chỉ âm thầm đổi thứ hạng ghi chú được đưa vào prompt AI theo thời gian.",
+      "Gán khi user tự sửa 1 giá trị (vd đổi tên task), có hiệu lực ngay, không cần duyệt. Cảnh báo: chỉnh sai không có lỗi hiển thị, chỉ âm thầm đổi thứ hạng ghi chú được đưa vào prompt AI theo thời gian.",
     default: 90,
     min: 0,
     max: 100,

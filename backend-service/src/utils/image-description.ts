@@ -2,7 +2,7 @@ import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 
 const PROMPT =
-  "Mô tả ngắn gọn (1-2 câu) nội dung/ý nghĩa của hình ảnh này bằng tiếng Việt — tập trung vào " +
+  "Mô tả ngắn gọn (1-2 câu) nội dung/ý nghĩa của hình ảnh này bằng tiếng Việt, tập trung vào " +
   "thông tin thực sự có trong ảnh (số liệu, biểu đồ, sơ đồ, ảnh chụp...), không suy đoán thêm " +
   "ngoài những gì nhìn thấy được.";
 

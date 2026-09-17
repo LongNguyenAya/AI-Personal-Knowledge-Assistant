@@ -121,7 +121,7 @@ export const PATCH = withAuthedContext<{ id: string }>(async (req, { session, pa
         }
       });
     } catch (err) {
-      console.error("[tasks] Failed to record correction memory — doesn't affect the task update:", err);
+      console.error("[tasks] Failed to record correction memory, doesn't affect the task update:", err);
     }
   }
 

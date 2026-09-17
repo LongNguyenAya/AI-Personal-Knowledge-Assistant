@@ -8,6 +8,7 @@ import { getDocumentChunks } from "../src/db/repositories/chunks";
 import { dbAdmin } from "../src/db/admin-client";
 import { users, documents } from "@ai-assistant/db/src/schema";
 import { and, eq, isNull } from "drizzle-orm";
+import { writeEvalReport } from "./lib/eval-report";
 
 type Route = "research" | "action" | "both" | "unknown";
 
@@ -42,7 +43,7 @@ async function resolveUser(): Promise<{ id: string; email: string }> {
     .innerJoin(documents, eq(documents.userId, users.id))
     .where(and(eq(users.isActive, true), isNull(users.deletedAt), eq(documents.status, "processed")));
 
-  if (candidates.length === 0) throw new Error("Không tìm thấy user nào đang có tài liệu processed để tạo fixture — upload thử ít nhất 1 tài liệu trước.");
+  if (candidates.length === 0) throw new Error("Không tìm thấy user nào đang có tài liệu processed để tạo fixture, upload thử ít nhất 1 tài liệu trước.");
   return pickRandom(candidates);
 }
 
@@ -104,11 +105,12 @@ async function main() {
   console.log(`Sinh fixture cho user: ${user.email}\n`);
 
   const fixtures = await buildFixtures(user);
-  if (fixtures.length === 0) throw new Error("Không sinh được fixture nào — user này chưa có tài liệu processed nào.");
+  if (fixtures.length === 0) throw new Error("Không sinh được fixture nào, user này chưa có tài liệu processed nào.");
 
   let routeCorrect = 0;
   let citationChecked = 0;
   let citationCorrect = 0;
+  const rows: string[] = [];
 
   console.log(`Chạy ${fixtures.length} câu hỏi (tự sinh)...\n`);
 
@@ -118,18 +120,21 @@ async function main() {
     if (routeOk) routeCorrect++;
 
     let citationLine = "";
+    let citationCell = "-";
     if (fixture.expectedFileName && (fixture.expectedRoute === "research" || fixture.expectedRoute === "both")) {
       citationChecked++;
       const { sources } = await retrieveRelevantChunks(fixture.question, user.id, 15);
       const found = sources.some((s) => s.fileName === fixture.expectedFileName);
       if (found) citationCorrect++;
       citationLine = ` | trích đúng tài liệu: ${found ? "OK" : "SAI (mong đợi " + fixture.expectedFileName + ")"}`;
+      citationCell = found ? "OK" : "SAI";
     }
 
     console.log(
       `[${routeOk ? "PASS" : "FAIL"}] "${fixture.question}"\n` +
         `    route: ${route} (mong đợi ${fixture.expectedRoute})${citationLine}`
     );
+    rows.push(`| ${fixture.question} | ${fixture.expectedRoute} | ${route} | ${routeOk ? "OK" : "SAI"} | ${citationCell} |`);
   }
 
   const routeAccuracy = ((routeCorrect / fixtures.length) * 100).toFixed(1);
@@ -138,6 +143,12 @@ async function main() {
   console.log(`\n=== Kết quả ===`);
   console.log(`Route đúng: ${routeCorrect}/${fixtures.length} (${routeAccuracy}%)`);
   console.log(`Trích đúng tài liệu: ${citationCorrect}/${citationChecked} (${citationAccuracy}%)`);
+
+  writeEvalReport("router", {
+    title: "Orchestrator router accuracy",
+    summary: `Route đúng: ${routeCorrect}/${fixtures.length} (${routeAccuracy}%). Trích đúng tài liệu: ${citationCorrect}/${citationChecked} (${citationAccuracy}%). Câu hỏi cho phần research được Gemini tự sinh động từ tài liệu thật của user \`${user.email}\`, không cố định.`,
+    table: { headers: ["Câu hỏi", "Route mong đợi", "Route thật", "Route", "Trích tài liệu"], rows },
+  });
 
   process.exit(0);
 }

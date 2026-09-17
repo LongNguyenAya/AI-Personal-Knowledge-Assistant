@@ -48,7 +48,7 @@ const EMPTY_TITLE: Record<CorrectionStatus, string> = {
 };
 
 const EMPTY_DESCRIPTION: Record<CorrectionStatus, string> = {
-  inactive: "The AI will suggest a note on its own when it runs into a tricky situation — nothing here yet.",
+  inactive: "The AI will suggest a note on its own when it runs into a tricky situation, nothing here yet.",
   active: "Notes you've approved will show up here.",
   dismissed: "Notes you've dismissed will show up here.",
 };
@@ -99,7 +99,7 @@ export default function CorrectionsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Notes</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          The AI suggests observations on its own when it runs into an ambiguous situation while processing — these only take effect once you approve them.
+          The AI suggests observations on its own when it runs into an ambiguous situation while processing, these only take effect once you approve them.
         </p>
       </div>
 
@@ -134,13 +134,13 @@ export default function CorrectionsPage() {
                 {item.sourceType} / {item.fieldName}
               </span>
               {/* This value drives the ranking fed into the AI prompt (ORDER BY confidence DESC,
-                  usageCount DESC) — shown so you can see why 1 note is prioritized over another. */}
+                  usageCount DESC), shown so you can see why 1 note is prioritized over another. */}
               <span className={`rounded-full px-2 py-0.5 font-medium ${confidenceBadgeStyle(item.confidence)}`}>
                 Confidence {item.confidence}
                 {item.usageCount > 1 ? ` · ×${item.usageCount}` : ""}
               </span>
             </div>
-            {/* wrongValue only exists for a correction the user made themselves — an AI-suggested
+            {/* wrongValue only exists for a correction the user made themselves, an AI-suggested
                 note has nothing to compare against so it's just shown plain. Diffed word by word so only the actual difference is highlighted. */}
             {item.wrongValue ? (
               <p className="text-sm text-gray-800 dark:text-gray-100">

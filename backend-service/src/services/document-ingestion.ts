@@ -45,7 +45,7 @@ async function extractText(fileName: string, buffer: Buffer): Promise<string> {
     case "webp":
       return extractImageContent(buffer, ext);
     default:
-      throw new Error(`Định dạng file ".${ext}" không được hỗ trợ — chỉ nhận .pdf, .docx, .pptx, .txt, .md, .png, .jpg, .jpeg, .webp.`);
+      throw new Error(`Định dạng file ".${ext}" không được hỗ trợ, chỉ nhận .pdf, .docx, .pptx, .txt, .md, .png, .jpg, .jpeg, .webp.`);
   }
 }
 
@@ -60,7 +60,7 @@ export async function enqueueDocumentIngestion(
   // Admin adjusts this via /admin/settings, the backend re-checks it because anyone with a valid JWT can still call directly.
   const maxUploadBytes = (await getSettingValue("maxUploadMb")) * 1024 * 1024;
   if (buffer.length > maxUploadBytes) {
-    throw new Error(`File quá lớn (${buffer.length} bytes) — vượt giới hạn ${maxUploadBytes} bytes.`);
+    throw new Error(`File quá lớn (${buffer.length} bytes), vượt giới hạn ${maxUploadBytes} bytes.`);
   }
   await saveFile(userId, key, buffer);
   await sendIngestionMessage({ userId, documentId, key, fileName });
@@ -95,7 +95,7 @@ export async function processDocumentIngestion(
     // The "possibly under-extracted" warning is just a self-check, the threshold is read from system_settings.
     const minCharsPerKb = await getSettingValue("minCharsPerKb");
     if (RATIO_CHECKED_EXTENSIONS.has(ext) && text.length < (buffer.length / 1024) * minCharsPerKb) {
-      const shortReason = `Trích xuất được ít nội dung (${text.length} ký tự) so với kích thước file (${Math.round(buffer.length / 1024)}KB) — có thể còn thiếu, bạn nên tự kiểm tra lại.`;
+      const shortReason = `Trích xuất được ít nội dung (${text.length} ký tự) so với kích thước file (${Math.round(buffer.length / 1024)}KB), có thể còn thiếu, bạn nên tự kiểm tra lại.`;
       flagReason = flagReason ? `${flagReason} ${shortReason}` : shortReason;
     }
 

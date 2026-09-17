@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   // Admin adjusts this via /admin/settings, matching "maxUploadMb" on the backend-service side.
   const maxUploadMb = await getSettingValue("maxUploadMb");
   if (file.size > maxUploadMb * 1024 * 1024) {
-    return new Response(`File too large — max ${maxUploadMb}MB`, { status: 400 });
+    return new Response(`File too large, max ${maxUploadMb}MB`, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
