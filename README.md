@@ -6,7 +6,7 @@ A personal assistant: upload documents, ask questions with real citations (RAG),
 
 ## Key features
 
-- **Chat with AI**: Answers with real source citations (research) or calls action tools (action), create a task, create a reminder, draw a data chart, draw a process diagram, search/read documents.
+- **Chat with AI**: Answers with real source citations (research) or calls action tools (action), create a task, create a reminder, draw a data chart, draw a process diagram, search/read documents, find a connection between 2 named entities across documents that never reference each other directly (knowledge graph).
 - **Document upload**: Supports .pdf, .docx, .pptx, .txt, .md, and images; extracts text automatically, detects prompt injection, and flags likely incomplete extraction.
 - **Attach a document right in chat**: Pick an existing document or upload a new one, the question is asked automatically once processing finishes.
 - **Tasks / Reminders**: Create manually or let the AI create them for you, reminders push through WebSocket + email when they're due.
@@ -98,7 +98,7 @@ Behavior is measured with 7 eval scripts (`npm run eval:router` / `eval:groundin
 
 ## Database
 
-`packages/db/src/schema.ts` is the single Drizzle schema, shared by both `frontend-app` and `backend-service`, neither service defines its own tables. Currently 17 tables, migrations live in `frontend-app/drizzle/migrations/` (generated and applied with `drizzle-kit`).
+`packages/db/src/schema.ts` is the single Drizzle schema, shared by both `frontend-app` and `backend-service`, neither service defines its own tables. Currently 19 tables, migrations live in `frontend-app/drizzle/migrations/` (generated and applied with `drizzle-kit`).
 
 **2 Postgres roles, no `WHERE user_id = ...` filtering in code:**
 
@@ -107,7 +107,7 @@ Behavior is measured with 7 eval scripts (`npm run eval:router` / `eval:groundin
 | `app_user` | Every normal user request | RLS filters automatically by `current_setting('app.current_user_id')`, set via `withUserContext()` at the start of each transaction |
 | `admin_user` | Admin actions (`/admin/*`) | `BYPASSRLS`, can read/write every user's data |
 
-8 of 17 tables have RLS enabled (`documents`, `chunks`, `tasks`, `conversations`, `reminders`, `chat_history`, `user_correction_memories`, `weekly_digests`), each with a `pgPolicy` matching `user_id` against `current_setting`. The other 9 tables don't have RLS since they're shared/global data: better-auth's own tables (`users`, `session`, `account`, `verification`), or data only admins touch (`admin_audit_log`, `agent_prompts`, `knowledge_files`, `admin_chart_analyses`, `system_settings`).
+10 of 19 tables have RLS enabled (`documents`, `chunks`, `tasks`, `conversations`, `reminders`, `chat_history`, `user_correction_memories`, `weekly_digests`, `kg_entities`, `kg_relations`), each with a `pgPolicy` matching `user_id` against `current_setting`. The other 9 tables don't have RLS since they're shared/global data: better-auth's own tables (`users`, `session`, `account`, `verification`), or data only admins touch (`admin_audit_log`, `agent_prompts`, `knowledge_files`, `admin_chart_analyses`, `system_settings`).
 
 `chunks.embedding` uses the `vector` type (pgvector). Relevant excerpts for RAG are found by cosine distance, not ordinary full-text search.
 
@@ -196,11 +196,11 @@ backend-service/
   src/routes/           Hono routes (documents, orchestrator, ws, email)
   src/services/         Document ingestion, sending email, weekly digest, SQS
   src/workers/          2 background workers (document ingestion, weekly digest)
-  src/scheduler/        Scans for due reminders every minute
+  src/scheduler/        Scans for due reminders and stuck document uploads every minute
   src/db/repositories/  DB queries, split by domain
 
 packages/
-  db/                   schema.ts (17 tables) + Drizzle client
+  db/                   schema.ts (19 tables) + Drizzle client
   shared-types/         Shared types, SETTINGS_REGISTRY, linear regression
 ```
 
@@ -217,6 +217,7 @@ frontend-app deploys on Render, backend-service deploys via Docker (`Dockerfile`
 
 - The WebSocket registry lives in the RAM of 1 process, running multiple backend-service instances at once isn't supported yet. A Redis pub/sub fix for this was built and tested on a separate branch (`experiment/redis-ws-registry`, not merged into `master`), see the note below. Not merged into production since current traffic doesn't need horizontal scaling yet.
 - `/corrections`, `/digest`, `/settings` aren't protected by an immediate redirect in `middleware.ts` the way `/chat`/`/documents`/`/tasks`/`/reminders` are, they're only blocked at the API layer, without an immediate redirect to `/login` on page load.
+- The knowledge graph's fuzzy name-matching threshold (embedding cosine distance 0.10, used only as a fallback after exact and substring matching) is a starting estimate measured against 1 small set of examples, not yet validated against a larger dataset.
 
 ## Self-hosting & concurrency exploration
 
