@@ -4,11 +4,15 @@ import { withUserContext } from "../context";
 import type { NewChunk } from "../../types/chunks";
 
 // Writes all chunks in the same transaction, avoiding a mid-way stop that leaves orphaned chunks.
+// Returns the inserted rows (id + content) so a caller like knowledge-graph extraction can run per chunk afterward.
 export async function insertChunks(userId: string, documentId: string, items: NewChunk[]) {
   return withUserContext(userId, async (tx) => {
+    const inserted: { id: string; content: string }[] = [];
     for (const item of items) {
-      await tx.insert(chunks).values({ documentId, ...item });
+      const [row] = await tx.insert(chunks).values({ documentId, ...item }).returning({ id: chunks.id, content: chunks.content });
+      inserted.push(row);
     }
+    return inserted;
   });
 }
 

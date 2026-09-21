@@ -74,6 +74,7 @@ The action-agent picks which tool to call based on the question itself, with no 
 | `extractActionItems` | Scan a document for action items/deadlines, only suggests, never creates a reminder on its own |
 | `proposeKnowledgeNote` | Propose a *general* lesson to remember forever, only takes effect after admin approval |
 | `noteObservation` | Record an ambiguous situation it just ran into, waits for the user's own approval |
+| `queryKnowledgeGraph` | Find a connection between 2 named entities mentioned across different documents that never reference each other directly, entities are merged and linked at ingest time (see "Agent harness" below) |
 
 The "research" route (pure lookup questions, no action needed) doesn't use any of the tools above. It's forced to answer through `submitAnswer`, which has 2 pure-code checks to block a fabricated source before an answer is accepted.
 
@@ -81,7 +82,7 @@ The "research" route (pure lookup questions, no action needed) doesn't use any o
 
 Self-correction lives in the tools themselves, not just in the prompt asking nicely: `createDiagram` parses its own Mermaid output before returning it, and on a syntax error hands the parser's message back to the model to fix and retry in the same turn; `searchDocuments`/`listTasks` return an extra field (`hasAnyDocuments`/`totalTaskCountIgnoringFilters`) so the model can tell apart "genuinely nothing exists" from "results got filtered out" instead of guessing.
 
-Behavior is measured with 6 eval scripts (`npm run eval:router` / `eval:grounding` / `eval:quote-verification` / `eval:action-consistency` / `eval:chart-narration` / `eval:diagram-grounding`), each grading a real tool call against a known answer, 2 of them using a separate model (Groq) as an independent judge. Every run rewrites its own section of `backend-service/docs/EVAL_RESULTS.md`, so the numbers there can't go stale from someone forgetting to update a doc by hand. Design rationale (why only some tools got this, why some evals grade per-claim instead of pass/fail) is in `backend-service/docs/HARNESS_NOTES.md`.
+Behavior is measured with 7 eval scripts (`npm run eval:router` / `eval:grounding` / `eval:quote-verification` / `eval:action-consistency` / `eval:chart-narration` / `eval:diagram-grounding` / `eval:kg-grounding`), each grading a real tool call against a known answer, 2 of them using a separate model (Groq) as an independent judge. A live Groq-judge gate was considered for `queryKnowledgeGraph` (block a connection before showing it, if a second model can't confirm it's meaningful) and rejected: "is this connection meaningful" has no objective check, so it would be the first gate in the codebase using 1 uncertain model to police another, instead the risk is measured with `eval:kg-grounding` and blocked in code where it can be (a generic/common-noun entity can never act as a bridge between 2 others). Every run rewrites its own section of `backend-service/docs/EVAL_RESULTS.md`, so the numbers there can't go stale from someone forgetting to update a doc by hand. Design rationale (why only some tools got this, why some evals grade per-claim instead of pass/fail) is in `backend-service/docs/HARNESS_NOTES.md`.
 
 ## Techniques applied
 
@@ -210,7 +211,7 @@ frontend-app deploys on Render, backend-service deploys via Docker (`Dockerfile`
 ## Scope & assumptions
 
 - Designed for 1 individual user, not a large multi-tenant SaaS. Because of that, several places optimize for "correct and simple" over "handles heavy load" (e.g. fixed-window rate limiting, the WS registry living in RAM).
-- No automated end-to-end browser test suite yet, and the 6 eval scripts (see "Agent harness & evals") are run by hand, not wired into CI, so a regression only gets caught if someone remembers to rerun them. Sample sizes per eval are small (1 to 15 cases), enough to catch a clear break, not enough to claim tight statistical confidence.
+- No automated end-to-end browser test suite yet, and the 7 eval scripts (see "Agent harness & evals") are run by hand, not wired into CI, so a regression only gets caught if someone remembers to rerun them. Sample sizes per eval are small (1 to 15 cases), enough to catch a clear break, not enough to claim tight statistical confidence.
 
 ## Known limitations
 

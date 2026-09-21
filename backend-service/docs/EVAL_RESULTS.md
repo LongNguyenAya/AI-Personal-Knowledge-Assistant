@@ -5,21 +5,21 @@ Mỗi mục dưới đây do chính script eval tự ghi ra khi chạy, không p
 <!-- eval:router:start -->
 ### Orchestrator router accuracy
 
-_Cập nhật lần cuối: 2026-09-16, chạy bằng `npm run eval:router`._
+_Cập nhật lần cuối: 2026-09-21, chạy bằng `npm run eval:router`._
 
 Route đúng: 9/9 (100.0%). Trích đúng tài liệu: 6/6 (100.0%). Câu hỏi cho phần research được Gemini tự sinh động từ tài liệu thật của user `ayamihiroshi2108@gmail.com`, không cố định.
 
 | Câu hỏi | Route mong đợi | Route thật | Route | Trích tài liệu |
 |---|---|---|---|---|
+| Nhân viên làm việc từ xa phải phản hồi email và tin nhắn công việc trong thời gian bao lâu? | research | research | OK | OK |
+| Tổng giá trị thiết bị đã cấp phát trong quý 3 năm 2026 là bao nhiêu? | research | research | OK | OK |
 | Nhánh hotfix được tạo ra từ nhánh nào và dùng để làm gì | research | research | OK | OK |
 | Loại năng lượng nào đang dẫn dắt tăng trưởng công suất mới ở Việt Nam? | research | research | OK | OK |
-| Ai được xem là lập trình viên đầu tiên trong lịch sử theo tài liệu này | research | research | OK | OK |
-| Chạy Lambda container mất bao nhiêu tiền mỗi tháng nếu vẫn nằm trong hạn mức miễn phí | research | research | OK | OK |
-| Bao giờ thì đội phải hoàn thành thiết kế UI? | research | research | OK | OK |
+| Ai là người viết thuật toán cho cỗ máy Analytical Engine của Charles Babbage? | research | research | OK | OK |
 | Tạo nhắc nhở họp lúc 18h tối mai | action | action | OK | - |
-| Đánh dấu task 'dọn bàn làm việc' là đã xong | action | action | OK | - |
+| Đánh dấu task 'kiểm tra lại hợp đồng' là đã xong | action | action | OK | - |
 | Vẽ biểu đồ số task hoàn thành theo tuần gần đây | action | action | OK | - |
-| Xem tài liệu "ghi-chu-quy-trinh-git.md" và tạo nhắc nhở nếu có deadline nào sắp tới | both | both | OK | OK |
+| Xem tài liệu "4-chinh-sach-lam-viec-tu-xa-2026.txt" và tạo nhắc nhở nếu có deadline nào sắp tới | both | both | OK | OK |
 
 <!-- eval:router:end -->
 
@@ -114,3 +114,20 @@ Bước trong sơ đồ: 7 có căn cứ / 0 chưa rõ / 0 bịa thêm (tổng 7
 | Từ chối | grounded | Source explicitly states: "Nếu quản lý từ chối ..." |
 
 <!-- eval:diagram-grounding:end -->
+
+<!-- eval:kg-grounding:start -->
+### Knowledge graph query grounding
+
+_Cập nhật lần cuối: 2026-09-20, chạy bằng `npm run eval:kg-grounding`._
+
+Độ chính xác: 2/2. Chạy qua đúng pipeline trích xuất thật (Gemini), không dựng graph tay. 1 case thật (2 tài liệu không nhắc trực tiếp nhau, chỉ nối qua 1 dự án chung) + 1 case bẫy (2 tài liệu chỉ chia sẻ 1 khái niệm chung chung "trường"/"bán trú", không thực sự liên quan).
+
+| Case | Mong đợi | Thực tế | Kết quả |
+|---|---|---|---|
+| Nguyễn Văn A <-> Trần Thị C (qua dự án Omega) | found=true, path 2 bước | found=true, path 2 bước | OK |
+| Minh <-> Lan (chỉ chung "trường") | found=false | found=false | OK |
+
+**Case/claim cần chú ý:**
+- Case bẫy: "trường" không được trích xuất thành entity nào cả lần chạy này (found=false xảy ra một cách tình cờ, không chứng minh được safeguard đã hoạt động).
+
+<!-- eval:kg-grounding:end -->

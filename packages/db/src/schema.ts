@@ -12,6 +12,8 @@ export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant", "system"])
 export const agentTypeEnum = pgEnum("agent_type", ["research", "action", "orchestrator", "pdf_extraction", "image_extraction"]);
 export const knowledgeStatusEnum = pgEnum("knowledge_status", ["pending", "approved", "rejected", "revoked"]);
 export const correctionStatusEnum = pgEnum("correction_status", ["active", "inactive", "dismissed", "expired"]);
+// "concept" marks a generic/common-noun entity (no proper name), never used as a bridge node when traversing the graph.
+export const kgEntityKindEnum = pgEnum("kg_entity_kind", ["person", "organization", "project", "concept"]);
 
 // Type inferred from the enum, declared once so both apps can import it.
 export type DocumentStatus = (typeof documentStatusEnum.enumValues)[number];
@@ -19,6 +21,7 @@ export type ReminderSource = (typeof reminderSourceEnum.enumValues)[number];
 export type AgentType = (typeof agentTypeEnum.enumValues)[number];
 export type KnowledgeStatus = (typeof knowledgeStatusEnum.enumValues)[number];
 export type CorrectionStatus = (typeof correctionStatusEnum.enumValues)[number];
+export type KgEntityKind = (typeof kgEntityKindEnum.enumValues)[number];
 
 export const users = pgTable(
   "users",
@@ -110,6 +113,10 @@ export const documents = pgTable("documents", {
   // Scanned once at ingest time, doesn't block processing, just flags a warning and forces confidence down.
   flaggedSuspicious: boolean("flagged_suspicious").notNull().default(false),
   flagReason: text("flag_reason"),
+  // Counts automatic re-enqueue attempts by document-recovery-scheduler.ts when a document is stuck at
+  // "uploaded" (its SQS ingestion message was lost/consumed without success), capped to avoid retrying
+  // a permanently-broken file forever.
+  ingestionRetryCount: integer("ingestion_retry_count").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   // No deletedAt, deleting a document is a hard delete, chunks are removed via cascading FK.
@@ -306,6 +313,48 @@ export const userCorrectionMemories = pgTable("user_correction_memories", {
   userFieldIdx: index("user_correction_memories_user_field_idx").on(table.userId, table.fieldName),
   userContextIdx: index("user_correction_memories_user_context_idx").on(table.userId, table.contextSignature),
   userIsolationPolicy: pgPolicy("user_correction_memories_user_isolation", {
+    for: "all",
+    to: appUserRole,
+    using: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+    withCheck: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+  }),
+})).enableRLS();
+
+// 1 row per distinct name after merge logic runs at insert time (see knowledge-graph-extraction.ts), not 1 row per mention.
+export const kgEntities = pgTable("kg_entities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  // Embedding of just the name (not chunk content), used to merge differently-worded mentions of the same entity ("Alpha" vs "du an Alpha").
+  nameEmbedding: vector("name_embedding", { dimensions: 768 }),
+  entityKind: kgEntityKindEnum("entity_kind").notNull(),
+  // Set once 2 merged mentions disagree on kind (e.g. "person" vs "organization"), used downstream to block this node as a graph-traversal bridge, never cleared back to false.
+  kindDisagreement: boolean("kind_disagreement").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("kg_entities_user_id_idx").on(table.userId),
+  userIsolationPolicy: pgPolicy("kg_entities_user_isolation", {
+    for: "all",
+    to: appUserRole,
+    using: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+    withCheck: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,
+  }),
+})).enableRLS();
+
+// sourceChunkId is required, never nullable, a relation with no traceable source chunk must not exist.
+export const kgRelations = pgTable("kg_relations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sourceEntityId: uuid("source_entity_id").notNull().references(() => kgEntities.id, { onDelete: "cascade" }),
+  targetEntityId: uuid("target_entity_id").notNull().references(() => kgEntities.id, { onDelete: "cascade" }),
+  relationType: text("relation_type").notNull(),
+  sourceChunkId: uuid("source_chunk_id").notNull().references(() => chunks.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("kg_relations_user_id_idx").on(table.userId),
+  sourceEntityIdx: index("kg_relations_source_entity_idx").on(table.sourceEntityId),
+  targetEntityIdx: index("kg_relations_target_entity_idx").on(table.targetEntityId),
+  userIsolationPolicy: pgPolicy("kg_relations_user_isolation", {
     for: "all",
     to: appUserRole,
     using: sql`${table.userId} = current_setting('app.current_user_id')::uuid`,

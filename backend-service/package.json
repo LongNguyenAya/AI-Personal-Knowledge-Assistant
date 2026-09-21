@@ -11,7 +11,8 @@
     "eval:quote-verification": "tsx --env-file=.env scripts/eval-quote-verification.ts",
     "eval:action-consistency": "tsx --env-file=.env scripts/eval-action-consistency.ts",
     "eval:chart-narration": "tsx --env-file=.env scripts/eval-chart-narration.ts",
-    "eval:diagram-grounding": "tsx --env-file=.env scripts/eval-diagram-grounding.ts"
+    "eval:diagram-grounding": "tsx --env-file=.env scripts/eval-diagram-grounding.ts",
+    "eval:kg-grounding": "tsx --env-file=.env scripts/eval-kg-grounding.ts"
   },
   "keywords": [],
   "author": "",

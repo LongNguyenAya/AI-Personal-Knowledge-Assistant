@@ -1,0 +1,2 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON kg_entities TO app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON kg_relations TO app_user;

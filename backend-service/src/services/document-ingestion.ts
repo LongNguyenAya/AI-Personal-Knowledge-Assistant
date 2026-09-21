@@ -7,6 +7,7 @@ import { extractImageContent } from "../utils/image-extraction";
 import { extractDocxContent, extractPptxContent } from "../utils/office-extraction";
 import { updateStatus, flagSuspicious } from "../db/repositories/documents";
 import { insertChunks } from "../db/repositories/chunks";
+import { extractAndStoreKnowledgeGraph } from "./knowledge-graph-extraction";
 import { sendIngestionMessage } from "./sqs";
 import { detectPromptInjection } from "../utils/injection-detection";
 import { getSettingValue } from "../db/repositories/settings";
@@ -117,11 +118,22 @@ export async function processDocumentIngestion(
       items.push({ content: textChunks[i], chunkIndex: i, embedding });
     }
     log.info(`[document-ingestion] Đã embed xong ${textChunks.length} chunk cho ${documentId}, ghi vào DB`);
-    await insertChunks(userId, documentId, items);
+    const insertedChunks = await insertChunks(userId, documentId, items);
     log.info(`[document-ingestion] Đã ghi chunks cho ${documentId}, cập nhật status "processed"`);
 
     await updateStatusAndNotify(userId, documentId, "processed");
     log.info(`[document-ingestion] Hoàn tất document ${documentId}`);
+
+    // Runs after the document is already usable for RAG search, a failure here must never affect
+    // ingestion status or availability, this is a best-effort side capability, not the main pipeline.
+    for (const chunk of insertedChunks) {
+      try {
+        await extractAndStoreKnowledgeGraph(userId, chunk.id, chunk.content);
+      } catch (kgErr) {
+        log.error(`[document-ingestion] Lỗi khi trích xuất knowledge graph cho chunk ${chunk.id} (bỏ qua):`, kgErr);
+      }
+    }
+
     return { success: true as const, chunksCreated: textChunks.length };
   } catch (err) {
     // Logs the real error immediately, String(err) in the return value alone was silently swallowed by the caller before.

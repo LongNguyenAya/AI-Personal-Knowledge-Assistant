@@ -11,6 +11,7 @@ import { extractActionItemsTool } from "../tools/extract-action-items";
 import { readFullDocumentsTool } from "../tools/read-full-documents";
 import { noteObservationTool } from "../tools/note-observation";
 import { createDiagramTool } from "../tools/create-diagram";
+import { queryKnowledgeGraphTool } from "../tools/query-knowledge-graph";
 import { buildActionAgentSystemPrompt } from "../prompts";
 import { OrchestratorState } from "./state";
 import { appendMessage } from "../../db/repositories/chat-history";
@@ -27,6 +28,7 @@ function buildActionTools(userId: string) {
     readFullDocuments: readFullDocumentsTool(userId),
     noteObservation: noteObservationTool(userId),
     createDiagram: createDiagramTool(),
+    queryKnowledgeGraph: queryKnowledgeGraphTool(userId),
   };
 }
 

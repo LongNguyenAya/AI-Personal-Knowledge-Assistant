@@ -169,6 +169,41 @@
       "when": 1788240241301,
       "tag": "0023_grant_admin_user_correction_memories",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1789894707505,
+      "tag": "0024_add_knowledge_graph_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1789894726643,
+      "tag": "0025_grant_app_user_kg_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1789895063148,
+      "tag": "0026_grant_admin_user_kg_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1789895487913,
+      "tag": "0027_kg_entities_merge_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1789959580483,
+      "tag": "0028_documents_ingestion_retry_count",
+      "breakpoints": true
     }
   ]
 }

@@ -19,6 +19,7 @@ import wsRoute from "./routes/ws";
 import emailRoute from "./routes/email";
 import { jwtAuthMiddleware } from "./middleware/jwt-auth";
 import { startReminderScheduler } from "./scheduler/reminder-scheduler";
+import { startDocumentRecoveryScheduler } from "./scheduler/document-recovery-scheduler";
 import { startDocumentIngestionWorker } from "./workers/document-ingestion-worker";
 import { startDigestWorker } from "./workers/digest-worker";
 import type { AppEnv } from "./types";
@@ -63,6 +64,7 @@ const wss = new WebSocketServer({ noServer: true });
 serve({ fetch: app.fetch, port, websocket: { server: wss } });
 
 startReminderScheduler();
+startDocumentRecoveryScheduler();
 startDocumentIngestionWorker();
 
 // Doesn't hard-throw like the other 2 env vars since this queue has to be created manually on the AWS Console, missing it doesn't block startup.
